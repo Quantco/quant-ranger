@@ -1,0 +1,10 @@
+build
+conda.recipe
+.copier-answers.yml
+docs/docs/reference/cli.md
+docs/docs/reference/python-api.md
+docs/pnpm-lock.yaml
+docs/.docusaurus
+
+*.html
+*.properties

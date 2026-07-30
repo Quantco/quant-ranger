@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /examples/plugin
+    schedule:
+      interval: monthly
+    groups:
+      gh-actions:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: monthly
+    groups:
+      docs:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      docs-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build

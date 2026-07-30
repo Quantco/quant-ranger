@@ -1,0 +1,125 @@
+name: Pixi Update Updater
+
+on:
+  schedule:
+    # Weekly: Monday 08:23 UTC.
+    - cron: "23 8 * * 1"
+    # Monthly candidate: Monday 10:23 UTC; resolver keeps the first Monday.
+    - cron: "23 10 * * 1"
+    # Quarterly candidate: Monday 12:23 UTC; resolver keeps the first Monday.
+    - cron: "23 12 * 1,4,7,10 1"
+  workflow_dispatch:
+    inputs:
+      repositories:
+        description: Optional comma-separated repository filters passed to quant-ranger.
+        required: false
+        type: string
+        default: ""
+      jobs:
+        description: Number of quant-ranger update items to process concurrently.
+        required: false
+        type: string
+        default: "8"
+      runner:
+        description: GitHub runner label used for the updater job.
+        required: false
+        type: string
+        default: ubuntu-latest
+      publish-changes:
+        description: Create or update pull requests instead of running in dry-run mode.
+        required: false
+        type: boolean
+        default: false
+      pr-details:
+        description: Show pull request details, including the full diff.
+        required: false
+        type: boolean
+        default: false
+      pr-details-diff-lines:
+        description: Trim pull request detail diffs to this many lines and enable PR details.
+        required: false
+        type: string
+        default: ""
+      schedule:
+        description: Optional schedule filter for manual Pixi update runs.
+        required: false
+        type: choice
+        default: no-filter
+        options:
+          - no-filter
+          - weekly
+          - monthly
+          - quarterly
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # GitHub reports which cron fired, but not what it means. Map it to a
+  # `--schedule` value in an unprivileged job so the updater job stays simple.
+  resolve-schedule:
+    name: Resolve schedule
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      updater-args: ${{ steps.schedule.outputs.updater-args }}
+      run-update: ${{ steps.schedule.outputs.run-update }}
+    steps:
+      - name: Resolve schedule
+        id: schedule
+        env:
+          CRON: ${{ github.event.schedule }}
+          REQUESTED_SCHEDULE: ${{ github.event_name == 'workflow_dispatch' && inputs.schedule || '' }}
+        run: |
+          if [[ "$REQUESTED_SCHEDULE" == "no-filter" ]]; then
+            schedule=
+          elif [[ -n "$REQUESTED_SCHEDULE" ]]; then
+            schedule="$REQUESTED_SCHEDULE"
+          else
+            run_update=true
+            case "$CRON" in
+              "23 8 * * 1") schedule=weekly ;;
+              "23 10 * * 1") schedule=monthly ;;
+              "23 12 * 1,4,7,10 1") schedule=quarterly ;;
+              *)
+                echo "Unknown Pixi update schedule cron: $CRON" >&2
+                exit 1
+                ;;
+            esac
+            # Cron cannot express "first Monday of the month", so the monthly and
+            # quarterly crons fire every Monday and are dropped outside the first
+            # week. `10#` forces base 10 so a leading zero is not read as octal.
+            if [[ "$schedule" != "weekly" ]] && (( 10#$(date -u +%d) > 7 )); then
+              run_update=false
+            fi
+          fi
+          run_update=${run_update:-true}
+          updater_args=
+          if [[ -n "$schedule" ]]; then
+            updater_args="--schedule $schedule"
+          fi
+          echo "updater-args=$updater_args" >> "$GITHUB_OUTPUT"
+          echo "run-update=$run_update" >> "$GITHUB_OUTPUT"
+
+  update:
+    name: Run pixi update updater
+    needs: resolve-schedule
+    if: ${{ needs.resolve-schedule.outputs.run-update == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/updater.yml
+    with:
+      updater: pixi-update
+      updater-args: ${{ needs.resolve-schedule.outputs.updater-args }}
+      repositories: ${{ inputs.repositories }}
+      jobs: ${{ inputs.jobs || '8' }}
+      runner: ${{ inputs.runner || 'ubuntu-latest' }}
+      # Scheduled runs publish; manual runs are dry runs unless asked otherwise.
+      publish-changes: ${{ github.event_name == 'schedule' || inputs.publish-changes }}
+      pr-details: ${{ inputs.pr-details || false }}
+      pr-details-diff-lines: ${{ inputs.pr-details-diff-lines }}
+    secrets:
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}

@@ -1,0 +1,115 @@
+name: Reusable Updater Workflow
+
+on:
+  workflow_call:
+    inputs:
+      updater:
+        description: quant-ranger updater command to run.
+        required: true
+        type: string
+      updater-args:
+        description: Extra arguments passed after the updater command.
+        required: true
+        type: string
+      repositories:
+        description: Optional comma-separated repository filters passed to quant-ranger.
+        required: true
+        type: string
+      # Keep this as a string, otherwise we get a syntax error when forwarding the input from workflow_dispatch
+      # https://github.com/orgs/community/discussions/67182
+      jobs:
+        description: Number of quant-ranger update items to process concurrently.
+        required: true
+        type: string
+      runner:
+        description: GitHub runner label used for the updater job.
+        required: true
+        type: string
+      publish-changes:
+        description: Create or update pull requests instead of running in dry-run mode.
+        required: true
+        type: boolean
+      pr-details:
+        description: Show pull request details, including the full diff.
+        required: true
+        type: boolean
+      pr-details-diff-lines:
+        description: Trim pull request detail diffs to this many lines and enable PR details.
+        required: true
+        type: string
+    secrets:
+      GH_APP_PRIVATE_KEY:
+        description: GitHub App private key.
+        required: true
+
+# quant-ranger authenticates as a GitHub App for the repositories it updates, so
+# the workflow's own token only needs to read this repository.
+permissions: {}
+
+jobs:
+  run:
+    name: Run ${{ inputs.updater }} updater
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+
+      - name: Allow rattler-sandbox user namespaces
+        run: |
+          # GitHub's Ubuntu AppArmor policy can deny the rootless uid_map write
+          # that rattler-sandbox uses; relax it in this ephemeral runner.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Run updater
+        env:
+          GH_APP_CLIENT_ID: ${{ vars.GH_APP_CLIENT_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          REPOSITORIES: ${{ inputs.repositories }}
+          UPDATE_JOBS: ${{ inputs.jobs }}
+          PUBLISH_CHANGES: ${{ inputs.publish-changes }}
+          PR_DETAILS: ${{ inputs.pr-details }}
+          PR_DETAILS_DIFF_LINES: ${{ inputs.pr-details-diff-lines }}
+          UPDATER: ${{ inputs.updater }}
+          UPDATER_ARGS: ${{ inputs.updater-args }}
+        run: |
+          global_args=()
+          if [[ -n "$REPOSITORIES" ]]; then
+            global_args+=(--repository "$REPOSITORIES")
+          else
+            global_args+=(--all-installed-repositories)
+          fi
+
+          if [[ "$UPDATE_JOBS" != "1" ]]; then
+            global_args+=(--jobs "$UPDATE_JOBS")
+          fi
+          if [[ "$PUBLISH_CHANGES" == "true" ]]; then
+            global_args+=(--publish-changes)
+          fi
+          if [[ "$PR_DETAILS" == "true" ]]; then
+            global_args+=(--pr-details)
+          fi
+          if [[ -n "$PR_DETAILS_DIFF_LINES" ]]; then
+            global_args+=(--pr-details-diff-lines "$PR_DETAILS_DIFF_LINES")
+          fi
+
+          # Updater options are a single string here because `workflow_call`
+          # cannot pass a list; split it on whitespace into argv entries.
+          updater_args=()
+          if [[ -n "$UPDATER_ARGS" ]]; then
+            read -r -a updater_args <<< "$UPDATER_ARGS"
+          fi
+
+          pixi run quant-ranger update \
+            "${global_args[@]}" \
+            "$UPDATER" \
+            "${updater_args[@]}"

@@ -1,0 +1,89 @@
+name: Chore
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, edited, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-public-api:
+    name: Check Public API
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+      - name: Check for breaking public API changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        # The `github` format duplicates annotations on every workflow rerun,
+        # therefore we use `oneline`.
+        run: |
+          if pixi run griffe check quant_ranger \
+            --against "${BASE_SHA}" --format oneline; then
+            exit 0
+          fi
+
+          if [[ ! "${PR_TITLE}" =~ ^[a-z]+(\(.*\))?\!: ]]; then
+            echo "::error::Griffe detected a breaking public API change. Mark the PR title as breaking (for example, 'feat!: Remove deprecated API')."
+            exit 1
+          fi
+
+  check-pr-title:
+    name: Check PR Title
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check valid conventional commit message
+        id: lint
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        with:
+          subjectPattern: ^[A-Za-z].+[^. ]$ # subject must start with a letter and may not end with a dot/space
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Post comment about invalid PR title
+        if: failure()
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: conventional-commit-pr-title
+          message: |
+            Thank you for opening this pull request! 👋🏼
+
+            This repository requires pull request titles to follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/) and it looks like your proposed title needs to be adjusted.
+
+            <details><summary><b>Details</b></summary>
+
+            ```
+            ${{ steps.lint.outputs.error_message }}
+            ```
+            </details>
+      - name: Delete comment about invalid PR title
+        if: success()
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: conventional-commit-pr-title
+          delete: true
+
+  assign-labels:
+    name: Assign Labels
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Assign labels
+        uses: release-drafter/release-drafter/autolabeler@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+        with:
+          token: ${{ github.token }}

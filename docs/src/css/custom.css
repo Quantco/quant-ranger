@@ -1,0 +1,91 @@
+:root {
+  --ifm-color-primary: #855521;
+  --ifm-color-primary-dark: #774c1e;
+  --ifm-color-primary-darker: #71481c;
+  --ifm-color-primary-darkest: #5d3b17;
+  --ifm-color-primary-light: #93602a;
+  --ifm-color-primary-lighter: #9b6732;
+  --ifm-color-primary-lightest: #b48755;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgb(0 0 0 / 10%);
+}
+
+[data-theme="dark"] {
+  --ifm-color-primary: #e2b867;
+  --ifm-color-primary-dark: #dba84a;
+  --ifm-color-primary-darker: #d7a13b;
+  --ifm-color-primary-darkest: #b77f26;
+  --ifm-color-primary-light: #e9c784;
+  --ifm-color-primary-lighter: #edcf94;
+  --ifm-color-primary-lightest: #f7ead0;
+  --docusaurus-highlighted-code-line-bg: rgb(0 0 0 / 30%);
+}
+
+.navbar__logo {
+  height: 2.6rem;
+}
+
+.navbar__logo img {
+  border-radius: 0.3rem;
+}
+
+.footer--dark {
+  --ifm-footer-background-color: var(--ifm-color-emphasis-100);
+  --ifm-footer-color: var(--ifm-font-color-base);
+  --ifm-footer-link-color: var(--ifm-link-color);
+  --ifm-footer-title-color: var(--ifm-heading-color);
+
+  /* The footer holds only the copyright line, so it needs less room than
+     Infima's default of twice the global spacing. */
+  --ifm-footer-padding-vertical: var(--ifm-global-spacing);
+
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.footer__copyright {
+  font-size: 0.875rem;
+}
+
+.markdown h1:first-child {
+  letter-spacing: -0.02em;
+}
+
+.project-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: var(--ifm-heading-margin-bottom);
+}
+
+.project-title h1 {
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.project-title__logo {
+  width: 4rem;
+  height: 4rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+@media (max-width: 576px) {
+  .project-title__logo {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+.plugin-data-flow {
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+/* The light screenshots have a near-white background that would otherwise bleed
+   into the page, so mark their edges explicitly. */
+.screenshot {
+  display: block;
+  max-width: 100%;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+}

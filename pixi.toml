@@ -1,0 +1,110 @@
+[workspace]
+name = "quant-ranger"
+description = "Tool for maintenance work across GitHub repositories."
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
+preview = ["pixi-build"]
+
+[package]
+name = "quant-ranger"
+# replaced in CI
+version = "0.0.0"
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+[package.build.backend]
+name = "pixi-build-python"
+version = "*"
+[package.build.config]
+# Derive the conda run-dependencies from `[project.dependencies]` in
+# `pyproject.toml` so that the PyPI metadata is the single source of truth.
+ignore-pypi-mapping = false
+[package.host-dependencies]
+python = ">=3.14"
+hatchling = "*"
+# Only dependencies that are unavailable on PyPI belong here; everything else is
+# declared in `pyproject.toml` and mapped automatically. These are all invoked as
+# external executables, so `pip` users must install them separately (see README).
+[package.run-dependencies]
+git = ">=2.54.0"
+mergiraf = ">=0.17.0"
+rattler-sandbox = ">=0.2.3"
+
+[tasks]
+
+[dependencies]
+quant-ranger = { path = "." }
+
+[feature.test.dependencies]
+pytest = "*"
+pytest-cov = "*"
+pyrefly = "*"
+griffe = "*"
+types-pyyaml = "*"
+types-requests = "*"
+[feature.test.tasks]
+test = "pytest"
+test-coverage = "pytest --cov=quant_ranger --cov-report=xml --cov-report=term-missing"
+
+[feature.build.dependencies]
+python = "*"
+hatchling = "*"
+python-build = "*"
+twine = ">=6"
+[feature.build.tasks]
+build-wheel = "python -m build --no-isolation ."
+check-wheel = "twine check dist/*"
+
+[feature.lint.dependencies]
+lefthook = "*"
+docformatter = "<1.7.8"
+ruff = "*"
+prettier = "*"
+taplo = "*"
+pre-commit-hooks = "*"
+typos = "*"
+zizmor = "*"
+griffe2md = ">=1.5.0"
+
+[feature.lint.tasks]
+pre-commit-install = "lefthook install"
+lint = "lefthook run pre-commit --all-files"
+
+[feature.py314.dependencies]
+python = "3.14.*"
+
+[feature.docs.dependencies]
+nodejs = ">=26"
+pnpm = ">=11.15"
+griffe2md = ">=1.5.0"
+
+[feature.docs.tasks]
+docs-install = { cmd = "pnpm install --frozen-lockfile", cwd = "docs" }
+docs-start = { cmd = "pnpm run start", cwd = "docs", depends-on = [
+  "docs-install",
+  "docs-reference",
+] }
+docs-build = { cmd = "pnpm run build", cwd = "docs", env = { NODE_OPTIONS = "--disable-warning=ExperimentalWarning" }, depends-on = [
+  "docs-install",
+  "docs-reference",
+] }
+docs-serve = { cmd = "pnpm run serve", cwd = "docs", depends-on = [
+  "docs-build",
+] }
+docs-typecheck = { cmd = "pnpm run typecheck", cwd = "docs", depends-on = [
+  "docs-install",
+] }
+docs-reference = "python docs/reference_docs_app.py"
+docs-reference-check = "python docs/reference_docs_app.py --check"
+docs-check = { depends-on = [
+  "docs-reference-check",
+  "docs-typecheck",
+  "docs-build",
+] }
+
+[environments]
+default = ["test", "build", "lint"]
+py314 = ["py314", "test"]
+docs = ["docs"]
+
+[tool.update]
+autoupdate-commit-message = "chore: Update pixi lockfile"

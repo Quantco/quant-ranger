@@ -1,0 +1,64 @@
+name: Copier Updater
+
+on:
+  schedule:
+    # This is Monday 00:23 UTC.
+    - cron: "23 0 * * 1"
+  workflow_dispatch:
+    inputs:
+      repositories:
+        description: Optional comma-separated repository filters passed to quant-ranger.
+        required: false
+        type: string
+        default: ""
+      jobs:
+        description: Number of quant-ranger update items to process concurrently.
+        required: false
+        type: string
+        default: "1"
+      runner:
+        description: GitHub runner label used for the updater job.
+        required: false
+        type: string
+        default: ubuntu-latest
+      publish-changes:
+        description: Create or update pull requests instead of running in dry-run mode.
+        required: false
+        type: boolean
+        default: false
+      pr-details:
+        description: Show pull request details, including the full diff.
+        required: false
+        type: boolean
+        default: false
+      pr-details-diff-lines:
+        description: Trim pull request detail diffs to this many lines and enable PR details.
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Run copier updater
+    permissions:
+      contents: read
+    uses: ./.github/workflows/updater.yml
+    with:
+      updater: copier
+      # The copier updater takes no options of its own.
+      updater-args: ""
+      repositories: ${{ inputs.repositories }}
+      jobs: ${{ inputs.jobs || '1' }}
+      runner: ${{ inputs.runner || 'ubuntu-latest' }}
+      # Scheduled runs publish; manual runs are dry runs unless asked otherwise.
+      publish-changes: ${{ github.event_name == 'schedule' || inputs.publish-changes }}
+      pr-details: ${{ inputs.pr-details || false }}
+      pr-details-diff-lines: ${{ inputs.pr-details-diff-lines }}
+    secrets:
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}

@@ -1,0 +1,27 @@
+[workspace]
+name = "quant-ranger-example-plugin"
+channels = [
+  "https://quantco.jfrog.io/artifactory/api/conda/qc-internal",
+  "conda-forge",
+]
+preview = ["pixi-build"]
+platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
+
+[package]
+name = "quant-ranger-example-plugin"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "*"
+
+[package.host-dependencies]
+python = ">=3.14"
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.14"
+quant-ranger = ">=0.2.0"
+
+[dependencies]
+quant-ranger-example-plugin = { path = "." }
