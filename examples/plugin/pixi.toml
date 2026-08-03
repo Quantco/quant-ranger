@@ -1,9 +1,6 @@
 [workspace]
 name = "quant-ranger-example-plugin"
-channels = [
-  "https://quantco.jfrog.io/artifactory/api/conda/qc-internal",
-  "conda-forge",
-]
+channels = ["conda-forge"]
 preview = ["pixi-build"]
 platforms = ["osx-arm64", "linux-64", "linux-aarch64"]
 
@@ -21,7 +18,7 @@ hatchling = "*"
 
 [package.run-dependencies]
 python = ">=3.14"
-quant-ranger = ">=0.2.0"
+quant-ranger = ">=0.1.1"
 
 [dependencies]
 quant-ranger-example-plugin = { path = "." }
