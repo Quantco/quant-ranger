@@ -55,6 +55,7 @@ PYTHON_MODULES = (
     "quant_ranger.updaters",
     "quant_ranger.aggregators",
     "quant_ranger.site_config",
+    "quant_ranger.testing",
 )
 PYTHON_RENDER_CONFIG: ConfigDict = {
     "annotations_path": "brief",
