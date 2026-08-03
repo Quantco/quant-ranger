@@ -77,6 +77,9 @@ indent-style = "space"
 [tool.pyrefly]
 python-version = "3.14.0"
 preset = "strict"
+[tool.pyrefly.errors]
+# https://github.com/Quantco/quant-ranger/issues/17
+implicit-any-lambda = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
