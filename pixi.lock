@@ -75,7 +75,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/py-rattler-0.23.2-py310h70157a2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.4-py314h2e6c369_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pynacl-1.6.2-py314h3129cac_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.1.1-hb17b654_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.2.0-hb17b654_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.6-habeac84_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rattler-sandbox-0.2.3-hb17b654_0.conda
@@ -240,7 +240,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/py-rattler-0.23.2-py310h45743d3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pydantic-core-2.46.4-py314h451b6cc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pynacl-1.6.2-py314h745c899_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.1.1-h069e38c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.2.0-h069e38c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.14.6-hc679e19_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyyaml-6.0.3-py314h807365f_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/rattler-sandbox-0.2.3-h069e38c_0.conda
@@ -490,7 +490,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/py-rattler-0.23.2-py310hbaa5893_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.4-py314h54f3292_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pynacl-1.6.2-py314h37c0525_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.1.1-h6fdd925_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.2.0-h6fdd925_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.6-h156bc91_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rattler-sandbox-0.2.3-h6fdd925_0.conda
@@ -911,7 +911,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/py-rattler-0.23.2-py310h70157a2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.4-py314h2e6c369_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pynacl-1.6.2-py314h3129cac_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.1.1-hb17b654_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.2.0-hb17b654_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.6-habeac84_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0.3-py314h67df5f8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rattler-sandbox-0.2.3-hb17b654_0.conda
@@ -1034,7 +1034,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/py-rattler-0.23.2-py310h45743d3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pydantic-core-2.46.4-py314h451b6cc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pynacl-1.6.2-py314h745c899_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.1.1-h069e38c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.2.0-h069e38c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.14.6-hc679e19_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyyaml-6.0.3-py314h807365f_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/rattler-sandbox-0.2.3-h069e38c_0.conda
@@ -1220,7 +1220,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/py-rattler-0.23.2-py310hbaa5893_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.4-py314h54f3292_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pynacl-1.6.2-py314h37c0525_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.1.1-h6fdd925_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.2.0-h6fdd925_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.6-h156bc91_101_cp314.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyyaml-6.0.3-py314h6e9b3f0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/rattler-sandbox-0.2.3-h6fdd925_0.conda
@@ -2035,19 +2035,18 @@ packages:
   run_exports: {}
   size: 1240349
   timestamp: 1783594399150
-- conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.1.1-hb17b654_1.conda
-  sha256: a2d656603d21f31d57a393a381442c2747251fe7049e8cc031973cb9e57cab68
-  md5: de7298b455eceac99bd624b97ba727ef
+- conda: https://conda.anaconda.org/conda-forge/linux-64/pyrefly-1.2.0-hb17b654_0.conda
+  sha256: 937a57a855f4a7f0994a561fbee5a089d509faf9b0668ae2fd02a71dc606dc4f
+  md5: 2c8a7d2685e9b1aff86433c47a883431
   depends:
-  - libgcc >=14
   - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
   constrains:
   - __glibc >=2.17
   license: MIT
-  license_family: MIT
   run_exports: {}
-  size: 11408406
-  timestamp: 1782826707443
+  size: 11772839
+  timestamp: 1785575423736
 - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.14.6-habeac84_101_cp314.conda
   build_number: 101
   sha256: ee8f2006e1724b1f2e9e0ccc5a7cfdcab973460faa2f63ac1f6e44fdad4c0344
@@ -2998,18 +2997,17 @@ packages:
   run_exports: {}
   size: 1166058
   timestamp: 1783594413942
-- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.1.1-h069e38c_1.conda
-  sha256: beff78ecd7021c513c337b47323dec2ec20ee63834408517df976bd2f7dcbf54
-  md5: dc6e51c8a74ab06ca14e959ad283fd06
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pyrefly-1.2.0-h069e38c_0.conda
+  sha256: dceaa83f28837d544fe39be2b1a5de8f34a004cc5e92feb0ee4039a2e1957c2c
+  md5: 41d5030dd417dc96d58a151711d2e4c9
   depends:
   - libgcc >=14
   constrains:
   - __glibc >=2.17
   license: MIT
-  license_family: MIT
   run_exports: {}
-  size: 11147745
-  timestamp: 1782826720700
+  size: 11517626
+  timestamp: 1785575442738
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/python-3.14.6-hc679e19_101_cp314.conda
   build_number: 101
   sha256: b8135c10971f387402f42b8fe52cf983665e9af9a7b5c839ae082a0f71f6c0c4
@@ -4897,18 +4895,17 @@ packages:
   run_exports: {}
   size: 1213873
   timestamp: 1783595121416
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.1.1-h6fdd925_1.conda
-  sha256: 9ae74ec65270548f6ad2b5584ddea38754001f274013aecf633a8331761be637
-  md5: 4187ee60069a0baf6c98fbfff392ea7f
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/pyrefly-1.2.0-h6fdd925_0.conda
+  sha256: ecb46769c4b863b3a5aaa3932e06972907439d83a612253de6155f9d47d1e6ab
+  md5: 958874b3b5800b69299c402002608b84
   depends:
   - __osx >=11.0
   constrains:
   - __osx >=11.0
   license: MIT
-  license_family: MIT
   run_exports: {}
-  size: 10708112
-  timestamp: 1782826805517
+  size: 11055889
+  timestamp: 1785575471905
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/python-3.14.6-h156bc91_101_cp314.conda
   build_number: 101
   sha256: fc70ae73df7798bce7cac7adef7fdfb874208b2623a0e8ccb4354194b8508769
