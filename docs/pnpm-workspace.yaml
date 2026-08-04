@@ -3,5 +3,5 @@ allowBuilds:
   core-js: false
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
-- "@quantco/*"
+  - "@quantco/*"
 blockExoticSubdeps: true
