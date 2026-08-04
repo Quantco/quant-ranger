@@ -1647,3 +1647,622 @@ factory: Callable[[SiteConfig], OptionInfo | ArgumentInfo]
 ```python
 resolve(site_config: SiteConfig) -> OptionInfo | ArgumentInfo
 ```
+
+## quant_ranger.testing
+
+**Classes:**
+
+- **FakeGitHubClient** – `GitHubClient` stand-in for tests that records calls per method.
+- **LogLevel** – Levels at which a `Logger` can emit messages.
+- **RecordingCheckout** – `RepositoryCheckout` that records git operations instead of running them.
+- **RecordingLogger** – Logger implementation for tests that records messages by level.
+
+### FakeGitHubClient
+
+```python
+FakeGitHubClient(token: str = 'secret-token', logger: Logger = RecordingLogger(), installation_owner: str | None = None, api_url: str = 'https://api.github.com', github_server_host: str = 'github.com', repository_url: str | None = None, pr_opened: bool = True, publish_changes: bool = False, checkout: RepositoryCheckout | None = None, active_by_owner: dict[str, list[RepositoryRef]] = dict(), installed: list[RepositoryRef] = list(), missing_refs: set[str] = set(), error: GitHubError | None = None, files: dict[str, list[str]] = dict(), file_contents: dict[str, str] = dict(), latest_release: str = 'v0.70.0', repo_tags: dict[tuple[str, str], list[str]] = dict(), repo_tag_error: GitHubError | None = None, tag_messages: dict[tuple[str, str, str], str | None] = dict(), active_repository_calls: list[str] = list(), installed_repository_calls: int = 0, clone_calls: list[RepositoryRef] = list(), find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = list(), file_content_calls: list[tuple[RepositoryRef, str]] = list(), latest_release_calls: list[tuple[str, str]] = list(), repo_tag_calls: list[tuple[str, str]] = list(), pull_request_calls: list[dict[str, Any]] = list()) -> None
+```
+
+`GitHubClient` stand-in for tests that records calls per method.
+
+Cast instances with `cast(GitHubClient, ...)` at the use site; only the
+methods a test exercises need to be configured.
+
+**Functions:**
+
+- **installed_repositories** –
+- **active_repositories** –
+- **check_ref_exists** –
+- **get_repository_url** –
+- **clone_repository** –
+- **find_files_by_name** –
+- **get_file_content** –
+- **get_latest_release** –
+- **get_repo_tags** –
+- **get_repo_tag_message** –
+- **create_pull_request** –
+
+**Attributes:**
+
+- **token** (<code>str</code>) –
+- **logger** (<code>Logger</code>) –
+- **installation_owner** (<code>str | None</code>) –
+- **api_url** (<code>str</code>) –
+- **github_server_host** (<code>str</code>) –
+- **repository_url** (<code>str | None</code>) –
+- **pr_opened** (<code>bool</code>) –
+- **publish_changes** (<code>bool</code>) –
+- **checkout** (<code>RepositoryCheckout | None</code>) –
+- **active_by_owner** (<code>dict\[str, list\[RepositoryRef\]\]</code>) –
+- **installed** (<code>list\[RepositoryRef\]</code>) –
+- **missing_refs** (<code>set\[str\]</code>) –
+- **error** (<code>GitHubError | None</code>) –
+- **files** (<code>dict\[str, list\[str\]\]</code>) –
+- **file_contents** (<code>dict\[str, str\]</code>) –
+- **latest_release** (<code>str</code>) –
+- **repo_tags** (<code>dict\[tuple\[str, str\], list\[str\]\]</code>) –
+- **repo_tag_error** (<code>GitHubError | None</code>) –
+- **tag_messages** (<code>dict\[tuple\[str, str, str\], str | None\]</code>) –
+- **active_repository_calls** (<code>list\[str\]</code>) –
+- **installed_repository_calls** (<code>int</code>) –
+- **clone_calls** (<code>list\[RepositoryRef\]</code>) –
+- **find_files_calls** (<code>list\[tuple\[RepositoryRef, str | Pattern\[str\]\]\]</code>) –
+- **file_content_calls** (<code>list\[tuple\[RepositoryRef, str\]\]</code>) –
+- **latest_release_calls** (<code>list\[tuple\[str, str\]\]</code>) –
+- **repo_tag_calls** (<code>list\[tuple\[str, str\]\]</code>) –
+- **pull_request_calls** (<code>list\[dict\[str, Any\]\]</code>) –
+
+#### token
+
+```python
+token: str = 'secret-token'
+```
+
+#### logger
+
+```python
+logger: Logger = field(default_factory=RecordingLogger)
+```
+
+#### installation_owner
+
+```python
+installation_owner: str | None = None
+```
+
+#### api_url
+
+```python
+api_url: str = 'https://api.github.com'
+```
+
+#### github_server_host
+
+```python
+github_server_host: str = 'github.com'
+```
+
+#### repository_url
+
+```python
+repository_url: str | None = None
+```
+
+#### pr_opened
+
+```python
+pr_opened: bool = True
+```
+
+#### publish_changes
+
+```python
+publish_changes: bool = False
+```
+
+#### checkout
+
+```python
+checkout: RepositoryCheckout | None = None
+```
+
+#### active_by_owner
+
+```python
+active_by_owner: dict[str, list[RepositoryRef]] = field(default_factory=dict)
+```
+
+#### installed
+
+```python
+installed: list[RepositoryRef] = field(default_factory=list)
+```
+
+#### missing_refs
+
+```python
+missing_refs: set[str] = field(default_factory=set)
+```
+
+#### error
+
+```python
+error: GitHubError | None = None
+```
+
+#### files
+
+```python
+files: dict[str, list[str]] = field(default_factory=dict)
+```
+
+#### file_contents
+
+```python
+file_contents: dict[str, str] = field(default_factory=dict)
+```
+
+#### latest_release
+
+```python
+latest_release: str = 'v0.70.0'
+```
+
+#### repo_tags
+
+```python
+repo_tags: dict[tuple[str, str], list[str]] = field(default_factory=dict)
+```
+
+#### repo_tag_error
+
+```python
+repo_tag_error: GitHubError | None = None
+```
+
+#### tag_messages
+
+```python
+tag_messages: dict[tuple[str, str, str], str | None] = field(default_factory=dict)
+```
+
+#### active_repository_calls
+
+```python
+active_repository_calls: list[str] = field(default_factory=list)
+```
+
+#### installed_repository_calls
+
+```python
+installed_repository_calls: int = 0
+```
+
+#### clone_calls
+
+```python
+clone_calls: list[RepositoryRef] = field(default_factory=list)
+```
+
+#### find_files_calls
+
+```python
+find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = field(default_factory=list)
+```
+
+#### file_content_calls
+
+```python
+file_content_calls: list[tuple[RepositoryRef, str]] = field(default_factory=list)
+```
+
+#### latest_release_calls
+
+```python
+latest_release_calls: list[tuple[str, str]] = field(default_factory=list)
+```
+
+#### repo_tag_calls
+
+```python
+repo_tag_calls: list[tuple[str, str]] = field(default_factory=list)
+```
+
+#### pull_request_calls
+
+```python
+pull_request_calls: list[dict[str, Any]] = field(default_factory=list)
+```
+
+#### installed_repositories
+
+```python
+installed_repositories() -> list[RepositoryRef]
+```
+
+#### active_repositories
+
+```python
+active_repositories(owner: str) -> list[RepositoryRef]
+```
+
+#### check_ref_exists
+
+```python
+check_ref_exists(repository_ref: RepositoryRef) -> bool
+```
+
+#### get_repository_url
+
+```python
+get_repository_url(repository_ref: RepositoryRef) -> str
+```
+
+#### clone_repository
+
+```python
+clone_repository(repository_ref: RepositoryRef, *, directory: Any = None) -> RepositoryCheckout
+```
+
+#### find_files_by_name
+
+```python
+find_files_by_name(repository_ref: RepositoryRef, filename: str | re.Pattern[str]) -> list[str]
+```
+
+#### get_file_content
+
+```python
+get_file_content(repository_ref: RepositoryRef, path: str) -> str | None
+```
+
+#### get_latest_release
+
+```python
+get_latest_release(owner: str, name: str) -> str
+```
+
+#### get_repo_tags
+
+```python
+get_repo_tags(owner: str, name: str) -> list[str]
+```
+
+#### get_repo_tag_message
+
+```python
+get_repo_tag_message(owner: str, name: str, tag: str) -> str | None
+```
+
+#### create_pull_request
+
+```python
+create_pull_request(checkout: RepositoryCheckout, options: PullRequestOptions, logger: Logger) -> bool
+```
+
+### LogLevel
+
+Bases: <code>StrEnum</code>
+
+Levels at which a `Logger` can emit messages.
+
+**Attributes:**
+
+- **DEBUG** –
+- **INFO** –
+- **WARNING** –
+- **ERROR** –
+
+#### DEBUG
+
+```python
+DEBUG = 'debug'
+```
+
+#### INFO
+
+```python
+INFO = 'info'
+```
+
+#### WARNING
+
+```python
+WARNING = 'warning'
+```
+
+#### ERROR
+
+```python
+ERROR = 'error'
+```
+
+### RecordingCheckout
+
+```python
+RecordingCheckout(path: str | Path, repository_ref: RepositoryRef | None = None, *, clean: bool = True, changed_files: Sequence[str] = (), lock_clean: bool = False) -> None
+```
+
+Bases: <code>RepositoryCheckout</code>
+
+`RepositoryCheckout` that records git operations instead of running them.
+
+By default `is_clean()` reports dirty once `add`/`add_all` was called;
+`lock_clean=True` pins it to the `clean` value regardless of adds.
+
+**Functions:**
+
+- **add** –
+- **add_all** –
+- **is_clean** –
+- **checkout_branch** –
+- **commit_with_author** –
+- **force_push_branch** –
+- **changed_files** –
+- **head_commit_files** –
+- **head_commit_diff** –
+
+**Attributes:**
+
+- **clean** –
+- **lock_clean** –
+- **clean_checked** –
+- **added_paths** (<code>list\[str\]</code>) –
+- **add_all_count** –
+- **checked_out_branches** (<code>list\[str\]</code>) –
+- **commits** (<code>list\[dict\[str, str\]\]</code>) –
+- **pushed_branches** (<code>list\[str\]</code>) –
+- **diff** –
+- **added** (<code>bool</code>) –
+
+#### clean
+
+```python
+clean = clean
+```
+
+#### lock_clean
+
+```python
+lock_clean = lock_clean
+```
+
+#### clean_checked
+
+```python
+clean_checked = False
+```
+
+#### added_paths
+
+```python
+added_paths: list[str] = []
+```
+
+#### add_all_count
+
+```python
+add_all_count = 0
+```
+
+#### checked_out_branches
+
+```python
+checked_out_branches: list[str] = []
+```
+
+#### commits
+
+```python
+commits: list[dict[str, str]] = []
+```
+
+#### pushed_branches
+
+```python
+pushed_branches: list[str] = []
+```
+
+#### diff
+
+```python
+diff = ''
+```
+
+#### added
+
+```python
+added: bool
+```
+
+#### add
+
+```python
+add(path: str | Path) -> None
+```
+
+#### add_all
+
+```python
+add_all() -> None
+```
+
+#### is_clean
+
+```python
+is_clean() -> bool
+```
+
+#### checkout_branch
+
+```python
+checkout_branch(branch: str, logger: Logger) -> None
+```
+
+#### commit_with_author
+
+```python
+commit_with_author(message: str, *, author_name: str, author_email: str, user_name: str, user_email: str, quant_ranger_id: str, logger: Logger) -> None
+```
+
+#### force_push_branch
+
+```python
+force_push_branch(source_branch: str, logger: Logger, *, config: Sequence[str] = (), redact: Sequence[str] = ()) -> None
+```
+
+#### changed_files
+
+```python
+changed_files(logger: Logger | None = None, *, staged: bool = False, path: str | Path | None = None) -> list[str]
+```
+
+#### head_commit_files
+
+```python
+head_commit_files(logger: Logger | None = None) -> list[str]
+```
+
+#### head_commit_diff
+
+```python
+head_commit_diff() -> str
+```
+
+### RecordingLogger
+
+```python
+RecordingLogger(show_progress: bool = False, stream: StringIO = StringIO(), records: list[tuple[LogLevel, str]] = list(), panels: list[tuple[str, RenderableType]] = list()) -> None
+```
+
+Logger implementation for tests that records messages by level.
+
+Assertion conventions:
+
+- Prefer asserting on outcomes over log lines; assert on logs only when
+  logging is the behavior under test.
+- Prefer `logged(level, contains)` over indexing into the per-level lists;
+  positional assertions break when unrelated log lines change.
+- Exact `==` comparisons are reserved for asserting silence
+  (`logger.warnings == []`), exact output formats, or pinning the complete
+  message sequence of a small unit (via `records`).
+
+**Functions:**
+
+- **logged** – True if any recorded message at `level` contains `contains`.
+- **info** –
+- **info_panel** –
+- **debug** –
+- **warning** –
+- **error** –
+- **exception** –
+
+**Attributes:**
+
+- **show_progress** (<code>bool</code>) –
+- **stream** (<code>StringIO</code>) –
+- **console** (<code>Console</code>) –
+- **records** (<code>list\[tuple\[LogLevel, str\]\]</code>) –
+- **panels** (<code>list\[tuple\[str, RenderableType\]\]</code>) –
+- **infos** (<code>list\[str\]</code>) –
+- **debug_messages** (<code>list\[str\]</code>) –
+- **warnings** (<code>list\[str\]</code>) –
+- **errors** (<code>list\[str\]</code>) –
+
+#### show_progress
+
+```python
+show_progress: bool = False
+```
+
+#### stream
+
+```python
+stream: StringIO = field(default_factory=StringIO)
+```
+
+#### console
+
+```python
+console: Console = field(init=False)
+```
+
+#### records
+
+```python
+records: list[tuple[LogLevel, str]] = field(default_factory=list)
+```
+
+#### panels
+
+```python
+panels: list[tuple[str, RenderableType]] = field(default_factory=list)
+```
+
+#### infos
+
+```python
+infos: list[str]
+```
+
+#### debug_messages
+
+```python
+debug_messages: list[str]
+```
+
+#### warnings
+
+```python
+warnings: list[str]
+```
+
+#### errors
+
+```python
+errors: list[str]
+```
+
+#### logged
+
+```python
+logged(level: LogLevel, contains: str) -> bool
+```
+
+True if any recorded message at `level` contains `contains`.
+
+#### info
+
+```python
+info(message: str) -> None
+```
+
+#### info_panel
+
+```python
+info_panel(title: str, content: RenderableType) -> None
+```
+
+#### debug
+
+```python
+debug(message: str) -> None
+```
+
+#### warning
+
+```python
+warning(message: str) -> None
+```
+
+#### error
+
+```python
+error(message: str) -> None
+```
+
+#### exception
+
+```python
+exception(message: str, error: BaseException) -> None
+```

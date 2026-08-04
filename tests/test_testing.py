@@ -2,7 +2,12 @@ from pathlib import Path
 
 from quant_ranger._impl.logger import progress
 from quant_ranger._impl.models import RepositoryRef
-from quant_ranger._impl.testing import RecordingCheckout, RecordingLogger
+from quant_ranger.testing import (
+    FakeGitHubClient,
+    LogLevel,
+    RecordingCheckout,
+    RecordingLogger,
+)
 
 
 def test_recording_logger_records_all_log_levels_separately() -> None:
@@ -17,6 +22,13 @@ def test_recording_logger_records_all_log_levels_separately() -> None:
     assert logger.debug_messages == ["debug"]
     assert logger.warnings == ["warning"]
     assert logger.errors == ["error"]
+    assert logger.logged(LogLevel.INFO, "info")
+
+
+def test_fake_github_client_is_configurable() -> None:
+    github_client = FakeGitHubClient(token="test-token")
+
+    assert github_client.token == "test-token"
 
 
 def test_recording_logger_can_capture_progress_output() -> None:

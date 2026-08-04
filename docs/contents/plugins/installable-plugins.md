@@ -190,6 +190,19 @@ An aggregator can instead declare `PythonProjectItem` or a custom `UpdateOutput`
 This makes it compatible with fewer updaters.
 Aggregators can also define typed CLI options with `AggregatorOptions` in the same way as updater options.
 
+## Test a plugin
+
+The public [`quant_ranger.testing`](../reference/python-api.md#quant_rangertesting)
+module provides lightweight test doubles for plugin tests:
+
+- `RecordingLogger` captures messages and rendered panels.
+- `RecordingCheckout` records Git operations against a temporary checkout.
+- `FakeGitHubClient` supplies configurable repository data and records client calls.
+- `LogLevel` selects the level inspected by `RecordingLogger.logged()`.
+
+These helpers let plugin tests exercise scanners, updater tasks, and aggregators
+without invoking Git or making GitHub API requests.
+
 ## Register the commands
 
 Entry points make the classes discoverable without changes to quant-ranger:
