@@ -38,7 +38,8 @@ ScheduleOption = Annotated[
         "--schedule",
         help=(
             "Filter to update configurations whose schedule matches this value. "
-            "Omit to include all configurations, including `never`."
+            "Omit to include every cadence. Configurations set to `never` are "
+            "always excluded."
         ),
     ),
 ]

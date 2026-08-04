@@ -1305,6 +1305,47 @@ def test_pixi_lockfile_scanner_filters_schedule_mismatches() -> None:
     )
 
 
+def test_pixi_lockfile_scanner_skips_never_without_schedule_filter() -> None:
+    repository = RepositoryRef(owner="quantco", name="with-lockfiles", branch="main")
+    logger = RecordingLogger()
+    github_client = FakeGitHubClient(
+        files={
+            "quantco/with-lockfiles": [
+                "pixi.lock",
+                "subproject/pixi.lock",
+            ],
+        },
+        file_contents={
+            "pixi.toml": """
+            [tool.update]
+            autoupdate-schedule = "never"
+            """,
+            "subproject/pixi.toml": """
+            [tool.update]
+            autoupdate-schedule = "weekly"
+            """,
+        },
+    )
+
+    items = PixiUpdateUpdater(PixiUpdateOptions()).scanner.scan_all(
+        [repository],
+        RunContext(
+            site_config=SiteConfig(),
+            github_client=cast(GitHubClient, github_client),
+            logger=logger,
+        ),
+    )
+
+    assert [
+        (item.repository_ref, item.path.as_posix()) for item in items.update_items
+    ] == [(repository, "subproject/pixi.lock")]
+    assert logger.logged(
+        LogLevel.DEBUG,
+        "[quantco/with-lockfiles@main] Skipping pixi.lock: configured schedule "
+        "is never.",
+    )
+
+
 def test_pixi_lockfile_scanner_skips_missing_manifest() -> None:
     repository = RepositoryRef(owner="quantco", name="with-lockfile", branch="main")
     logger = RecordingLogger()

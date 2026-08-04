@@ -179,13 +179,17 @@ class PixiUpdateScanner(Scanner[PixiUpdateItem]):
             if manifest is None:
                 continue
 
-            if (
-                self.schedule is not None
-                and self.schedule != manifest.tool.update.autoupdate_schedule
-            ):
+            configured_schedule = manifest.tool.update.autoupdate_schedule
+            # `never` opts out of autoupdates entirely, so it is honored even in
+            # an unfiltered run; the other values only select a cadence.
+            if configured_schedule == "never":
+                context.logger.debug(f"Skipping {path}: configured schedule is never.")
+                continue
+
+            if self.schedule is not None and self.schedule != configured_schedule:
                 context.logger.debug(
                     f"Skipping {path}: configured schedule is "
-                    f"{manifest.tool.update.autoupdate_schedule}; current scheduled run is {self.schedule}."
+                    f"{configured_schedule}; current scheduled run is {self.schedule}."
                 )
                 continue
 

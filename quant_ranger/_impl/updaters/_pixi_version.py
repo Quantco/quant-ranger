@@ -108,6 +108,12 @@ class PixiVersionScanner(Scanner[PixiVersionItem]):
             return []
 
         config = self._read_config(repository_ref, context)
+        # `never` opts out of autoupdates entirely, so it is honored even in an
+        # unfiltered run; the other values only select a cadence.
+        if config.autoupdate_schedule == "never":
+            context.logger.debug("Skipping repository: configured schedule is never.")
+            return []
+
         if self.schedule is not None and config.autoupdate_schedule != self.schedule:
             context.logger.debug(
                 f"Skipping repository: configured schedule is "
