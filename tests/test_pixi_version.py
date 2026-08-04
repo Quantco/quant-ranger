@@ -368,6 +368,38 @@ def test_pixi_repository_scanner_filters_schedule_mismatches() -> None:
     )
 
 
+def test_pixi_repository_scanner_skips_never_without_schedule_filter() -> None:
+    repository = RepositoryRef(owner="quantco", name="with-lockfile", branch="main")
+    logger = RecordingLogger()
+    github_client = FakeGitHubClient(
+        files={"quantco/with-lockfile": ["pixi.lock"]},
+        file_contents={
+            "pixi.toml": """
+            [tool.pixi-version-updater]
+            autoupdate-schedule = "never"
+            """,
+        },
+    )
+
+    items = PixiVersionUpdater(
+        PixiVersionOptions(setup_pixi_marker="prefix-dev/setup-pixi")
+    ).scanner.scan_all(
+        [repository],
+        RunContext(
+            site_config=SiteConfig(),
+            github_client=cast(GitHubClient, github_client),
+            logger=logger,
+        ),
+    )
+
+    assert items.update_items == ()
+    assert logger.logged(
+        LogLevel.DEBUG,
+        "[quantco/with-lockfile@main] Skipping repository: configured schedule "
+        "is never.",
+    )
+
+
 def test_pixi_repository_scanner_reads_scheduled_config_once_per_repository() -> None:
     repository = RepositoryRef(owner="quantco", name="with-lockfiles", branch="main")
     github_client = FakeGitHubClient(

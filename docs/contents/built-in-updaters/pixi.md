@@ -174,7 +174,8 @@ quant-ranger update \
 ```
 
 `--schedule weekly` runs only configurations set to `weekly`.
-Omitting the option is a manual, unfiltered run and includes configurations set to `never`.
+Omitting the option is a manual, unfiltered run over every other cadence.
+Configurations set to `never` are always skipped, with or without the option.
 Other updaters do not accept this option.
 Control their cadence by choosing when the workflow calls them.
 
