@@ -17,8 +17,8 @@ Result processing belongs in an [installable aggregator](installable-plugins.md#
 ## Let a coding agent write it
 
 The repository ships a [`create-custom-updater` skill](https://github.com/quantco/quant-ranger/blob/main/skills/create-custom-updater/SKILL.md) that teaches coding agents to write, debug, and run one-off updaters.
-The conda-forge `quant-ranger` package depends on the matching skill package, so the skill is already present in your Pixi environment.
-Run [pixi-skills](https://github.com/pavelzw/pixi-skills) through `pixi exec` to configure the skill for your coding agent:
+The conda-forge `quant-ranger` package depends on a matching [pixi-skills](https://github.com/pavelzw/pixi-skills) skills package, so the skill is already present in your Pixi environment.
+Run pixi-skills through `pixi exec` to configure the skill for your coding agent:
 
 ```bash
 pixi exec pixi-skills manage
