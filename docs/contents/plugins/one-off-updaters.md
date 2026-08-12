@@ -18,17 +18,16 @@ Result processing belongs in an [installable aggregator](installable-plugins.md#
 
 The repository ships a [`create-custom-updater` skill](https://github.com/quantco/quant-ranger/blob/main/skills/create-custom-updater/SKILL.md) that teaches coding agents to write, debug, and run one-off updaters.
 The conda-forge `quant-ranger` package depends on the matching skill package, so the skill is already present in your Pixi environment.
-Install [pixi-skills](https://pixi.prefix.dev/latest/integration/extensions/pixi_skills/) once and configure the skill for your coding agent:
+Run [pixi-skills](https://github.com/pavelzw/pixi-skills) through `pixi exec` to configure the skill for your coding agent:
 
 ```bash
-pixi global install pixi-skills
-pixi skills manage
+pixi exec pixi-skills manage
 ```
 
 The interactive prompt lets you select `create-custom-updater`, your coding agent, and whether to configure it for the current project or globally.
 No separate installation of the skill is required.
 
-You can also install the skill directly from the repository with the [`skills` CLI](https://github.com/vercel-labs/skills):
+Alternatively, install the skill directly from the repository with the [`skills` CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add quantco/quant-ranger --skill create-custom-updater
