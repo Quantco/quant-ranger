@@ -1,7 +1,4 @@
-from datetime import UTC, datetime
-
 from quant_ranger._impl.aggregators import LogFailuresAggregator
-from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.models import (
     RepositoryRef,
     ScanFailure,
@@ -9,7 +6,7 @@ from quant_ranger._impl.models import (
     UpdateItem,
     UpdateResult,
 )
-from quant_ranger._impl.testing import RecordingLogger
+from quant_ranger._impl.testing import RecordingLogger, make_update_results_artifact
 from quant_ranger.aggregators import AggregatorOptions
 
 
@@ -30,7 +27,7 @@ def test_log_failures_aggregator_logs_failed_tasks() -> None:
             _result(Status.FAILURE, name="silent"),
         ],
         logger,
-        _artifact([_scan_failure()]),
+        make_update_results_artifact([_scan_failure()]),
     )
 
     output = logger.stream.getvalue()
@@ -61,7 +58,7 @@ def test_log_failures_aggregator_logs_no_failures() -> None:
             _result(Status.SKIPPED),
         ],
         logger,
-        _artifact(),
+        make_update_results_artifact(),
     )
 
     assert logger.infos == ["No failures."]
@@ -73,7 +70,7 @@ def test_failure_entry_logs_plain_message_without_details_marker() -> None:
     LogFailuresAggregator(AggregatorOptions()).aggregate(
         [_result(Status.FAILURE, message="plain failure")],
         logger,
-        _artifact(),
+        make_update_results_artifact(),
     )
 
     output = logger.stream.getvalue()
@@ -87,7 +84,7 @@ def test_failure_entry_separates_details_from_bold_message() -> None:
     LogFailuresAggregator(AggregatorOptions()).aggregate(
         [_result(Status.FAILURE, message="boom", details="Traceback: boom\n")],
         logger,
-        _artifact(),
+        make_update_results_artifact(),
     )
 
     output = logger.stream.getvalue()
@@ -103,7 +100,7 @@ def test_failure_entry_styles_header_by_failure_source() -> None:
     LogFailuresAggregator(AggregatorOptions()).aggregate(
         [_result(Status.FAILURE, message="boom")],
         logger,
-        _artifact([_scan_failure()]),
+        make_update_results_artifact([_scan_failure()]),
     )
 
     output = logger.stream.getvalue()
@@ -132,18 +129,4 @@ def _scan_failure() -> ScanFailure:
         repository_ref=RepositoryRef(owner="quantco", name="scan-broken"),
         message="scan failed",
         details="scan traceback",
-    )
-
-
-def _artifact(
-    scan_failures: list[ScanFailure] | None = None,
-) -> UpdateResultsArtifact:
-    return UpdateResultsArtifact(
-        updater="copier",
-        updater_options={},
-        generated_at=datetime(2026, 7, 16, tzinfo=UTC),
-        dry_run=True,
-        github_api_url="https://api.github.com",
-        results=[],
-        scan_failures=scan_failures or [],
     )
