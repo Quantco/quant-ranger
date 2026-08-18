@@ -29,11 +29,12 @@ def export_frontend(output_directory: Path, logger: Logger) -> None:
 def make_frontend_app(logger: Logger) -> typer.Typer:
     app = typer.Typer(
         help="Export the packaged static frontend for self-hosting.",
+        short_help="Export the static frontend.",
         no_args_is_help=True,
         rich_markup_mode="rich",
     )
 
-    @app.command("export")
+    @app.command("export", short_help="Write the frontend to a directory.")
     def export(
         output_directory: Path = typer.Option(
             ...,

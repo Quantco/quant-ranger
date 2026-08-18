@@ -37,7 +37,7 @@ $ quant-ranger [OPTIONS] [COMMAND] [ARGS]...
 
 * `update`: Run repository update tasks.
 * `aggregate`: Process update results.
-* `frontend`: Export the packaged static frontend for...
+* `frontend`: Export the static frontend.
 
 ## `quant-ranger update`
 
@@ -277,7 +277,7 @@ $ quant-ranger frontend [OPTIONS] COMMAND [ARGS]...
 
 **Commands**:
 
-* `export`: Write the packaged static frontend to a...
+* `export`: Write the frontend to a directory.
 
 ### `quant-ranger frontend export`
 
