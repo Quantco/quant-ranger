@@ -55,6 +55,14 @@ class GitHubError(RuntimeError):
     """Wrapper for errors raised by GitHub operations."""
 
 
+def github_web_url(api_url: str) -> str:
+    """Derive the web URL used by GitHub.com, GHE Cloud, and GHES."""
+    api_url = api_url.rstrip("/")
+    if api_url.endswith("/api/v3"):
+        return api_url.removesuffix("/api/v3")
+    return api_url.replace("://api.", "://", 1)
+
+
 def git_basic_auth(token: str) -> str:
     credential = f"x-access-token:{token}".encode()
     return base64.b64encode(credential).decode()

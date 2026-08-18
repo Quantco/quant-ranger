@@ -3,7 +3,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import override
 
-from packaging.version import InvalidVersion, Version
+from packaging.version import Version
 
 from quant_ranger._impl.github import PullRequestOptions
 from quant_ranger._impl.helpers import CommandError
@@ -22,6 +22,7 @@ from ._common import (
     attempt_mergiraf_solve,
     github_server_host_from_repository_url,
     is_trusted_template,
+    is_valid_version_tag,
     parse_copier_answers,
     parse_template_repository_for_host,
     run_copier_command,
@@ -66,27 +67,18 @@ def get_sorted_newer_tags(tags: Iterable[str], current_ref: str) -> list[str]:
     Raises:
         ValueError: If `current_ref` is not a version tag.
     """
-    try:
-        current_version = Version(current_ref)
-    except InvalidVersion as error:
+    if not is_valid_version_tag(current_ref):
         msg = f"Incompatible _commit format {current_ref!r}; only tags are allowed."
-        raise ValueError(msg) from error
+        raise ValueError(msg)
+    current_version = Version(current_ref)
 
     tags_by_version: dict[Version, str] = dict(
-        sorted((Version(tag), tag) for tag in tags if _is_valid_version_tag(tag))
+        sorted((Version(tag), tag) for tag in tags if is_valid_version_tag(tag))
     )
 
     return [
         tag for version, tag in tags_by_version.items() if version > current_version
     ]
-
-
-def _is_valid_version_tag(tag: str) -> bool:
-    try:
-        Version(tag)
-        return True
-    except InvalidVersion:
-        return False
 
 
 class CopierUpdateItem(UpdateItem):

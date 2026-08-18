@@ -1,0 +1,170 @@
+import { useEffect, useRef, useState } from "react";
+
+import { rawValueLabel } from "./Charts";
+import { MultiSelect, matchingOptions } from "./MultiSelect";
+import { REPOSITORIES } from "./dashboard";
+import type { CountedValue, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
+
+const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`;
+
+function controlId(column: string) {
+  return column.replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function repositoryName(value: string) {
+  return value.slice(value.lastIndexOf("/") + 1);
+}
+
+function repositoryCount(count: number) {
+  return `${count} ${count === 1 ? "repository" : "repositories"}`;
+}
+
+function InvertToggle({ disabled, inverted, label, onChange }: { disabled: boolean; inverted: boolean; label: string; onChange: (inverted: boolean) => void }) {
+  return (
+    <button
+      aria-label={`${inverted ? "Disable" : "Enable"} inverted ${label} filter`}
+      aria-pressed={inverted}
+      className="filter-invert-toggle"
+      disabled={disabled}
+      onClick={() => onChange(!inverted)}
+      title={disabled ? "Add a filter value before inverting" : "Invert this filter"}
+      type="button"
+    >
+      Invert
+    </button>
+  );
+}
+
+export function ValueFilterControl({
+  column,
+  filter,
+  onChange,
+  onInvert,
+  options,
+}: {
+  column: string;
+  filter?: ValueFilter;
+  onChange: (values: DashboardValue[]) => void;
+  onInvert: (inverted: boolean) => void;
+  options: CountedValue[];
+}) {
+  const optionByToken = new Map(options.map(({ value }) => [valueToken(value), value]));
+
+  return (
+    <MultiSelect
+      id={`value-filter-${controlId(column)}`}
+      label={<code>{column}</code>}
+      labelAction={<InvertToggle disabled={filter == null || filter.values.length === 0} inverted={filter?.inverted === true} label={column} onChange={onInvert} />}
+      onChange={(tokens) => onChange([...tokens].flatMap((token) => (optionByToken.has(token) ? [optionByToken.get(token)] : [])) as DashboardValue[])}
+      options={options.map(({ count, value }) => {
+        const label = rawValueLabel(value);
+        return {
+          detail: column === REPOSITORIES ? undefined : repositoryCount(count),
+          label: column === REPOSITORIES ? repositoryName(label) : label,
+          value: valueToken(value),
+        };
+      })}
+      placeholder={column === REPOSITORIES ? "Type to add repositories…" : "Type to add values…"}
+      selected={new Set((filter?.values ?? []).map(valueToken))}
+    />
+  );
+}
+
+export function TextFilterControl({
+  column,
+  filter,
+  onChange,
+  onInvert,
+  options,
+}: {
+  column: string;
+  filter?: TextFilter;
+  onChange: (query: string) => void;
+  onInvert: (inverted: boolean) => void;
+  options: CountedValue[];
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const query = filter?.query ?? "";
+  const id = `text-filter-${controlId(column)}`;
+  const suggestions = matchingOptions(
+    options.map(({ count, value }) => ({ count, label: rawValueLabel(value), value })),
+    query,
+  ).slice(0, 8);
+  const bestMatch = query.trim() === "" ? undefined : suggestions[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+
+  const accept = (value: string) => {
+    onChange(value);
+    setOpen(false);
+  };
+
+  return (
+    <div className="text-filter-control" ref={root}>
+      <div className="filter-control-heading">
+        <label htmlFor={id}>
+          <code>{column}</code>
+        </label>
+        <InvertToggle disabled={filter == null || query.trim() === ""} inverted={filter?.inverted === true} label={column} onChange={onInvert} />
+      </div>
+      <div className="text-filter-search-control">
+        <input
+          aria-activedescendant={!open || bestMatch == null ? undefined : `${id}-suggestion-0`}
+          aria-autocomplete="list"
+          aria-controls={open ? `${id}-suggestions` : undefined}
+          aria-expanded={open}
+          id={id}
+          onChange={(event) => {
+            onChange(event.target.value);
+            setOpen(event.target.value.trim() !== "");
+          }}
+          onFocus={() => {
+            if (query.trim() !== "") setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && bestMatch != null) {
+              event.preventDefault();
+              accept(bestMatch.label);
+            } else if (event.key === "Escape") {
+              setOpen(false);
+            }
+          }}
+          placeholder="Search values…"
+          role="combobox"
+          type="search"
+          value={query}
+        />
+      </div>
+      {open && (
+        <div className="text-filter-suggestions" id={`${id}-suggestions`} role="listbox">
+          {suggestions.length === 0 ? (
+            <span className="multi-select-empty">No matching values</span>
+          ) : (
+            suggestions.map(({ count, label, value }, index) => (
+              <button
+                aria-selected={index === 0}
+                className={index === 0 ? "is-best-match" : undefined}
+                id={`${id}-suggestion-${index}`}
+                key={valueToken(value)}
+                onClick={() => accept(label)}
+                role="option"
+                type="button"
+              >
+                <span>{label}</span>
+                <small>{repositoryCount(count)}</small>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

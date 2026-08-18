@@ -7,6 +7,7 @@ import typer
 
 from quant_ranger._impl.aggregators import (
     AnyAggregator,
+    CopierDashboardAggregator,
     IncidentIoAlertsAggregator,
     LogFailuresAggregator,
 )
@@ -26,6 +27,7 @@ from ._helpers import command_signature
 BUILTIN_AGGREGATORS: tuple[type[AnyAggregator], ...] = (
     LogFailuresAggregator,
     IncidentIoAlertsAggregator,
+    CopierDashboardAggregator,
 )
 
 

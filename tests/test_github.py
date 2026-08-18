@@ -26,6 +26,7 @@ from quant_ranger._impl.github import (
     GitHubError,
     PullRequestOptions,
     app_installation_clients,
+    github_web_url,
     resolve_github_app_credentials,
     resolve_github_token,
 )
@@ -34,6 +35,18 @@ from quant_ranger._impl.logger import LogLevel
 from quant_ranger._impl.models import RepositoryRef
 from quant_ranger._impl.testing import RecordingCheckout, RecordingLogger
 from quant_ranger.site_config import CommitAuthor, SiteConfig
+
+
+@pytest.mark.parametrize(
+    ("api_url", "expected"),
+    [
+        ("https://api.github.com", "https://github.com"),
+        ("https://api.acme.ghe.com", "https://acme.ghe.com"),
+        ("https://github.example/api/v3", "https://github.example"),
+    ],
+)
+def test_github_web_url(api_url: str, expected: str) -> None:
+    assert github_web_url(api_url) == expected
 
 
 def test_resolve_github_token_uses_environment_order(

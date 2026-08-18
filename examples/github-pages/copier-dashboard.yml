@@ -1,0 +1,49 @@
+name: Refresh Copier Dashboard
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quant-ranger-pages
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+
+      - name: Collect Copier data
+        env:
+          GH_TOKEN: ${{ secrets.QUANT_RANGER_TOKEN }}
+        run: >-
+          pixi run quant-ranger update
+          --gh
+          --owner "${{ github.repository_owner }}"
+          --results-file copier-results.json
+          copier-dashboard
+
+      - name: Aggregate Copier Dashboard
+        run: >-
+          pixi run quant-ranger aggregate copier-dashboard
+          copier-results.json
+          --output-file _site/data/copier/latest.json
+
+      - name: Deploy Copier data
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          destination_dir: data/copier
+          github_token: ${{ github.token }}
+          keep_files: true
+          publish_dir: ./_site/data/copier
