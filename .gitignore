@@ -394,6 +394,13 @@ $RECYCLE.BIN/
 # rattler-build
 output/
 
+# Dashboard development
+.local/
+frontend/public/data/
+node_modules/
+quant_ranger/_frontend/
+_pages/
+
 # Claude
 .claude/*.local.*
 .claude/worktrees/

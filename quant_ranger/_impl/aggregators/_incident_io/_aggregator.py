@@ -4,6 +4,7 @@ from typing import Annotated, Any, NamedTuple, override
 import requests
 import typer
 
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.helpers import CliError
 from quant_ranger._impl.logger import Logger
 from quant_ranger._impl.models import (
@@ -112,13 +113,12 @@ class IncidentIoAlertsAggregator(
         self,
         results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
         logger: Logger,
-        scan_failures: Sequence[ScanFailure],
-        updater_name: str,
+        artifact: UpdateResultsArtifact,
     ) -> None:
         events = _build_alert_events(
             results,
-            scan_failures,
-            updater_name=updater_name,
+            artifact.scan_failures,
+            updater_name=artifact.updater,
             deduplication_key_prefix=self.options.deduplication_key_prefix,
             source_url=self.options.source_url,
             team=self.options.team,

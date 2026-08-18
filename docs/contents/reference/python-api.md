@@ -41,6 +41,7 @@ complete implementation.
 - **UpdateOutcome** – The outcome returned by updater implementation code.
 - **UpdateOutput** – Typed data returned by updater implementation code.
 - **UpdateResult** – The structured result of running one update item.
+- **UpdateResultsArtifact** – Portable artifact written by update runs and consumed by aggregators.
 
 **Functions:**
 
@@ -923,6 +924,78 @@ output: SerializeAsAny[OutputT] | None = None
 from_outcome(outcome: UpdateOutcome[ResultOutputT], *, item: ResultItemT) -> UpdateResult[ResultOutputT, ResultItemT]
 ```
 
+### UpdateResultsArtifact
+
+Bases: <code>BaseModel</code>
+
+Portable artifact written by update runs and consumed by aggregators.
+
+**Attributes:**
+
+- **model_config** –
+- **updater** (<code>str</code>) –
+- **updater_options** (<code>dict\[str, JsonValue\]</code>) –
+- **generated_at** (<code>datetime</code>) –
+- **dry_run** (<code>bool</code>) –
+- **github_api_url** (<code>str</code>) –
+- **workflow_url** (<code>str | None</code>) –
+- **results** (<code>list\[dict\[str, JsonValue\]\]</code>) –
+- **scan_failures** (<code>list\[ScanFailure\]</code>) –
+
+#### model_config
+
+```python
+model_config = ConfigDict(frozen=True, extra='forbid')
+```
+
+#### updater
+
+```python
+updater: str
+```
+
+#### updater_options
+
+```python
+updater_options: dict[str, JsonValue]
+```
+
+#### generated_at
+
+```python
+generated_at: datetime
+```
+
+#### dry_run
+
+```python
+dry_run: bool
+```
+
+#### github_api_url
+
+```python
+github_api_url: str
+```
+
+#### workflow_url
+
+```python
+workflow_url: str | None = None
+```
+
+#### results
+
+```python
+results: list[dict[str, JsonValue]]
+```
+
+#### scan_failures
+
+```python
+scan_failures: list[ScanFailure]
+```
+
 ### get_exec_output_silently
 
 ```python
@@ -1291,7 +1364,7 @@ options: OptionsT = options
 #### aggregate
 
 ```python
-aggregate(results: Sequence[UpdateResult[OutputT, ItemT]], logger: Logger, scan_failures: Sequence[ScanFailure], updater_name: str) -> None
+aggregate(results: Sequence[UpdateResult[OutputT, ItemT]], logger: Logger, artifact: UpdateResultsArtifact) -> None
 ```
 
 Consume all updater results after the update run completes.

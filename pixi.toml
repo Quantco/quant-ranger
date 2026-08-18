@@ -34,6 +34,15 @@ rattler-sandbox = ">=0.2.3"
 [dependencies]
 quant-ranger = { path = "." }
 
+[feature.frontend.dependencies]
+nodejs = ">=26.6,<27"
+pnpm = "=11.22.0"
+[feature.frontend.tasks]
+frontend-install = "pnpm --dir frontend install --frozen-lockfile"
+frontend-preview = "pnpm --dir frontend run dev"
+frontend-build = "pnpm --dir frontend run build"
+frontend-package = { depends-on = ["frontend-build"] }
+
 [feature.test.dependencies]
 pytest = "*"
 pytest-cov = "*"
@@ -103,8 +112,9 @@ docs-check = { depends-on = [
 
 [environments]
 default = ["test", "build", "lint"]
-py314 = ["py314", "test"]
 docs = ["docs"]
+frontend = ["frontend"]
+py314 = ["py314", "test"]
 
 [tool.update]
 autoupdate-commit-message = "chore: Update pixi lockfile"

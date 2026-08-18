@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -5,6 +6,7 @@ import requests
 
 from quant_ranger._impl.aggregators import IncidentIoAlertsAggregator
 from quant_ranger._impl.aggregators._incident_io import _aggregator as aggregator_module
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.helpers import CliError
 from quant_ranger._impl.logger import LogLevel
 from quant_ranger._impl.models import (
@@ -94,6 +96,20 @@ def _result(
     )
 
 
+def _artifact(
+    scan_failures: list[ScanFailure] | None = None,
+) -> UpdateResultsArtifact:
+    return UpdateResultsArtifact(
+        updater="copier",
+        updater_options={},
+        generated_at=datetime(2026, 7, 16, tzinfo=UTC),
+        dry_run=True,
+        github_api_url="https://api.github.com",
+        results=[],
+        scan_failures=scan_failures or [],
+    )
+
+
 def test_sends_firing_and_resolved_events_per_repository(
     incident_io: _FakeIncidentIo,
 ) -> None:
@@ -106,14 +122,15 @@ def test_sends_firing_and_resolved_events_per_repository(
             _result(Status.UPDATED, name="healthy"),
         ],
         logger,
-        [
-            ScanFailure(
-                repository_ref=RepositoryRef(owner="quantco", name="scan-broken"),
-                message="scan failed",
-                details="scan traceback",
-            )
-        ],
-        "copier",
+        _artifact(
+            [
+                ScanFailure(
+                    repository_ref=RepositoryRef(owner="quantco", name="scan-broken"),
+                    message="scan failed",
+                    details="scan traceback",
+                )
+            ]
+        ),
     )
 
     events = {
@@ -153,7 +170,7 @@ def test_uses_custom_deduplication_key_prefix(incident_io: _FakeIncidentIo) -> N
 
     IncidentIoAlertsAggregator(
         _options(deduplication_key_prefix="quant-ranger/zizmor")
-    ).aggregate([_result(Status.FAILURE, message="boom")], logger, (), "copier")
+    ).aggregate([_result(Status.FAILURE, message="boom")], logger, _artifact())
 
     (event,) = incident_io.sent_events
     assert event["deduplication_key"] == "quant-ranger/zizmor/quantco/example"
@@ -167,7 +184,7 @@ def test_sends_source_url_and_team(incident_io: _FakeIncidentIo) -> None:
             source_url="https://github.com/quantco/example/actions/runs/9",
             team="other-team",
         )
-    ).aggregate([_result(Status.UPDATED)], logger, (), "copier")
+    ).aggregate([_result(Status.UPDATED)], logger, _artifact())
 
     (event,) = incident_io.sent_events
     assert event["source_url"] == ("https://github.com/quantco/example/actions/runs/9")
@@ -192,8 +209,7 @@ def test_strips_repository_branch_from_metadata(
             )
         ],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     (body,) = incident_io.sent_events
@@ -220,8 +236,7 @@ def test_separates_alerts_per_branch(incident_io: _FakeIncidentIo) -> None:
             for branch in ("main", "dev")
         ],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     keys = {event["deduplication_key"] for event in incident_io.sent_events}
@@ -237,8 +252,7 @@ def test_logs_api_response_at_debug_level(incident_io: _FakeIncidentIo) -> None:
     IncidentIoAlertsAggregator(_options()).aggregate(
         [_result(Status.FAILURE, message="boom")],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     assert logger.logged(
@@ -261,8 +275,7 @@ def test_attaches_note_to_firing_alert(incident_io: _FakeIncidentIo) -> None:
             _result(Status.UPDATED, name="healthy"),
         ],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     assert incident_io.alert_lookups == ["quant-ranger/quantco/example"]
@@ -285,8 +298,7 @@ def test_attaches_note_without_details(incident_io: _FakeIncidentIo) -> None:
     IncidentIoAlertsAggregator(_options()).aggregate(
         [_result(Status.FAILURE, message="boom")],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     # A failure without details still produces a note with the message.
@@ -307,8 +319,7 @@ def test_skips_note_when_alert_lookup_finds_nothing(
     IncidentIoAlertsAggregator(_options()).aggregate(
         [_result(Status.FAILURE, message="boom", details="traceback")],
         logger,
-        (),
-        "copier",
+        _artifact(),
     )
 
     assert incident_io.notes == []
@@ -323,8 +334,9 @@ def test_reports_failures_without_message(incident_io: _FakeIncidentIo) -> None:
     IncidentIoAlertsAggregator(_options()).aggregate(
         [_result(Status.FAILURE)],
         logger,
-        [ScanFailure(repository_ref=RepositoryRef(owner="quantco", name="example"))],
-        "copier",
+        _artifact(
+            [ScanFailure(repository_ref=RepositoryRef(owner="quantco", name="example"))]
+        ),
     )
 
     ((_, content),) = incident_io.notes
@@ -336,7 +348,7 @@ def test_reports_failures_without_message(incident_io: _FakeIncidentIo) -> None:
 def test_no_repositories_sends_nothing(incident_io: _FakeIncidentIo) -> None:
     logger = RecordingLogger()
 
-    IncidentIoAlertsAggregator(_options()).aggregate([], logger, (), "copier")
+    IncidentIoAlertsAggregator(_options()).aggregate([], logger, _artifact())
 
     assert incident_io.sent_events == []
     assert logger.logged(LogLevel.INFO, "no alert events to send")
@@ -352,8 +364,7 @@ def test_raises_cli_error_when_server_is_unreachable(
         IncidentIoAlertsAggregator(_options()).aggregate(
             [_result(Status.FAILURE, message="boom")],
             logger,
-            (),
-            "copier",
+            _artifact(),
         )
 
 
@@ -370,8 +381,7 @@ def test_raises_cli_error_when_sending_fails(
                 _result(Status.UPDATED, name="healthy"),
             ],
             logger,
-            (),
-            "copier",
+            _artifact(),
         )
 
     assert logger.logged(LogLevel.ERROR, "quantco/example")

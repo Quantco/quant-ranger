@@ -37,6 +37,7 @@ $ quant-ranger [OPTIONS] [COMMAND] [ARGS]...
 
 * `update`: Run repository update tasks.
 * `aggregate`: Process update results.
+* `frontend`: Export the packaged static frontend for...
 
 ## `quant-ranger update`
 
@@ -258,4 +259,37 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 * `--source-url TEXT`: Link attached to each alert, e.g. the GitHub Actions run that produced the results file.  [required]
 * `--team TEXT`: Team name sent as `team` metadata, for alert sources that route alerts by a team attribute.  [required]
 * `--api-url TEXT`: incident.io API base URL.  [default: https://api.incident.io]
+* `--help`: Show this message and exit.
+
+## `quant-ranger frontend`
+
+Export the packaged static frontend for self-hosting.
+
+**Usage**:
+
+```console
+$ quant-ranger frontend [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `export`: Write the packaged static frontend to a...
+
+### `quant-ranger frontend export`
+
+Write the packaged static frontend to a directory.
+
+**Usage**:
+
+```console
+$ quant-ranger frontend export [OPTIONS]
+```
+
+**Options**:
+
+* `-o, --output-directory PATH`: Directory in which to write the static site.  [required]
 * `--help`: Show this message and exit.

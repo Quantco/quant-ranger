@@ -5,10 +5,10 @@ from rich.console import Group, RenderableType
 from rich.rule import Rule
 from rich.text import Text
 
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.logger import Logger
 from quant_ranger._impl.models import (
     Diagnostics,
-    ScanFailure,
     Status,
     UpdateItem,
     UpdateOutput,
@@ -33,11 +33,10 @@ class LogFailuresAggregator(Aggregator[UpdateItem, UpdateOutput, AggregatorOptio
         self,
         results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
         logger: Logger,
-        scan_failures: Sequence[ScanFailure],
-        updater_name: str,
+        artifact: UpdateResultsArtifact,
     ) -> None:
         failures = [result for result in results if result.result == Status.FAILURE]
-        if not failures and not scan_failures:
+        if not failures and not artifact.scan_failures:
             logger.info("No failures.")
             return
 
@@ -45,7 +44,7 @@ class LogFailuresAggregator(Aggregator[UpdateItem, UpdateOutput, AggregatorOptio
             logger.console.print(
                 _failure_entry(str(failure.item), failure, style=UPDATE_FAILURE_STYLE)
             )
-        for scan_failure in scan_failures:
+        for scan_failure in artifact.scan_failures:
             logger.console.print(
                 _failure_entry(
                     f"{scan_failure.repository_ref.display_name} (scan)",

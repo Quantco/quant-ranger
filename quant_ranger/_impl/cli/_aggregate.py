@@ -125,7 +125,7 @@ def _run_aggregator_from_results_file(
     )
 
     logger.info(f'Running aggregator "{aggregator.name}"...')
-    aggregator.aggregate(results, logger, artifact.scan_failures, artifact.updater)
+    aggregator.aggregate(results, logger, artifact)
 
 
 def _check_aggregator_result_compatibility(

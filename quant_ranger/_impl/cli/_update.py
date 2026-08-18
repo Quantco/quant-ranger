@@ -1,3 +1,4 @@
+import os
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -273,8 +274,20 @@ def _run_update(
             updater=updater,
             results=results,
             scan_failures=scan_failures,
+            dry_run=not publish_changes,
+            github_api_url=github_api_url,
+            workflow_url=_github_workflow_url(),
         )
         logger.info(f"Wrote updater results to {results_file}.")
+
+
+def _github_workflow_url() -> str | None:
+    server_url = os.environ.get("GITHUB_SERVER_URL")
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not server_url or not repository or not run_id:
+        return None
+    return f"{server_url.rstrip('/')}/{repository}/actions/runs/{run_id}"
 
 
 def _make_run_contexts(
