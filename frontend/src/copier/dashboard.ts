@@ -52,26 +52,6 @@ export interface CountedValue {
 }
 
 const BOOLEAN_ANSWER_ORDER: readonly DashboardValue[] = [true, false];
-const COLUMN_TERMS: Record<string, string> = {
-  ci: "CI",
-  conda: "Conda",
-  github: "GitHub",
-  jupyter: "Jupyter",
-  mkdocs: "MkDocs",
-  pixi: "Pixi",
-  python: "Python",
-  sql: "SQL",
-  url: "URL",
-  windows: "Windows",
-  zizmor: "Zizmor",
-};
-
-/** Turn a Copier answer key into a concise display label. */
-export function columnLabel(column: string): string {
-  const words = column.split("_").map((word) => COLUMN_TERMS[word] ?? word);
-  const label = words.join(" ");
-  return `${label.charAt(0).toLocaleUpperCase()}${label.slice(1)}`;
-}
 
 function valueForFiltering(row: DashboardRow, column: string): DashboardValue {
   if (column === REPOSITORIES) return row.repository;

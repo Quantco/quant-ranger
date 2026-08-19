@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import "./copier-dashboard.css";
+import { replaceHash } from "../url-state";
 import { BooleanChartsSections, DashboardHeader, PieChartsSection, RepositoriesSection } from "./DashboardContent";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { TextFilterControl, ValueFilterControl } from "./FilterControls";
@@ -26,8 +27,7 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
   const [valueFilters, setValueFilters] = useState<ValueFilter[]>(initialUrlState.valueFilters);
 
   useEffect(() => {
-    const hash = copierDashboardHash({ hiddenBooleanColumns, selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort: tableSort, textFilters, valueFilters });
-    if (window.location.hash !== hash) window.history.replaceState(window.history.state, "", hash);
+    replaceHash(copierDashboardHash({ hiddenBooleanColumns, selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort: tableSort, textFilters, valueFilters }));
   }, [hiddenBooleanColumns, selectedChartColumns, selectedFilterColumns, selectedTableColumns, tableSort, textFilters, valueFilters]);
 
   const textFilteredRows = useMemo(() => filterRowsByTextFilters(rows, textFilters), [rows, textFilters]);
@@ -161,7 +161,7 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
     <main>
       <DashboardHeader generatedAt={snapshot.generated_at} repositoryCount={rows.length} />
 
-      <div className="copier-dashboard-layout">
+      <div className="dashboard-layout">
         <DashboardSidebar
           activeFilterCount={textFilters.length + valueFilters.length}
           booleanOptions={{ fields: booleanColumns, onChange: setSelectedBooleanColumns, selected: selectedBooleanColumns }}
@@ -171,7 +171,7 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
           tableColumns={{ fields: availableTableColumns, onChange: setSelectedTableColumns, selected: selectedTableColumns, visibleCount: visibleTableColumns.length }}
         />
 
-        <div className="copier-dashboard-content">
+        <div className="dashboard-content">
           <RepositoriesSection columns={visibleTableColumns} onSelectionChange={setSelectedRows} onSortChange={setTableSort} repositoryNames={repositoryNames} rows={filteredRows} sort={tableSort} />
           <PieChartsSection charts={pieCharts} />
           <BooleanChartsSections groups={booleanChartGroups} />

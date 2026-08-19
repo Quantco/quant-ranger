@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+
+import { useAutocomplete } from "./useAutocomplete";
 
 export type AutocompleteOption = {
   detail?: string;
@@ -17,54 +19,22 @@ type MultiSelectProps = {
   selected: Set<string>;
 };
 
-function matchRank(label: string, query: string) {
-  const candidate = label.toLocaleLowerCase();
-  const search = query.trim().toLocaleLowerCase();
-  if (search === "" || candidate === search) return 0;
-  if (candidate.startsWith(search)) return 1;
-  if (candidate.split(/[^a-zA-Z0-9]+/).some((word) => word.startsWith(search))) return 2;
-  return candidate.includes(search) ? 3 : Infinity;
-}
-
-export function matchingOptions<T extends { label: string }>(options: T[], query: string) {
-  return options
-    .map((option) => ({ option, rank: matchRank(option.label, query) }))
-    .filter(({ rank }) => Number.isFinite(rank))
-    .sort((left, right) => left.rank - right.rank)
-    .map(({ option }) => option);
-}
-
 export function MultiSelect({ codeLabels = false, id, label, labelAction, onChange, options, placeholder, selected }: MultiSelectProps) {
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
-  const root = useRef<HTMLDivElement>(null);
-  const visibleOptions = matchingOptions(options, query);
   const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const bestMatch = query.trim() === "" ? undefined : visibleOptions.find(({ value }) => !selected.has(value));
+  const { bestMatch, close, onInputKeyDown, open, root, setOpen, visibleOptions } = useAutocomplete({
+    closeOnAccept: false,
+    isSelectable: ({ value }) => !selected.has(value),
+    onAccept: ({ value }) => {
+      onChange(new Set(selected).add(value));
+      setQuery("");
+    },
+    onClose: () => setQuery(""),
+    options,
+    query,
+  });
   const allVisibleSelected = visibleOptions.length > 0 && visibleOptions.every(({ value }) => selected.has(value));
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !root.current?.contains(event.target)) {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-    document.addEventListener("pointerdown", closeOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("pointerdown", closeOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
 
   const toggleOption = (value: string) => {
     const next = new Set(selected);
@@ -109,6 +79,8 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             </button>
           ))}
           <input
+            aria-activedescendant={!open || bestMatch == null ? undefined : `${id}-option-${visibleOptions.indexOf(bestMatch)}`}
+            aria-autocomplete="list"
             aria-controls={open ? `${id}-options` : undefined}
             aria-expanded={open}
             aria-labelledby={`${id}-label`}
@@ -119,18 +91,13 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && bestMatch != null) {
-                event.preventDefault();
-                onChange(new Set(selected).add(bestMatch.value));
-                setQuery("");
-              } else if (event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
+              if (!onInputKeyDown(event) && event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
                 toggleOption(selectedOptions.at(-1)!.value);
-              } else if (event.key === "ArrowDown") {
-                setOpen(true);
               }
             }}
             placeholder={selectedOptions.length === 0 ? placeholder : "Search…"}
             ref={input}
+            role="combobox"
             type="search"
             value={query}
           />
@@ -141,8 +108,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
           disabled={selected.size === 0 && query === ""}
           onClick={() => {
             onChange(new Set());
-            setOpen(false);
-            setQuery("");
+            close();
           }}
           title="Clear selection"
           type="button"
@@ -162,12 +128,12 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
               </button>
             )}
           </div>
-          <div aria-labelledby={`${id}-label`} className="multi-select-options" id={`${id}-options`}>
+          <div aria-labelledby={`${id}-label`} className="multi-select-options" id={`${id}-options`} role="listbox">
             {visibleOptions.length === 0 ? (
               <span className="multi-select-empty">No matching options</span>
             ) : (
-              visibleOptions.map(({ detail, label: optionLabel, value }) => (
-                <label className={bestMatch?.value === value ? "is-best-match" : undefined} key={value}>
+              visibleOptions.map(({ detail, label: optionLabel, value }, index) => (
+                <label aria-selected={selected.has(value)} className={bestMatch?.value === value ? "is-best-match" : undefined} id={`${id}-option-${index}`} key={value} role="option">
                   <input checked={selected.has(value)} onChange={() => toggleOption(value)} type="checkbox" />
                   <span>{codeLabels ? <code>{optionLabel}</code> : optionLabel}</span>
                   {detail != null && <small>{detail}</small>}

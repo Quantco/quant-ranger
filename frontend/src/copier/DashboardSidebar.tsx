@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
+import { DashboardSidebarShell } from "../components/DashboardSidebar";
 import { FieldSelector } from "../components/FieldSelector";
-import { CopyDashboardLink } from "./ClipboardControls";
 import { MultiSelect } from "./MultiSelect";
 import { REPOSITORIES } from "./dashboard";
 
@@ -30,20 +30,7 @@ export function DashboardSidebar({ activeFilterCount, booleanOptions, filters, o
   const visibleSelectedTableColumns = new Set(optionalTableColumns.filter((column) => tableColumns.selected.has(column)));
 
   return (
-    <aside aria-labelledby="sidebar-heading" className="dashboard-sidebar">
-      <div className="dashboard-sidebar-heading">
-        <h2 id="sidebar-heading">Explore data</h2>
-        {activeFilterCount > 0 && <span>{activeFilterCount} active</span>}
-      </div>
-      <div className="dashboard-sidebar-actions">
-        <CopyDashboardLink />
-        {activeFilterCount > 0 && (
-          <button className="text-button" onClick={onResetFilters} type="button">
-            Reset filters
-          </button>
-        )}
-      </div>
-
+    <DashboardSidebarShell activeFilterCount={activeFilterCount} headingId="sidebar-heading" onResetFilters={onResetFilters} title="Explore data">
       <section className="dashboard-sidebar-section filter-builder">
         <MultiSelect
           codeLabels
@@ -72,6 +59,6 @@ export function DashboardSidebar({ activeFilterCount, booleanOptions, filters, o
         onChange={booleanOptions.onChange}
         selected={booleanOptions.selected}
       />
-    </aside>
+    </DashboardSidebarShell>
   );
 }

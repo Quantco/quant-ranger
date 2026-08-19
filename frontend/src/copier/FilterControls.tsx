@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-
 import { rawValueLabel } from "./Charts";
-import { MultiSelect, matchingOptions } from "./MultiSelect";
+import { MultiSelect } from "./MultiSelect";
 import { REPOSITORIES } from "./dashboard";
 import type { CountedValue, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
+import { useAutocomplete } from "./useAutocomplete";
 
 const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
@@ -83,29 +82,22 @@ export function TextFilterControl({
   onInvert: (inverted: boolean) => void;
   options: CountedValue[];
 }) {
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
   const query = filter?.query ?? "";
   const id = `text-filter-${controlId(column)}`;
-  const suggestions = matchingOptions(
-    options.map(({ count, value }) => ({ count, label: rawValueLabel(value), value })),
+  const {
+    accept,
+    bestMatch,
+    onInputKeyDown,
+    open,
+    root,
+    setOpen,
+    visibleOptions: suggestions,
+  } = useAutocomplete({
+    limit: 8,
+    onAccept: ({ label }) => onChange(label),
+    options: options.map(({ count, value }) => ({ count, label: rawValueLabel(value), value })),
     query,
-  ).slice(0, 8);
-  const bestMatch = query.trim() === "" ? undefined : suggestions[0];
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOutside);
-    return () => document.removeEventListener("pointerdown", closeOutside);
-  }, [open]);
-
-  const accept = (value: string) => {
-    onChange(value);
-    setOpen(false);
-  };
+  });
 
   return (
     <div className="text-filter-control" ref={root}>
@@ -129,14 +121,7 @@ export function TextFilterControl({
           onFocus={() => {
             if (query.trim() !== "") setOpen(true);
           }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && bestMatch != null) {
-              event.preventDefault();
-              accept(bestMatch.label);
-            } else if (event.key === "Escape") {
-              setOpen(false);
-            }
-          }}
+          onKeyDown={onInputKeyDown}
           placeholder="Search values…"
           role="combobox"
           type="search"
@@ -154,7 +139,7 @@ export function TextFilterControl({
                 className={index === 0 ? "is-best-match" : undefined}
                 id={`${id}-suggestion-${index}`}
                 key={valueToken(value)}
-                onClick={() => accept(label)}
+                onClick={() => accept({ count, label, value })}
                 role="option"
                 type="button"
               >

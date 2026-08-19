@@ -5,7 +5,7 @@ export type DataTableValue = boolean | Date | null | number | string | undefined
 export interface DataTableColumn<Row> {
   align?: "left" | "right";
   id: string;
-  label: string;
+  label: ReactNode;
   maxWidth?: number | string;
   render?: (value: DataTableValue, row: Row) => ReactNode;
   sortable?: boolean;

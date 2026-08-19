@@ -1,11 +1,3 @@
-.chart-error {
-  margin: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--color-error);
-  border-radius: var(--radius-small);
-  background: var(--color-error-subtle);
-}
-
 .repository-list {
   min-height: 8rem;
   padding-right: 2.9rem;
@@ -62,23 +54,6 @@
 
 .dashboard-meta strong {
   color: var(--color-foreground);
-}
-
-.copier-dashboard-layout {
-  display: grid;
-  grid-template-areas: "sidebar content";
-  grid-template-columns: minmax(20rem, 22rem) minmax(0, 1fr);
-  gap: var(--space-5);
-  align-items: start;
-}
-
-.copier-dashboard-content {
-  min-width: 0;
-  grid-area: content;
-}
-
-.copier-dashboard-content > .dashboard-section:first-child {
-  padding-top: var(--space-4);
 }
 
 .dashboard-help {
@@ -436,9 +411,41 @@
   font-variant-numeric: tabular-nums;
 }
 
-.observable-plot > * {
-  max-width: 100%;
-  margin: 0;
+.answer-chart {
+  min-width: 0;
+}
+
+.answer-chart-legend {
+  display: flex;
+  gap: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+}
+
+.answer-chart-legend li {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.answer-chart-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.answer-chart-bar {
+  display: flex;
+  width: 100%;
+  height: 1.75rem;
+  overflow: hidden;
+}
+
+.answer-chart-segment {
+  flex-basis: 0;
+  min-width: 1px;
 }
 
 .repository-table {
@@ -520,20 +527,6 @@
 
 .repository-names summary > span {
   min-width: 0;
-}
-
-@media (max-width: 1100px) {
-  .copier-dashboard-layout {
-    grid-template-areas:
-      "sidebar"
-      "content";
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-4);
-  }
-
-  .copier-dashboard-content > .dashboard-section:first-child {
-    padding-top: 0;
-  }
 }
 
 @media (max-width: 800px) {

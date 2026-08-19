@@ -1,4 +1,5 @@
 import type { DataTableSort } from "../components/DataTable";
+import { queryParameters, setsEqual } from "../url-state";
 import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from "./dashboard";
 import type { DashboardSnapshot, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
 
@@ -13,11 +14,6 @@ export interface CopierDashboardUrlState {
   sort: DataTableSort | null;
   textFilters: TextFilter[];
   valueFilters: ValueFilter[];
-}
-
-function queryParameters(hash: string): URLSearchParams {
-  const queryStart = hash.indexOf("?");
-  return new URLSearchParams(queryStart === -1 ? "" : hash.slice(queryStart + 1));
 }
 
 function isDashboardValue(value: unknown): value is DashboardValue {
@@ -117,10 +113,6 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
     textFilters: [...textFilterByColumn.values()],
     valueFilters: [...valueFilterByColumn.values()],
   };
-}
-
-function setsEqual(left: Set<string>, right: Set<string>): boolean {
-  return left.size === right.size && [...left].every((value) => right.has(value));
 }
 
 export function copierDashboardHash({ hiddenBooleanColumns, selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort, textFilters, valueFilters }: CopierDashboardUrlState): string {

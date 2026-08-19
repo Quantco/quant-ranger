@@ -1,6 +1,3 @@
-import * as Plot from "@observablehq/plot";
-import { useEffect, useRef } from "react";
-
 import { REPOSITORIES, answerCounts } from "./dashboard";
 import type { CountedValue, DashboardRow, DashboardValue } from "./dashboard";
 
@@ -13,54 +10,30 @@ export const rawValueLabel = (value: DashboardValue) => (value == null || value 
 
 const valueKey = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
-function PlotFigure({ options }: { options: Plot.PlotOptions }) {
-  const container = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    try {
-      const plot = Plot.plot(options);
-      container.current?.replaceChildren(plot);
-      return () => plot.remove();
-    } catch (error) {
-      const fallback = document.createElement("p");
-      fallback.className = "chart-error";
-      fallback.textContent = `Chart unavailable: ${error instanceof Error ? error.message : String(error)}`;
-      container.current?.replaceChildren(fallback);
-    }
-  }, [options]);
-  return <div className="observable-plot" ref={container} />;
-}
-
 export function AnswerChart({ column, rows }: AnswerChartProps) {
-  const values = answerCounts(rows, column).map(({ count, value }) => ({ count, key: valueKey(value), label: rawValueLabel(value), value }));
+  const values = answerCounts(rows, column).map(({ count, value }, index) => ({ color: sliceColor(value, index), count, key: valueKey(value), label: rawValueLabel(value) }));
   if (values.length === 0) return <p>No data for the selected filters.</p>;
-  const labels = new Map(values.map(({ count, key, label }) => [key, `${label} (${count})`]));
-  const options: Plot.PlotOptions = {
-    ariaLabel: `${column} distribution`,
-    axis: null,
-    color: {
-      domain: values.map(({ key }) => key),
-      legend: "swatches",
-      range: values.map(({ value }) => sliceColor(value, 0)),
-      tickFormat: (key) => labels.get(String(key)),
-    },
-    height: 32,
-    margin: 0,
-    style: { fontSize: "12px" },
-    width: 800,
-    x: { domain: [0, rows.length], nice: false },
-    marks: [
-      Plot.barX(
-        values,
-        Plot.stackX({
-          ariaLabel: ({ count, label }) => `${label}: ${count}`,
-          fill: "key",
-          title: ({ count, label }) => `${label}: ${count}`,
-          x: "count",
-        }),
-      ),
-    ],
-  };
-  return <PlotFigure options={options} />;
+  const description = values.map(({ count, label }) => `${label}: ${count}`).join(", ");
+
+  return (
+    <div className="answer-chart">
+      <ul className="answer-chart-legend">
+        {values.map(({ color, count, key, label }) => (
+          <li key={key}>
+            <span aria-hidden="true" className="answer-chart-swatch" style={{ background: color }} />
+            <span>
+              {label} ({count})
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div aria-label={`${column} distribution: ${description}`} className="answer-chart-bar" role="img">
+        {values.map(({ color, count, key, label }) => (
+          <span className="answer-chart-segment" key={key} style={{ background: color, flexGrow: count }} title={`${label}: ${count}`} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function displayValueLabel(column: string, value: DashboardValue) {
