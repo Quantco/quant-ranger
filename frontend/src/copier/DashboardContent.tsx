@@ -88,6 +88,7 @@ export function RepositoriesSection({
 }
 
 export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
+  const [expandedChart, setExpandedChart] = useState<string | null>(null);
   if (charts.length === 0) return null;
 
   return (
@@ -95,14 +96,22 @@ export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
       <h2 id="pie-charts-heading">Pie charts</h2>
       <p className="dashboard-help">Contents of the selected fields across the currently matching repositories.</p>
       <div className="pie-charts">
-        {charts.map(({ column, data }) => (
-          <div className="pie-chart-card" key={column}>
-            <h3>
-              <code>{column}</code>
-            </h3>
-            <PieChart column={column} data={data} />
-          </div>
-        ))}
+        {charts.map(({ column, data }) => {
+          const expanded = expandedChart === column;
+          return (
+            <div className={`pie-chart-card${expanded ? " pie-chart-card-expanded" : ""}`} key={column}>
+              <div className="pie-chart-card-heading">
+                <h3>
+                  <code>{column}</code>
+                </h3>
+                <button aria-expanded={expanded} className="text-button" onClick={() => setExpandedChart(expanded ? null : column)} type="button">
+                  {expanded ? "Show smaller" : "Show larger"}
+                </button>
+              </div>
+              <PieChart column={column} data={data} />
+            </div>
+          );
+        })}
       </div>
     </section>
   );

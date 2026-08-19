@@ -357,9 +357,37 @@
   background: #fff;
 }
 
+.pie-chart-card-heading {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
 .pie-chart-card h3 {
-  margin: 0 0 var(--space-3);
+  min-width: 0;
+  margin: 0;
   font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.pie-chart-card-heading .text-button {
+  flex: none;
+}
+
+.pie-chart-card-expanded {
+  grid-column: 1 / -1;
+}
+
+.pie-chart-card-expanded .pie-chart {
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  gap: var(--space-5);
+}
+
+.pie-chart-card-expanded .pie-chart-legend {
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  max-height: 20rem;
 }
 
 .pie-chart {
