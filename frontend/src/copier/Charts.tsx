@@ -5,6 +5,7 @@ type AnswerChartProps = { column: string; rows: DashboardRow[] };
 type PieChartProps = { column: string; data: CountedValue[] };
 
 const PIE_COLORS = ["#64748b", "#3b82f6", "#8b5cf6", "#f59e0b", "#14b8a6", "#ec4899", "#84cc16", "#f97316"];
+const ANSWER_LEGEND_VALUES: DashboardValue[] = [true, false, ""];
 
 export const rawValueLabel = (value: DashboardValue) => (value == null || value === "" ? "No value" : String(value));
 
@@ -17,22 +18,25 @@ export function AnswerChart({ column, rows }: AnswerChartProps) {
 
   return (
     <div className="answer-chart">
-      <ul className="answer-chart-legend">
-        {values.map(({ color, count, key, label }) => (
-          <li key={key}>
-            <span aria-hidden="true" className="answer-chart-swatch" style={{ background: color }} />
-            <span>
-              {label} ({count})
-            </span>
-          </li>
-        ))}
-      </ul>
       <div aria-label={`${column} distribution: ${description}`} className="answer-chart-bar" role="img">
         {values.map(({ color, count, key, label }) => (
           <span className="answer-chart-segment" key={key} style={{ background: color, flexGrow: count }} title={`${label}: ${count}`} />
         ))}
       </div>
     </div>
+  );
+}
+
+export function AnswerLegend() {
+  return (
+    <ul aria-label="Boolean value legend" className="answer-chart-legend">
+      {ANSWER_LEGEND_VALUES.map((value, index) => (
+        <li key={valueKey(value)}>
+          <span aria-hidden="true" className="answer-chart-swatch" style={{ background: sliceColor(value, index) }} />
+          <span>{rawValueLabel(value)}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
