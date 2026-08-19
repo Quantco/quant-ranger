@@ -60,28 +60,30 @@ export function RepositoriesSection({
   return (
     <section aria-labelledby="repositories-heading" className="dashboard-section">
       <h2 id="repositories-heading">Repositories</h2>
-      <p aria-live="polite" className="dashboard-summary">
-        <strong>{rows.length}</strong> matching repositories · <strong>{repositoryNames.length}</strong> selected for copying
-      </p>
+      <div className="repository-toolbar">
+        <p aria-live="polite" className="dashboard-summary">
+          <strong>{rows.length}</strong> matching repositories · <strong>{repositoryNames.length}</strong> selected for copying
+        </p>
+        <details className="repository-names">
+          <summary>
+            <span>Copy repository names ({repositoryNames.length})</span>
+            <DisclosureIcon />
+          </summary>
+          <p className="dashboard-help">These lists contain the repository rows selected below.</p>
+          <div className="repository-lists">
+            <div>
+              <h3>Comma-separated</h3>
+              <CopyableRepositoryList label="Comma-separated" value={repositoryNames.join(",")} />
+            </div>
+            <div>
+              <h3>Newline-separated</h3>
+              <CopyableRepositoryList label="Newline-separated" value={repositoryNames.join("\n")} />
+            </div>
+          </div>
+        </details>
+      </div>
       <p className="dashboard-help">Use the filters in the sidebar to narrow the table. Select a column heading to sort.</p>
       <RepositoryTable columns={columns} onSelectionChange={onSelectionChange} onSortChange={onSortChange} rows={rows} sort={sort} />
-      <details className="repository-names">
-        <summary>
-          <span>Copy repository names ({repositoryNames.length})</span>
-          <DisclosureIcon />
-        </summary>
-        <p className="dashboard-help">These lists contain the repository rows selected above.</p>
-        <div className="repository-lists">
-          <div>
-            <h3>Comma-separated</h3>
-            <CopyableRepositoryList label="Comma-separated" value={repositoryNames.join(",")} />
-          </div>
-          <div>
-            <h3>Newline-separated</h3>
-            <CopyableRepositoryList label="Newline-separated" value={repositoryNames.join("\n")} />
-          </div>
-        </div>
-      </details>
     </section>
   );
 }

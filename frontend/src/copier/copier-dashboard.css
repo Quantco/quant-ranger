@@ -453,8 +453,17 @@
 }
 
 .answer-chart-segment {
+  display: grid;
   flex-basis: 0;
+  place-items: center;
   min-width: 1px;
+  overflow: hidden;
+}
+
+.answer-chart-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .repository-table {
@@ -512,12 +521,32 @@
   color: var(--color-error);
 }
 
+.repository-toolbar {
+  display: flex;
+  gap: var(--space-2) var(--space-4);
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.repository-toolbar .dashboard-summary {
+  margin: 0;
+}
+
+.repository-names[open] {
+  flex-basis: 100%;
+}
+
 .repository-names summary {
   display: flex;
   gap: var(--space-2);
   align-items: center;
   justify-content: space-between;
   min-height: 2rem;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
   list-style: none;
 }
 

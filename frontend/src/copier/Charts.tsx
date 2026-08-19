@@ -7,20 +7,32 @@ type PieChartProps = { column: string; data: CountedValue[] };
 const PIE_COLORS = ["#64748b", "#3b82f6", "#8b5cf6", "#f59e0b", "#14b8a6", "#ec4899", "#84cc16", "#f97316"];
 const ANSWER_LEGEND_VALUES: DashboardValue[] = [true, false, ""];
 
-export const rawValueLabel = (value: DashboardValue) => (value == null || value === "" ? "No value" : String(value));
+export const rawValueLabel = (value: DashboardValue) => (value === "" ? '""' : String(value));
 
 const valueKey = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
 export function AnswerChart({ column, rows }: AnswerChartProps) {
-  const values = answerCounts(rows, column).map(({ count, value }, index) => ({ color: sliceColor(value, index), count, key: valueKey(value), label: rawValueLabel(value) }));
+  const values = answerCounts(rows, column).map(({ count, value }, index) => ({ color: sliceColor(value, index), count, key: valueKey(value), label: rawValueLabel(value), value }));
   if (values.length === 0) return <p>No data for the selected filters.</p>;
+  const total = values.reduce((sum, { count }) => sum + count, 0);
   const description = values.map(({ count, label }) => `${label}: ${count}`).join(", ");
 
   return (
     <div className="answer-chart">
       <div aria-label={`${column} distribution: ${description}`} className="answer-chart-bar" role="img">
-        {values.map(({ color, count, key, label }) => (
-          <span className="answer-chart-segment" key={key} style={{ background: color, flexGrow: count }} title={`${label}: ${count}`} />
+        {values.map(({ color, count, key, label, value }) => (
+          <span
+            className="answer-chart-segment"
+            key={key}
+            style={{ background: color, color: value == null || value === "" ? "#fff" : "var(--color-foreground)", flexGrow: count }}
+            title={`${label}: ${count}`}
+          >
+            {count / total >= 0.1 && (
+              <span aria-hidden="true" className="answer-chart-count">
+                {count}
+              </span>
+            )}
+          </span>
         ))}
       </div>
     </div>
