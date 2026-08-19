@@ -42,7 +42,7 @@ class CopierDashboardUpdater(Updater[UpdateItem, CopierDashboardOutput, UpdateOp
     """Collect Copier answers without materializing repository checkouts."""
 
     name: ClassVar[str] = "copier-dashboard"
-    description: ClassVar[str] = "Collect repository data for the Copier Dashboard."
+    description: ClassVar[str] = "Collect Copier dashboard data."
     scanner = RepositoriesScanner()
 
     @override

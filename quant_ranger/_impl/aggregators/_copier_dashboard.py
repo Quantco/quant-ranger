@@ -69,7 +69,7 @@ class CopierDashboardAggregator(
     Aggregator[UpdateItem, CopierDashboardOutput, CopierDashboardOptions]
 ):
     name = "copier-dashboard"
-    description = "Write browser-ready JSON for the Copier Dashboard."
+    description = "Write Copier dashboard JSON."
 
     @override
     def aggregate(

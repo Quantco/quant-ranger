@@ -68,7 +68,7 @@ $ quant-ranger update [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `zizmor`: Fix configured zizmor findings.
-* `copier-dashboard`: Collect repository data for the Copier...
+* `copier-dashboard`: Collect Copier dashboard data.
 * `copier`: Update a Copier template.
 * `copier-migration`: Apply a Copier-answer migration.
 * `pixi-version`: Update pinned Pixi versions.
@@ -93,7 +93,7 @@ $ quant-ranger update zizmor [OPTIONS]
 
 ### `quant-ranger update copier-dashboard`
 
-Collect repository data for the Copier Dashboard.
+Collect Copier dashboard data.
 
 **Usage**:
 
@@ -232,7 +232,7 @@ $ quant-ranger aggregate [OPTIONS] COMMAND [ARGS]...
 
 * `log-failures`: Print recorded failures.
 * `incident-io-alerts`: Send a per-repository incident.io alert...
-* `copier-dashboard`: Write browser-ready JSON for the Copier...
+* `copier-dashboard`: Write Copier dashboard JSON.
 
 ### `quant-ranger aggregate log-failures`
 
@@ -279,7 +279,7 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 
 ### `quant-ranger aggregate copier-dashboard`
 
-Write browser-ready JSON for the Copier Dashboard.
+Write Copier dashboard JSON.
 
 **Usage**:
 

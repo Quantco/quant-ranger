@@ -72,10 +72,8 @@ The workflow's built-in `github.token` is used separately to update the `gh-page
 
 Frontend releases and report data have independent lifecycles:
 
-| Change                    | Files deployed                          |
-| ------------------------- | --------------------------------------- |
-| New quant-ranger frontend | `index.html` and `assets/`              |
-| Copier inventory refresh  | `data/copier/latest.json`               |
+- **New quant-ranger frontend:** `index.html` and `assets/`
+- **Copier inventory refresh:** `data/copier/latest.json`
 
 The examples use [`peaceiris/actions-gh-pages`](https://github.com/peaceiris/actions-gh-pages) because it supports retaining the rest of a Pages branch while deploying a subdirectory.
 GitHub's Pages artifact deployment replaces the complete site and is therefore better suited to deployments where one workflow owns every file.
