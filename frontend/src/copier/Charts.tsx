@@ -4,7 +4,7 @@ import type { CountedValue, DashboardValue } from "./dashboard";
 
 type PieChartProps = { column: string; data: CountedValue[] };
 
-const PIE_COLORS = ["#64748b", "#3b82f6", "#8b5cf6", "#f59e0b", "#14b8a6", "#ec4899", "#84cc16", "#f97316"];
+const PIE_COLORS = ["#2563eb", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#0f766e"];
 
 function displayValueLabel(column: string, value: DashboardValue) {
   const label = dataTableValueLabel(value);
@@ -46,7 +46,7 @@ export function PieChart({ column, data }: PieChartProps) {
               <title>{`${label}: ${count}`}</title>
             </circle>
           ) : (
-            <path d={slicePath(start, end)} fill={color} key={`${typeof value}:${String(value)}`}>
+            <path d={slicePath(start, end)} fill={color} key={`${typeof value}:${String(value)}`} stroke="#fff" strokeWidth="0.8">
               <title>{`${label}: ${count}`}</title>
             </path>
           ),
