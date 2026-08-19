@@ -17,7 +17,7 @@ quant-ranger frontend export --output-directory _site
 ```
 
 The command copies `index.html` and the versioned assets into `_site`.
-It does not copy report data or remove anything already under `_site/data`, so updating the frontend does not erase data produced by independent workflows.
+It does not copy or remove anything under `_site/data`, so updating the frontend does not erase reports produced by independent workflows.
 No Node.js installation is needed.
 
 ## Preview the frontend locally
@@ -30,7 +30,7 @@ python -m http.server --directory _site 8000
 
 Then open [http://localhost:8000/](http://localhost:8000/).
 The production deployment is still completely static: GitHub Pages serves the HTML, JavaScript, and JSON files over HTTPS, with no application server.
-Opening `_site/index.html` directly with a `file://` URL is the unsupported case because browsers prevent JavaScript loaded from a local file from fetching adjacent JSON files.
+Opening `_site/index.html` directly with a `file://` URL is unsupported because browsers prevent locally loaded JavaScript from fetching adjacent JSON files.
 
 ## Deploy the frontend to GitHub Pages
 
@@ -47,4 +47,5 @@ Then configure GitHub Pages to deploy from the root of that branch before adding
 </CodeBlock>
 
 Rerun it after updating quant-ranger to publish a newer frontend.
-`keep_files` retains report JSON already present on the Pages branch.
+`keep_files` retains the data already present on the Pages branch.
+All workflows that write to this branch must use the same `quant-ranger-pages` concurrency group so that their deployments cannot overlap.
