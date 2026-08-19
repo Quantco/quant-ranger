@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 
 import CopierDashboard from "./copier/CopierDashboard";
 import type { DashboardSnapshot } from "./copier/dashboard";
+import { fetchJson } from "./data";
 import Overview from "./Overview";
 
 const SITE_TITLE = "Quant Ranger Dashboard";
 const COPIER_TITLE = "Copier Dashboard";
+const COPIER_DATA_PATH = "data/copier/latest.json";
 
 type Route = { kind: "copier" } | { kind: "overview" } | { kind: "unknown" };
 type Page = { kind: "copier"; snapshot: DashboardSnapshot } | { kind: "overview" } | { kind: "unknown" };
@@ -19,9 +21,9 @@ function currentRoute(): Route {
 
 async function loadPage(route: Route): Promise<Page> {
   if (route.kind !== "copier") return route;
-  const response = await fetch("./data/copier/latest.json", { cache: "no-cache" });
-  if (!response.ok) throw new Error(`Could not load Copier data (${response.status})`);
-  return { kind: "copier", snapshot: (await response.json()) as DashboardSnapshot };
+  const snapshot = await fetchJson<DashboardSnapshot>(`./${COPIER_DATA_PATH}`);
+  if (snapshot == null) throw new Error("No Copier report data was found.");
+  return { kind: "copier", snapshot };
 }
 
 export default function Site() {
@@ -75,9 +77,15 @@ export default function Site() {
         )}
       </nav>
       {error ? (
-        <main>
-          <h1>Could not load dashboard data</h1>
+        <main className="standalone-state">
+          <h1>Copier dashboard unavailable</h1>
           <p>{error}</p>
+          <div className="data-message">
+            <p>
+              Expected a generated report at <code>{COPIER_DATA_PATH}</code>.
+            </p>
+            <a href="#/">Return to the dashboard</a>
+          </div>
         </main>
       ) : page == null ? (
         <main>
