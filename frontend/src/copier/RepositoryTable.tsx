@@ -1,6 +1,5 @@
-import { DataTable, type DataTableColumn, type DataTableSort, type DataTableValue } from "../components/DataTable";
-import { rawValueLabel } from "./Charts";
-import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type DashboardRow, type DashboardValue } from "./dashboard";
+import { DataTable, dataTableValueLabel, type DataTableColumn, type DataTableSort, type DataTableValue } from "../components/DataTable";
+import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type DashboardRow } from "./dashboard";
 
 const BASE_COLUMNS = new Set([REPOSITORIES, COPIER_ANSWERS, TEMPLATE, VERSION, VALIDATION]);
 
@@ -8,12 +7,12 @@ function renderValue(value: DataTableValue, row: DashboardRow, column: string) {
   if (column === REPOSITORIES && row.url) {
     return (
       <a href={row.url} rel="noreferrer" target="_blank">
-        {rawValueLabel(value as DashboardValue)}
+        {dataTableValueLabel(value)}
       </a>
     );
   }
   if (typeof value === "boolean") return <span className={`boolean-value boolean-value-${value}`}>{String(value)}</span>;
-  return rawValueLabel(value as DashboardValue);
+  return dataTableValueLabel(value);
 }
 
 export function RepositoryTable({

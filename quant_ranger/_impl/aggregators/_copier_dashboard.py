@@ -127,7 +127,6 @@ class CopierDashboardAggregator(
         payload = {
             "generated_at": artifact.generated_at.isoformat(),
             "columns": columns,
-            "template_options": template_options,
             "version_options": _version_options(rows, template_options),
             "answer_groups": _answer_groups(rows, answer_fields, template_options),
             "rows": rows,

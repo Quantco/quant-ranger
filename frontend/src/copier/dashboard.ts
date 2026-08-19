@@ -30,7 +30,6 @@ export interface DashboardSnapshot {
   columns: string[];
   generated_at: string;
   rows: DashboardRow[];
-  template_options: string[];
   version_options: VersionOptions[];
 }
 
@@ -104,28 +103,12 @@ export function removeValueFilter(filters: ValueFilter[], column: string): Value
 
 /** Count non-empty values for a distribution chart. */
 export function countBy(rows: DashboardRow[], column: string): CountedValue[] {
-  const counts = new Map<DashboardValue, number>();
-
-  for (const row of rows) {
-    const value = valueForFiltering(row, column);
-    if (value == null || value === "") continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-
-  return [...counts].map<CountedValue>(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count);
+  return countValues(rows, column, (value) => (value == null || value === "" ? undefined : value)).sort((left, right) => right.count - left.count);
 }
 
 /** Count every value for a chart, grouping all missing values together. */
 export function countAllValues(rows: DashboardRow[], column: string): CountedValue[] {
-  const counts = new Map<DashboardValue, number>();
-
-  for (const row of rows) {
-    const rawValue = valueForFiltering(row, column);
-    const value = rawValue == null ? "" : rawValue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-
-  return [...counts].map<CountedValue>(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count);
+  return countValues(rows, column, (value) => (value == null ? "" : value)).sort((left, right) => right.count - left.count);
 }
 
 /**
@@ -135,27 +118,26 @@ export function countAllValues(rows: DashboardRow[], column: string): CountedVal
  * raw empty-string sentinel.
  */
 export function answerCounts(rows: DashboardRow[], column: string): CountedValue[] {
-  const counts = new Map<DashboardValue, number>();
+  return countValues(rows, column, (value) => (value == null ? undefined : value)).sort((left, right) => {
+    if (left.value === "") return right.value === "" ? 0 : 1;
+    if (right.value === "") return -1;
 
-  for (const row of rows) {
-    const rawValue = valueForFiltering(row, column);
-    if (rawValue == null) continue;
-
-    counts.set(rawValue, (counts.get(rawValue) ?? 0) + 1);
-  }
-
-  const values = [...counts].sort(([left], [right]) => {
-    if (left === "") return right === "" ? 0 : 1;
-    if (right === "") return -1;
-
-    const leftBooleanOrder = BOOLEAN_ANSWER_ORDER.indexOf(left);
-    const rightBooleanOrder = BOOLEAN_ANSWER_ORDER.indexOf(right);
+    const leftBooleanOrder = BOOLEAN_ANSWER_ORDER.indexOf(left.value);
+    const rightBooleanOrder = BOOLEAN_ANSWER_ORDER.indexOf(right.value);
     if (leftBooleanOrder !== -1 || rightBooleanOrder !== -1) {
       return (leftBooleanOrder === -1 ? BOOLEAN_ANSWER_ORDER.length : leftBooleanOrder) - (rightBooleanOrder === -1 ? BOOLEAN_ANSWER_ORDER.length : rightBooleanOrder);
     }
 
-    return compareValues(left, right);
+    return compareValues(left.value, right.value);
   });
+}
 
-  return values.map<CountedValue>(([value, count]) => ({ value, count }));
+function countValues(rows: DashboardRow[], column: string, normalize: (value: DashboardValue) => DashboardValue): CountedValue[] {
+  const counts = new Map<DashboardValue, number>();
+  for (const row of rows) {
+    const value = normalize(valueForFiltering(row, column));
+    if (value === undefined) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts].map(([value, count]) => ({ count, value }));
 }

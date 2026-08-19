@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 import type { DataTableSort } from "../components/DataTable";
+import { formatDateTime } from "../date";
 import { AnswerChart, AnswerLegend, PieChart } from "./Charts";
 import { CopyableRepositoryList } from "./ClipboardControls";
 import { DisclosureIcon } from "../components/DisclosureIcon";
@@ -17,14 +20,7 @@ type PieChartData = {
 };
 
 function snapshotDate(value: unknown) {
-  if (typeof value !== "string" || value === "") return "Unknown snapshot date";
-  const date = new Date(value);
-  if (Number.isNaN(date.valueOf())) return "Unknown snapshot date";
-  return `${new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  }).format(date)} UTC`;
+  return typeof value === "string" ? (formatDateTime(value, true) ?? "Unknown snapshot date") : "Unknown snapshot date";
 }
 
 export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt: unknown; repositoryCount: number }) {
@@ -57,6 +53,7 @@ export function RepositoriesSection({
   rows: DashboardRow[];
   sort: DataTableSort | null;
 }) {
+  const [showRepositoryNames, setShowRepositoryNames] = useState(false);
   return (
     <section aria-labelledby="repositories-heading" className="dashboard-section">
       <h2 id="repositories-heading">Repositories</h2>
@@ -64,11 +61,13 @@ export function RepositoriesSection({
         <p aria-live="polite" className="dashboard-summary">
           <strong>{rows.length}</strong> matching repositories · <strong>{repositoryNames.length}</strong> selected for copying
         </p>
-        <details className="repository-names">
-          <summary>
-            <span>Copy repository names ({repositoryNames.length})</span>
-            <DisclosureIcon />
-          </summary>
+        <button aria-expanded={showRepositoryNames} className="repository-copy-toggle" onClick={() => setShowRepositoryNames((visible) => !visible)} type="button">
+          <DisclosureIcon />
+          <span>Copy repository names ({repositoryNames.length})</span>
+        </button>
+      </div>
+      {showRepositoryNames && (
+        <div className="repository-names">
           <p className="dashboard-help">These lists contain the repository rows selected below.</p>
           <div className="repository-lists">
             <div>
@@ -80,8 +79,8 @@ export function RepositoriesSection({
               <CopyableRepositoryList label="Newline-separated" value={repositoryNames.join("\n")} />
             </div>
           </div>
-        </details>
-      </div>
+        </div>
+      )}
       <p className="dashboard-help">Use the filters in the sidebar to narrow the table. Select a column heading to sort.</p>
       <RepositoryTable columns={columns} onSelectionChange={onSelectionChange} onSortChange={onSortChange} rows={rows} sort={sort} />
     </section>

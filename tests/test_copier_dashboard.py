@@ -1,5 +1,4 @@
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
@@ -9,7 +8,6 @@ from quant_ranger._impl.aggregators._copier_dashboard import (
     CopierDashboardAggregator,
     CopierDashboardOptions,
 )
-from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.github import GitHubClient
 from quant_ranger._impl.helpers import CliError
 from quant_ranger._impl.models import (
@@ -21,7 +19,11 @@ from quant_ranger._impl.models import (
     UpdateResult,
 )
 from quant_ranger._impl.runtime import RunContext
-from quant_ranger._impl.testing import FakeGitHubClient, RecordingLogger
+from quant_ranger._impl.testing import (
+    FakeGitHubClient,
+    RecordingLogger,
+    make_update_results_artifact,
+)
 from quant_ranger._impl.updaters._copier._dashboard import (
     CopierDashboardOutput,
     CopierDashboardUpdater,
@@ -60,7 +62,9 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
     aggregator = CopierDashboardAggregator(
         CopierDashboardOptions(output_file=output_file)
     )
-    artifact = _artifact()
+    artifact = make_update_results_artifact(
+        github_api_url="https://github.example/api/v3"
+    )
 
     aggregator.aggregate(
         [
@@ -95,7 +99,6 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
         "Validation",
         "build_docs",
     ]
-    assert payload["template_options"] == ["python"]
     assert payload["version_options"] == [
         {"template": None, "versions": ["v2.0.0"]},
         {"template": "python", "versions": ["v2.0.0"]},
@@ -128,12 +131,12 @@ def test_copier_dashboard_aggregator_rejects_incomplete_data(
     failure: str,
     tmp_path: Path,
 ) -> None:
-    artifact = _artifact(
-        scan_failures=(
+    artifact = make_update_results_artifact(
+        (
             [ScanFailure(repository_ref=_item("unreadable").repository_ref)]
             if failure == "scan"
             else []
-        )
+        ),
     )
     results: list[UpdateResult[CopierDashboardOutput, UpdateItem]] = [
         UpdateResult(
@@ -152,18 +155,3 @@ def test_copier_dashboard_aggregator_rejects_incomplete_data(
 
 def _item(name: str) -> UpdateItem:
     return UpdateItem(repository_ref=RepositoryRef(owner="quantco", name=name))
-
-
-def _artifact(
-    *,
-    scan_failures: list[ScanFailure] | None = None,
-) -> UpdateResultsArtifact:
-    return UpdateResultsArtifact(
-        updater="copier-dashboard",
-        updater_options={},
-        generated_at=datetime(2026, 8, 18, 8, 30, tzinfo=UTC),
-        dry_run=True,
-        github_api_url="https://github.example/api/v3",
-        results=[],
-        scan_failures=scan_failures or [],
-    )

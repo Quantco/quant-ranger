@@ -64,10 +64,9 @@ tasks are described in [`docs/README.md`](docs/README.md).
 
 ### Static frontend
 
-The package includes an optional static frontend for Copier inventories. Export
-it without Node.js using
+The package includes an optional static frontend for browser-readable updater
+reports. Export it without Node.js using
 `quant-ranger frontend export --output-directory _site`.
 
 See [Hosting the frontend](https://ranger.quantco.cloud/usage/hosting-frontend)
-for local serving, GitHub Pages workflows, and independently updating its JSON
-data.
+for local serving and a GitHub Pages deployment workflow.

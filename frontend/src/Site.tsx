@@ -12,7 +12,6 @@ type Page = { kind: "copier"; snapshot: DashboardSnapshot } | { kind: "overview"
 
 function currentRoute(): Route {
   const hash = window.location.hash;
-  if (hash !== "" && !hash.startsWith("#/")) return { kind: "copier" };
   const path = hash.replace(/^#\/?/, "").split("?", 1)[0];
   if (path === "") return { kind: "overview" };
   return path === "copier" ? { kind: "copier" } : { kind: "unknown" };

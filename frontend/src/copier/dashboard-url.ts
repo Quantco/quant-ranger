@@ -25,15 +25,9 @@ function parseValueFilter(rawFilter: string, columns: Set<string>): ValueFilter 
     const parsed: unknown = JSON.parse(rawFilter);
     if (!Array.isArray(parsed)) return null;
     const column = parsed[0];
-    let inverted = false;
-    let rawValues: unknown[] = [];
-    if (parsed.length === 2 || (parsed.length === 3 && typeof parsed[2] === "boolean")) {
-      rawValues = Array.isArray(parsed[1]) ? parsed[1] : [parsed[1]];
-      inverted = parsed[2] === true;
-    } else if (parsed.length === 3 && (parsed[1] === "include" || parsed[1] === "exclude")) {
-      rawValues = [parsed[2]];
-      inverted = parsed[1] === "exclude";
-    }
+    if (parsed.length !== 2 && (parsed.length !== 3 || typeof parsed[2] !== "boolean")) return null;
+    const rawValues = Array.isArray(parsed[1]) ? parsed[1] : [parsed[1]];
+    const inverted = parsed[2] === true;
     if (typeof column !== "string" || !columns.has(column) || rawValues.length === 0 || !rawValues.every(isDashboardValue)) return null;
     return { column, inverted: inverted || undefined, values: rawValues };
   } catch {
@@ -55,12 +49,6 @@ function parseTextFilter(rawFilter: string, columns: Set<string>): TextFilter | 
   }
 }
 
-function repositoriesMatching(snapshot: DashboardSnapshot, query: string): string[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const matches = [...new Set(snapshot.rows.map(({ repository }) => repository).filter((repository) => repository.toLocaleLowerCase().includes(normalizedQuery)))];
-  return matches.length === 0 ? [query] : matches;
-}
-
 export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = window.location.hash): CopierDashboardUrlState {
   const parameters = queryParameters(hash);
   const columns = new Set(snapshot.columns);
@@ -76,22 +64,9 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
     if (filter != null) valueFilterByColumn.set(filter.column, filter);
   }
   for (const rawFilter of parameters.getAll("search")) {
-    const filter = parseTextFilter(rawFilter, filterColumns);
-    if (filter == null) continue;
-    if (filter.column === REPOSITORIES) {
-      if (!valueFilterByColumn.has(REPOSITORIES)) valueFilterByColumn.set(REPOSITORIES, { column: REPOSITORIES, inverted: filter.inverted, values: repositoriesMatching(snapshot, filter.query) });
-    } else if (textFilterColumns.has(filter.column)) {
-      textFilterByColumn.set(filter.column, filter);
-    }
+    const filter = parseTextFilter(rawFilter, textFilterColumns);
+    if (filter != null) textFilterByColumn.set(filter.column, filter);
   }
-
-  const legacyQuery = parameters.get("q");
-  if (legacyQuery?.trim() && !valueFilterByColumn.has(REPOSITORIES)) valueFilterByColumn.set(REPOSITORIES, { column: REPOSITORIES, values: repositoriesMatching(snapshot, legacyQuery) });
-  const legacyTemplate = parameters.get("template");
-  if (legacyTemplate != null && snapshot.template_options.includes(legacyTemplate)) valueFilterByColumn.set(TEMPLATE, { column: TEMPLATE, values: [legacyTemplate] });
-  const versions = new Set(snapshot.version_options.flatMap(({ versions: options }) => options));
-  const legacyVersion = parameters.get("version");
-  if (legacyVersion != null && versions.has(legacyVersion)) valueFilterByColumn.set(VERSION, { column: VERSION, values: [legacyVersion] });
 
   const selectedFilterColumns = parameters.has("field") ? new Set(parameters.getAll("field").filter((column) => filterColumns.has(column))) : new Set(DEFAULT_FILTER_COLUMNS);
   for (const column of [...textFilterByColumn.keys(), ...valueFilterByColumn.keys()]) selectedFilterColumns.add(column);

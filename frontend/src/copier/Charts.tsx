@@ -1,3 +1,4 @@
+import { dataTableValueLabel } from "../components/DataTable";
 import { REPOSITORIES, answerCounts } from "./dashboard";
 import type { CountedValue, DashboardRow, DashboardValue } from "./dashboard";
 
@@ -7,12 +8,10 @@ type PieChartProps = { column: string; data: CountedValue[] };
 const PIE_COLORS = ["#64748b", "#3b82f6", "#8b5cf6", "#f59e0b", "#14b8a6", "#ec4899", "#84cc16", "#f97316"];
 const ANSWER_LEGEND_VALUES: DashboardValue[] = [true, false, ""];
 
-export const rawValueLabel = (value: DashboardValue) => (value === "" ? '""' : String(value));
-
 const valueKey = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
 export function AnswerChart({ column, rows }: AnswerChartProps) {
-  const values = answerCounts(rows, column).map(({ count, value }, index) => ({ color: sliceColor(value, index), count, key: valueKey(value), label: rawValueLabel(value), value }));
+  const values = answerCounts(rows, column).map(({ count, value }, index) => ({ color: sliceColor(value, index), count, key: valueKey(value), label: dataTableValueLabel(value), value }));
   if (values.length === 0) return <p>No data for the selected filters.</p>;
   const total = values.reduce((sum, { count }) => sum + count, 0);
   const description = values.map(({ count, label }) => `${label}: ${count}`).join(", ");
@@ -45,7 +44,7 @@ export function AnswerLegend() {
       {ANSWER_LEGEND_VALUES.map((value, index) => (
         <li key={valueKey(value)}>
           <span aria-hidden="true" className="answer-chart-swatch" style={{ background: sliceColor(value, index) }} />
-          <span>{rawValueLabel(value)}</span>
+          <span>{dataTableValueLabel(value)}</span>
         </li>
       ))}
     </ul>
@@ -53,7 +52,7 @@ export function AnswerLegend() {
 }
 
 function displayValueLabel(column: string, value: DashboardValue) {
-  const label = rawValueLabel(value);
+  const label = dataTableValueLabel(value);
   return column === REPOSITORIES ? label.slice(label.lastIndexOf("/") + 1) : label;
 }
 

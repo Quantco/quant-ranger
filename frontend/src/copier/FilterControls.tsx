@@ -1,4 +1,4 @@
-import { rawValueLabel } from "./Charts";
+import { dataTableValueLabel } from "../components/DataTable";
 import { MultiSelect } from "./MultiSelect";
 import { REPOSITORIES } from "./dashboard";
 import type { CountedValue, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
@@ -56,7 +56,7 @@ export function ValueFilterControl({
       labelAction={<InvertToggle disabled={filter == null || filter.values.length === 0} inverted={filter?.inverted === true} label={column} onChange={onInvert} />}
       onChange={(tokens) => onChange([...tokens].flatMap((token) => (optionByToken.has(token) ? [optionByToken.get(token)] : [])) as DashboardValue[])}
       options={options.map(({ count, value }) => {
-        const label = rawValueLabel(value);
+        const label = dataTableValueLabel(value);
         return {
           detail: column === REPOSITORIES ? undefined : repositoryCount(count),
           label: column === REPOSITORIES ? repositoryName(label) : label,
@@ -97,7 +97,7 @@ export function TextFilterControl({
   } = useAutocomplete({
     limit: 8,
     onAccept: ({ label }) => onChange(label),
-    options: options.map(({ count, value }) => ({ count, label: rawValueLabel(value), value })),
+    options: options.map(({ count, value }) => ({ count, label: dataTableValueLabel(value), value })),
     query,
   });
 
