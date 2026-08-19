@@ -289,7 +289,7 @@ $ quant-ranger aggregate copier-dashboard [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
 
 **Options**:
 
