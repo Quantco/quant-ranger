@@ -87,6 +87,7 @@ export function TextFilterControl({
   const {
     accept,
     activeIndex,
+    activeOptionRef,
     onInputKeyDown,
     open,
     root,
@@ -145,6 +146,7 @@ export function TextFilterControl({
                 onClick={() => accept({ count, label, value })}
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActiveIndex(index)}
+                ref={index === activeIndex ? activeOptionRef : undefined}
                 role="option"
                 tabIndex={-1}
                 type="button"

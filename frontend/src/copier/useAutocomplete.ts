@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 type LabelledOption = { label: string };
 
@@ -28,6 +28,7 @@ export function useAutocomplete<Option extends LabelledOption>({
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const activeElement = useRef<HTMLElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const matches = options
     .map((option) => ({ option, rank: matchRank(option.label, query) }))
@@ -37,6 +38,9 @@ export function useAutocomplete<Option extends LabelledOption>({
   const visibleOptions = limit == null ? matches : matches.slice(0, limit);
   const resolvedActiveIndex = open && visibleOptions.length > 0 ? Math.min(Math.max(activeIndex, 0), visibleOptions.length - 1) : -1;
   const activeOption = resolvedActiveIndex >= 0 ? visibleOptions[resolvedActiveIndex] : undefined;
+  const activeOptionRef = useCallback((element: HTMLElement | null) => {
+    activeElement.current = element;
+  }, []);
 
   const close = () => {
     setOpen(false);
@@ -49,6 +53,10 @@ export function useAutocomplete<Option extends LabelledOption>({
   };
 
   useEffect(() => setActiveIndex(-1), [query]);
+
+  useEffect(() => {
+    if (open && resolvedActiveIndex >= 0) activeElement.current?.scrollIntoView({ block: "nearest" });
+  }, [open, resolvedActiveIndex]);
 
   useEffect(() => {
     if (!open) return;
@@ -96,5 +104,5 @@ export function useAutocomplete<Option extends LabelledOption>({
     return false;
   };
 
-  return { accept, activeIndex: resolvedActiveIndex, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions };
+  return { accept, activeIndex: resolvedActiveIndex, activeOptionRef, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions };
 }

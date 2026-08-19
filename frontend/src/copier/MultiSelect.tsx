@@ -23,7 +23,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const { activeIndex, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
+  const { activeIndex, activeOptionRef, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
     closeOnAccept: false,
     onAccept: ({ value }) => {
       toggleOption(value);
@@ -142,6 +142,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
                   onClick={() => toggleOption(value)}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
+                  ref={activeIndex === index ? activeOptionRef : undefined}
                   role="option"
                 >
                   <span aria-hidden="true" className="multi-select-option-check">
