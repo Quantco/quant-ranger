@@ -399,6 +399,8 @@ output/
 frontend/public/data/
 node_modules/
 quant_ranger/_frontend/
+_site/
+# Legacy local sample data; frontend exports and workflows use _site.
 _pages/
 
 # Claude
