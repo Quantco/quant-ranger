@@ -391,8 +391,7 @@
 }
 
 .pie-chart-legend li {
-  display: grid;
-  grid-template-columns: 0.65rem minmax(0, 1fr) auto;
+  display: flex;
   gap: var(--space-2);
   align-items: center;
 }
