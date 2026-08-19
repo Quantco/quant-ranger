@@ -7,7 +7,6 @@ export const DEFAULT_FILTER_COLUMNS = [REPOSITORIES, TEMPLATE, VERSION];
 export const DEFAULT_TABLE_COLUMNS = [VALIDATION, TEMPLATE, VERSION];
 
 export interface CopierDashboardUrlState {
-  hiddenBooleanColumns: Set<string>;
   selectedChartColumns: Set<string>;
   selectedFilterColumns: Set<string>;
   selectedTableColumns: Set<string>;
@@ -71,7 +70,6 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
   const selectedFilterColumns = parameters.has("field") ? new Set(parameters.getAll("field").filter((column) => filterColumns.has(column))) : new Set(DEFAULT_FILTER_COLUMNS);
   for (const column of [...textFilterByColumn.keys(), ...valueFilterByColumn.keys()]) selectedFilterColumns.add(column);
   const selectedChartColumns = new Set(parameters.getAll("chart").filter((column) => columns.has(column)));
-  const hiddenBooleanColumns = new Set(parameters.getAll("hide-boolean").filter((column) => booleanColumns.has(column)));
 
   const selectedTableColumns = parameters.has("column") ? new Set(parameters.getAll("column").filter((column) => column !== REPOSITORIES && columns.has(column))) : new Set(DEFAULT_TABLE_COLUMNS);
   const sortColumn = parameters.get("sort");
@@ -80,7 +78,6 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
     sortColumn != null && columns.has(sortColumn) && (sortDirection === "ascending" || sortDirection === "descending") ? { direction: sortDirection, id: sortColumn } : null;
 
   return {
-    hiddenBooleanColumns,
     selectedChartColumns,
     selectedFilterColumns,
     selectedTableColumns,
@@ -90,12 +87,11 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
   };
 }
 
-export function copierDashboardHash({ hiddenBooleanColumns, selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort, textFilters, valueFilters }: CopierDashboardUrlState): string {
+export function copierDashboardHash({ selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort, textFilters, valueFilters }: CopierDashboardUrlState): string {
   const parameters = new URLSearchParams();
   for (const { column, inverted, query } of textFilters) parameters.append("search", JSON.stringify(inverted ? [column, query, true] : [column, query]));
   for (const { column, inverted, values } of valueFilters) parameters.append("filter", JSON.stringify(inverted ? [column, values, true] : [column, values]));
   for (const column of [...selectedChartColumns].sort()) parameters.append("chart", column);
-  for (const column of [...hiddenBooleanColumns].sort()) parameters.append("hide-boolean", column);
 
   if (!setsEqual(selectedFilterColumns, new Set(DEFAULT_FILTER_COLUMNS))) {
     if (selectedFilterColumns.size === 0) parameters.append("field", "");

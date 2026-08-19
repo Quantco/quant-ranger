@@ -13,7 +13,6 @@ type FieldSelection = {
 
 type DashboardSidebarProps = {
   activeFilterCount: number;
-  booleanOptions: FieldSelection;
   filters: FieldSelection & { controls: ReactNode };
   onResetFilters: () => void;
   pieCharts: FieldSelection;
@@ -25,7 +24,7 @@ function replaceSelection(current: Set<string>, fields: string[], replacement: S
   return new Set([...current].filter((field) => !fieldSet.has(field)).concat([...replacement]));
 }
 
-export function DashboardSidebar({ activeFilterCount, booleanOptions, filters, onResetFilters, pieCharts, tableColumns }: DashboardSidebarProps) {
+export function DashboardSidebar({ activeFilterCount, filters, onResetFilters, pieCharts, tableColumns }: DashboardSidebarProps) {
   const optionalTableColumns = tableColumns.fields.filter((column) => column !== REPOSITORIES);
   const visibleSelectedTableColumns = new Set(optionalTableColumns.filter((column) => tableColumns.selected.has(column)));
 
@@ -52,13 +51,6 @@ export function DashboardSidebar({ activeFilterCount, booleanOptions, filters, o
         summary={`${tableColumns.visibleCount} of ${tableColumns.fields.length}`}
       />
       <FieldSelector fields={pieCharts.fields} label="Pie charts" onChange={pieCharts.onChange} selected={pieCharts.selected} />
-      <FieldSelector
-        emptyMessage="Select one template to choose Boolean options."
-        fields={booleanOptions.fields}
-        label="Boolean Template Options"
-        onChange={booleanOptions.onChange}
-        selected={booleanOptions.selected}
-      />
     </DashboardSidebarShell>
   );
 }

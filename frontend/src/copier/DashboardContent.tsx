@@ -2,17 +2,11 @@ import { useState } from "react";
 
 import type { DataTableSort } from "../components/DataTable";
 import { formatDateTime } from "../date";
-import { AnswerChart, AnswerLegend, PieChart } from "./Charts";
+import { PieChart } from "./Charts";
 import { CopyableRepositoryList } from "./ClipboardControls";
 import { DisclosureIcon } from "../components/DisclosureIcon";
 import { RepositoryTable } from "./RepositoryTable";
 import type { CountedValue, DashboardRow } from "./dashboard";
-
-type BooleanChartGroup = {
-  charts: { column: string; rows: DashboardRow[] }[];
-  id: string;
-  title: string;
-};
 
 type PieChartData = {
   column: string;
@@ -115,24 +109,4 @@ export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
       </div>
     </section>
   );
-}
-
-export function BooleanChartsSections({ groups }: { groups: BooleanChartGroup[] }) {
-  return groups.map(({ charts, id, title }) => (
-    <section aria-labelledby={`${id}-heading`} className="dashboard-section" key={id}>
-      <h2 id={`${id}-heading`}>{title}</h2>
-      <p className="dashboard-help">Breakdown of the currently matching repositories.</p>
-      <AnswerLegend />
-      <div className="answer-plots">
-        {charts.map(({ column, rows }) => (
-          <div key={column}>
-            <h3>
-              <code>{column}</code>
-            </h3>
-            <AnswerChart column={column} rows={rows} />
-          </div>
-        ))}
-      </div>
-    </section>
-  ));
 }
