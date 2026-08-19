@@ -93,7 +93,8 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             onFocus={() => setOpen(true)}
             onKeyDown={(event) => {
               if (!onKeyDown(event) && event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
-                toggleOption(selectedOptions.at(-1)!.value);
+                const previous = selectedOptions.at(-1);
+                if (previous) toggleOption(previous.value);
               }
             }}
             placeholder={selectedOptions.length === 0 ? placeholder : "Search…"}

@@ -182,7 +182,7 @@ export function DataTable<Row>({
                   <input
                     aria-label={`Select ${String(key)}`}
                     checked={selected.has(key)}
-                    onChange={(event) => selectRow(key, event.target.checked, (event.nativeEvent as MouseEvent).shiftKey)}
+                    onChange={(event) => selectRow(key, event.target.checked, event.nativeEvent instanceof MouseEvent && event.nativeEvent.shiftKey)}
                     type="checkbox"
                   />
                 </td>
