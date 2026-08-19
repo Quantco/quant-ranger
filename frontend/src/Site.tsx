@@ -10,8 +10,8 @@ export default function Site() {
       </nav>
       <main>
         <header className="dashboard-header">
-          <h1>Repository maintenance</h1>
-          <p>The frontend is ready for browser-readable updater reports.</p>
+          <h1>Dashboard</h1>
+          <p>Explore quant-ranger activity and reports.</p>
         </header>
       </main>
     </>
