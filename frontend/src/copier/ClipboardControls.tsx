@@ -1,4 +1,4 @@
-import { useClipboard } from "../components/Clipboard";
+import { useClipboard } from "../components/useClipboard";
 
 function CopyIcon({ copied }: { copied: boolean }) {
   return copied ? (

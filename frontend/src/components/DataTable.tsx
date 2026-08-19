@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState, type Key, type ReactNode } from "react";
 
-export type DataTableValue = boolean | Date | null | number | string | undefined;
+import { displayValue, type DisplayValue } from "../value";
 
 export interface DataTableColumn<Row> {
   align?: "left" | "right";
   id: string;
   label: ReactNode;
   maxWidth?: number | string;
-  render?: (value: DataTableValue, row: Row) => ReactNode;
+  render?: (value: DisplayValue, row: Row) => ReactNode;
   sortable?: boolean;
-  tooltip?: (value: DataTableValue, row: Row) => string;
+  tooltip?: (value: DisplayValue, row: Row) => string;
   title?: string;
   truncate?: boolean;
-  value: (row: Row) => DataTableValue;
+  value: (row: Row) => DisplayValue;
 }
 
 interface DataTableProps<Row> {
@@ -29,13 +29,7 @@ export type DataTableSort = { direction: "ascending" | "descending"; id: string 
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-export function dataTableValueLabel(value: DataTableValue): string {
-  if (value == null || value === "") return "-";
-  if (value instanceof Date) return value.toISOString();
-  return String(value);
-}
-
-function compareValues(left: DataTableValue, right: DataTableValue): number {
+function compareValues(left: DisplayValue, right: DisplayValue): number {
   if (Object.is(left, right)) return 0;
   if (left == null || left === "") return 1;
   if (right == null || right === "") return -1;
@@ -137,8 +131,10 @@ export function DataTable<Row>({
   const selectRow = (key: Key, checked: boolean, range: boolean) => {
     const next = new Set(selected);
     const currentIndex = sorted.findIndex((entry) => entry.key === key);
+    const currentEntry = sorted[currentIndex];
+    if (currentEntry == null) return;
     const lastIndex = sorted.findIndex((entry) => entry.key === lastSelected);
-    const rangeEntries = range && lastIndex >= 0 ? sorted.slice(Math.min(currentIndex, lastIndex), Math.max(currentIndex, lastIndex) + 1) : [sorted[currentIndex]];
+    const rangeEntries = range && lastIndex >= 0 ? sorted.slice(Math.min(currentIndex, lastIndex), Math.max(currentIndex, lastIndex) + 1) : [currentEntry];
     for (const entry of rangeEntries) {
       if (checked) next.add(entry.key);
       else next.delete(entry.key);
@@ -179,7 +175,7 @@ export function DataTable<Row>({
           </tr>
         </thead>
         <tbody>
-          {sorted.map(({ index, key, row }) => (
+          {sorted.map(({ key, row }) => (
             <tr key={key}>
               {onSelectionChange && (
                 <td className="data-table-selection">
@@ -193,8 +189,8 @@ export function DataTable<Row>({
               )}
               {columns.map((column) => {
                 const value = column.value(row);
-                const content = column.render?.(value, row) ?? dataTableValueLabel(value);
-                const tooltip = column.tooltip?.(value, row) ?? dataTableValueLabel(value);
+                const content = column.render?.(value, row) ?? displayValue(value);
+                const tooltip = column.tooltip?.(value, row) ?? displayValue(value);
                 return (
                   <td className={column.align === "right" ? "data-table-cell-right" : undefined} key={column.id}>
                     {(column.truncate || column.maxWidth) && tooltip !== "-" ? (

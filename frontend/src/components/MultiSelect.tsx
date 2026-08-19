@@ -23,7 +23,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const { activeIndex, activeOptionRef, close, onKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
+  const { accept, activeIndex, activeOptionRef, close, onKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
     closeOnAccept: false,
     onAccept: ({ value }) => {
       toggleOption(value);
@@ -133,23 +133,23 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             {visibleOptions.length === 0 ? (
               <span className="multi-select-empty">No matching options</span>
             ) : (
-              visibleOptions.map(({ detail, label: optionLabel, value }, index) => (
+              visibleOptions.map((option, index) => (
                 <div
-                  aria-selected={selected.has(value)}
+                  aria-selected={selected.has(option.value)}
                   className={activeIndex === index ? "is-active" : undefined}
                   id={`${id}-option-${index}`}
-                  key={value}
-                  onClick={() => toggleOption(value)}
+                  key={option.value}
+                  onClick={() => accept(option)}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
                   ref={activeIndex === index ? activeOptionRef : undefined}
                   role="option"
                 >
                   <span aria-hidden="true" className="multi-select-option-check">
-                    {selected.has(value) ? "✓" : ""}
+                    {selected.has(option.value) ? "✓" : ""}
                   </span>
-                  <span>{codeLabels ? <code>{optionLabel}</code> : optionLabel}</span>
-                  {detail != null && <small>{detail}</small>}
+                  <span>{codeLabels ? <code>{option.label}</code> : option.label}</span>
+                  {option.detail != null && <small>{option.detail}</small>}
                 </div>
               ))
             )}

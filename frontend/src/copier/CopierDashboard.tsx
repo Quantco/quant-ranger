@@ -7,7 +7,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { TextFilterControl, ValueFilterControl } from "./FilterControls";
 import { copierDashboardHash, readCopierDashboardUrlState } from "./dashboard-url";
 import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, answerCounts, countAllValues, countBy, filterRowsByTextFilters, filterRowsByValueFilters, removeValueFilter } from "./dashboard";
-import type { CountedValue, DashboardRow, DashboardSnapshot, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
+import type { CountedValue, DashboardRow, DashboardSnapshot, FilterValue, TextFilter, ValueFilter } from "./dashboard";
 
 function versionDistribution(data: CountedValue[], versions: string[]) {
   const order = new Map(versions.map((version, index) => [version, index]));
@@ -58,7 +58,7 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
     });
   };
 
-  const setSelectedValues = (column: string, values: DashboardValue[]) => {
+  const setSelectedValues = (column: string, values: FilterValue[]) => {
     setValueFilters((current) => {
       const otherFilters = removeValueFilter(current, column);
       const existingFilter = current.find((filter) => filter.column === column);

@@ -13,11 +13,11 @@ type PieChartData = {
   data: CountedValue[];
 };
 
-function snapshotDate(value: unknown) {
-  return typeof value === "string" ? (formatDateTime(value, true) ?? "Unknown snapshot date") : "Unknown snapshot date";
+function snapshotDate(value: string) {
+  return formatDateTime(value, true) ?? "Unknown snapshot date";
 }
 
-export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt: unknown; repositoryCount: number }) {
+export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) {
   return (
     <header className="dashboard-header">
       <h1>Copier Dashboard</h1>

@@ -1,17 +1,13 @@
-import { dataTableValueLabel } from "../components/DataTable";
 import { MultiSelect } from "../components/MultiSelect";
 import { useAutocomplete } from "../components/useAutocomplete";
-import { REPOSITORIES } from "./dashboard";
-import type { CountedValue, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
+import { displayValue } from "../value";
+import { REPOSITORIES, repositoryName } from "./dashboard";
+import type { CountedValue, DashboardValue, FilterValue, TextFilter, ValueFilter } from "./dashboard";
 
 const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
 function controlId(column: string) {
-  return column.replace(/[^a-zA-Z0-9_-]/g, "-");
-}
-
-function repositoryName(value: string) {
-  return value.slice(value.lastIndexOf("/") + 1);
+  return encodeURIComponent(column);
 }
 
 function repositoryCount(count: number) {
@@ -43,7 +39,7 @@ export function ValueFilterControl({
 }: {
   column: string;
   filter?: ValueFilter;
-  onChange: (values: DashboardValue[]) => void;
+  onChange: (values: FilterValue[]) => void;
   onInvert: (inverted: boolean) => void;
   options: CountedValue[];
 }) {
@@ -54,9 +50,16 @@ export function ValueFilterControl({
       id={`value-filter-${controlId(column)}`}
       label={<code>{column}</code>}
       labelAction={<InvertToggle disabled={filter == null || filter.values.length === 0} inverted={filter?.inverted === true} label={column} onChange={onInvert} />}
-      onChange={(tokens) => onChange([...tokens].flatMap((token) => (optionByToken.has(token) ? [optionByToken.get(token)] : [])) as DashboardValue[])}
+      onChange={(tokens) =>
+        onChange(
+          [...tokens].flatMap((token) => {
+            const value = optionByToken.get(token);
+            return value === undefined ? [] : [value];
+          }),
+        )
+      }
       options={options.map(({ count, value }) => {
-        const label = dataTableValueLabel(value);
+        const label = displayValue(value);
         return {
           detail: column === REPOSITORIES ? undefined : repositoryCount(count),
           label: column === REPOSITORIES ? repositoryName(label) : label,
@@ -97,7 +100,7 @@ export function TextFilterControl({
   } = useAutocomplete({
     limit: 8,
     onAccept: ({ label }) => onChange(label),
-    options: options.map(({ count, value }) => ({ count, label: dataTableValueLabel(value), value })),
+    options: options.map(({ count, value }) => ({ count, label: displayValue(value), value })),
     query,
   });
 

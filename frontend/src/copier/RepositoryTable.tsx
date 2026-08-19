@@ -1,18 +1,19 @@
-import { DataTable, dataTableValueLabel, type DataTableColumn, type DataTableSort, type DataTableValue } from "../components/DataTable";
+import { DataTable, type DataTableColumn, type DataTableSort } from "../components/DataTable";
+import { displayValue, type DisplayValue } from "../value";
 import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type DashboardRow } from "./dashboard";
 
 const BASE_COLUMNS = new Set([REPOSITORIES, COPIER_ANSWERS, TEMPLATE, VERSION, VALIDATION]);
 
-function renderValue(value: DataTableValue, row: DashboardRow, column: string) {
+function renderValue(value: DisplayValue, row: DashboardRow, column: string) {
   if (column === REPOSITORIES && row.url) {
     return (
       <a href={row.url} rel="noreferrer" target="_blank">
-        {dataTableValueLabel(value)}
+        {displayValue(value)}
       </a>
     );
   }
   if (typeof value === "boolean") return <span className={`boolean-value boolean-value-${value}`}>{String(value)}</span>;
-  return dataTableValueLabel(value);
+  return displayValue(value);
 }
 
 export function RepositoryTable({

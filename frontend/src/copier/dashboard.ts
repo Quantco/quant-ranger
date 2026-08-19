@@ -5,6 +5,7 @@ export const VERSION = "Version";
 export const VALIDATION = "Validation";
 
 export type DashboardValue = string | number | boolean | null | undefined;
+export type FilterValue = Exclude<DashboardValue, undefined>;
 
 export interface AnswerGroup {
   fields: string[];
@@ -36,7 +37,7 @@ export interface DashboardSnapshot {
 export interface ValueFilter {
   column: string;
   inverted?: boolean;
-  values: DashboardValue[];
+  values: FilterValue[];
 }
 
 export interface TextFilter {
@@ -46,11 +47,15 @@ export interface TextFilter {
 }
 
 export interface CountedValue {
-  value: DashboardValue;
+  value: FilterValue;
   count: number;
 }
 
-const BOOLEAN_ANSWER_ORDER: readonly DashboardValue[] = [true, false];
+const BOOLEAN_ANSWER_ORDER: readonly FilterValue[] = [true, false];
+
+export function repositoryName(value: string): string {
+  return value.slice(value.lastIndexOf("/") + 1);
+}
 
 function valueForFiltering(row: DashboardRow, column: string): DashboardValue {
   if (column === REPOSITORIES) return row.repository;
@@ -133,7 +138,7 @@ export function answerCounts(rows: DashboardRow[], column: string): CountedValue
 }
 
 function countValues(rows: DashboardRow[], column: string, normalize: (value: DashboardValue) => DashboardValue): CountedValue[] {
-  const counts = new Map<DashboardValue, number>();
+  const counts = new Map<FilterValue, number>();
   for (const row of rows) {
     const value = normalize(valueForFiltering(row, column));
     if (value === undefined) continue;

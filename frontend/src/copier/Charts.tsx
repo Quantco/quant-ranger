@@ -1,12 +1,12 @@
-import { dataTableValueLabel } from "../components/DataTable";
-import { REPOSITORIES } from "./dashboard";
+import { displayValue } from "../value";
+import { REPOSITORIES, repositoryName } from "./dashboard";
 import type { CountedValue, DashboardValue } from "./dashboard";
 
 type PieChartProps = { column: string; data: CountedValue[] };
 
 function displayValueLabel(column: string, value: DashboardValue) {
-  const label = dataTableValueLabel(value);
-  return column === REPOSITORIES ? label.slice(label.lastIndexOf("/") + 1) : label;
+  const label = displayValue(value);
+  return column === REPOSITORIES ? repositoryName(label) : label;
 }
 
 function sliceColor(value: DashboardValue, index: number) {

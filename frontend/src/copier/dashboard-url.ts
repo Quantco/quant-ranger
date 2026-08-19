@@ -1,7 +1,7 @@
 import type { DataTableSort } from "../components/DataTable";
 import { queryParameters, setsEqual } from "../url-state";
 import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from "./dashboard";
-import type { DashboardSnapshot, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
+import type { DashboardSnapshot, FilterValue, TextFilter, ValueFilter } from "./dashboard";
 
 export const DEFAULT_FILTER_COLUMNS = [REPOSITORIES, TEMPLATE, VERSION];
 export const DEFAULT_TABLE_COLUMNS = [VALIDATION, TEMPLATE, VERSION];
@@ -15,8 +15,20 @@ export interface CopierDashboardUrlState {
   valueFilters: ValueFilter[];
 }
 
-function isDashboardValue(value: unknown): value is DashboardValue {
-  return value == null || typeof value === "boolean" || typeof value === "number" || typeof value === "string";
+function compareStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function compareColumns(left: { column: string }, right: { column: string }): number {
+  return compareStrings(left.column, right.column);
+}
+
+function valueSortKey(value: FilterValue): string {
+  return `${typeof value}:${JSON.stringify(value) ?? ""}`;
+}
+
+function isFilterValue(value: unknown): value is FilterValue {
+  return value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string";
 }
 
 function parseValueFilter(rawFilter: string, columns: Set<string>): ValueFilter | null {
@@ -27,7 +39,7 @@ function parseValueFilter(rawFilter: string, columns: Set<string>): ValueFilter 
     if (parsed.length !== 2 && (parsed.length !== 3 || typeof parsed[2] !== "boolean")) return null;
     const rawValues = Array.isArray(parsed[1]) ? parsed[1] : [parsed[1]];
     const inverted = parsed[2] === true;
-    if (typeof column !== "string" || !columns.has(column) || rawValues.length === 0 || !rawValues.every(isDashboardValue)) return null;
+    if (typeof column !== "string" || !columns.has(column) || rawValues.length === 0 || !rawValues.every(isFilterValue)) return null;
     return { column, inverted: inverted || undefined, values: rawValues };
   } catch {
     return null;
@@ -89,13 +101,16 @@ export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = 
 
 export function copierDashboardHash({ selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort, textFilters, valueFilters }: CopierDashboardUrlState): string {
   const parameters = new URLSearchParams();
-  for (const { column, inverted, query } of textFilters) parameters.append("search", JSON.stringify(inverted ? [column, query, true] : [column, query]));
-  for (const { column, inverted, values } of valueFilters) parameters.append("filter", JSON.stringify(inverted ? [column, values, true] : [column, values]));
+  for (const { column, inverted, query } of [...textFilters].sort(compareColumns)) parameters.append("search", JSON.stringify(inverted ? [column, query, true] : [column, query]));
+  for (const { column, inverted, values } of [...valueFilters].sort(compareColumns)) {
+    const sortedValues = [...values].sort((left, right) => compareStrings(valueSortKey(left), valueSortKey(right)));
+    parameters.append("filter", JSON.stringify(inverted ? [column, sortedValues, true] : [column, sortedValues]));
+  }
   for (const column of [...selectedChartColumns].sort()) parameters.append("chart", column);
 
   if (!setsEqual(selectedFilterColumns, new Set(DEFAULT_FILTER_COLUMNS))) {
     if (selectedFilterColumns.size === 0) parameters.append("field", "");
-    else for (const column of selectedFilterColumns) parameters.append("field", column);
+    else for (const column of [...selectedFilterColumns].sort()) parameters.append("field", column);
   }
   if (!setsEqual(selectedTableColumns, new Set(DEFAULT_TABLE_COLUMNS))) {
     if (selectedTableColumns.size === 0) parameters.append("column", "");
