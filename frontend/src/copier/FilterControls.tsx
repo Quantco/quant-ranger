@@ -1,8 +1,8 @@
 import { dataTableValueLabel } from "../components/DataTable";
-import { MultiSelect } from "./MultiSelect";
+import { MultiSelect } from "../components/MultiSelect";
+import { useAutocomplete } from "../components/useAutocomplete";
 import { REPOSITORIES } from "./dashboard";
 import type { CountedValue, DashboardValue, TextFilter, ValueFilter } from "./dashboard";
-import { useAutocomplete } from "./useAutocomplete";
 
 const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`;
 
@@ -88,7 +88,7 @@ export function TextFilterControl({
     accept,
     activeIndex,
     activeOptionRef,
-    onInputKeyDown,
+    onKeyDown,
     open,
     root,
     setActiveIndex,
@@ -125,7 +125,7 @@ export function TextFilterControl({
           onFocus={() => {
             if (query.trim() !== "") setOpen(true);
           }}
-          onKeyDown={onInputKeyDown}
+          onKeyDown={onKeyDown}
           placeholder="Search values…"
           role="combobox"
           type="search"

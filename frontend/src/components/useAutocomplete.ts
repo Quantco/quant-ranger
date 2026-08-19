@@ -74,7 +74,7 @@ export function useAutocomplete<Option extends LabelledOption>({
     };
   }, [open]);
 
-  const onInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === "Escape" && open) {
       event.preventDefault();
       close();
@@ -104,5 +104,5 @@ export function useAutocomplete<Option extends LabelledOption>({
     return false;
   };
 
-  return { accept, activeIndex: resolvedActiveIndex, activeOptionRef, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions };
+  return { accept, activeIndex: resolvedActiveIndex, activeOptionRef, close, onKeyDown, open, root, setActiveIndex, setOpen, visibleOptions };
 }

@@ -23,7 +23,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const { activeIndex, activeOptionRef, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
+  const { activeIndex, activeOptionRef, close, onKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
     closeOnAccept: false,
     onAccept: ({ value }) => {
       toggleOption(value);
@@ -92,7 +92,7 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={(event) => {
-              if (!onInputKeyDown(event) && event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
+              if (!onKeyDown(event) && event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
                 toggleOption(selectedOptions.at(-1)!.value);
               }
             }}

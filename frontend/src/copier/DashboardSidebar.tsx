@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { DashboardSidebarShell } from "../components/DashboardSidebar";
 import { FieldSelector } from "../components/FieldSelector";
-import { MultiSelect } from "./MultiSelect";
+import { MultiSelect } from "../components/MultiSelect";
 import { REPOSITORIES } from "./dashboard";
 
 type FieldSelection = {
