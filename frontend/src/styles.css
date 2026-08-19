@@ -34,8 +34,19 @@ body {
 }
 
 .site-title {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
   color: var(--color-foreground);
   font-weight: 700;
+}
+
+.site-title::before {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  background: url("../favicon.png") center / contain no-repeat;
+  content: "";
 }
 
 main {
