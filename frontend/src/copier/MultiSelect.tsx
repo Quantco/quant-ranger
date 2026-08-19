@@ -23,11 +23,10 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
   const [query, setQuery] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const { bestMatch, close, onInputKeyDown, open, root, setOpen, visibleOptions } = useAutocomplete({
+  const { activeIndex, close, onInputKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
     closeOnAccept: false,
-    isSelectable: ({ value }) => !selected.has(value),
     onAccept: ({ value }) => {
-      onChange(new Set(selected).add(value));
+      toggleOption(value);
       setQuery("");
     },
     onClose: () => setQuery(""),
@@ -79,11 +78,13 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
             </button>
           ))}
           <input
-            aria-activedescendant={!open || bestMatch == null ? undefined : `${id}-option-${visibleOptions.indexOf(bestMatch)}`}
+            aria-activedescendant={!open || activeIndex < 0 ? undefined : `${id}-option-${activeIndex}`}
             aria-autocomplete="list"
             aria-controls={open ? `${id}-options` : undefined}
             aria-expanded={open}
+            aria-haspopup="listbox"
             aria-labelledby={`${id}-label`}
+            autoComplete="off"
             className="multi-select-search"
             onChange={(event) => {
               setQuery(event.target.value);
@@ -128,16 +129,27 @@ export function MultiSelect({ codeLabels = false, id, label, labelAction, onChan
               </button>
             )}
           </div>
-          <div aria-labelledby={`${id}-label`} className="multi-select-options" id={`${id}-options`} role="listbox">
+          <div aria-labelledby={`${id}-label`} aria-multiselectable="true" className="multi-select-options" id={`${id}-options`} role="listbox">
             {visibleOptions.length === 0 ? (
               <span className="multi-select-empty">No matching options</span>
             ) : (
               visibleOptions.map(({ detail, label: optionLabel, value }, index) => (
-                <label aria-selected={selected.has(value)} className={bestMatch?.value === value ? "is-best-match" : undefined} id={`${id}-option-${index}`} key={value} role="option">
-                  <input checked={selected.has(value)} onChange={() => toggleOption(value)} type="checkbox" />
+                <div
+                  aria-selected={selected.has(value)}
+                  className={activeIndex === index ? "is-active" : undefined}
+                  id={`${id}-option-${index}`}
+                  key={value}
+                  onClick={() => toggleOption(value)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  role="option"
+                >
+                  <span aria-hidden="true" className="multi-select-option-check">
+                    {selected.has(value) ? "✓" : ""}
+                  </span>
                   <span>{codeLabels ? <code>{optionLabel}</code> : optionLabel}</span>
                   {detail != null && <small>{detail}</small>}
-                </label>
+                </div>
               ))
             )}
           </div>

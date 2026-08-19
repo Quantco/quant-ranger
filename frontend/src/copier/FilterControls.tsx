@@ -86,10 +86,11 @@ export function TextFilterControl({
   const id = `text-filter-${controlId(column)}`;
   const {
     accept,
-    bestMatch,
+    activeIndex,
     onInputKeyDown,
     open,
     root,
+    setActiveIndex,
     setOpen,
     visibleOptions: suggestions,
   } = useAutocomplete({
@@ -109,10 +110,12 @@ export function TextFilterControl({
       </div>
       <div className="text-filter-search-control">
         <input
-          aria-activedescendant={!open || bestMatch == null ? undefined : `${id}-suggestion-0`}
+          aria-activedescendant={!open || activeIndex < 0 ? undefined : `${id}-suggestion-${activeIndex}`}
           aria-autocomplete="list"
           aria-controls={open ? `${id}-suggestions` : undefined}
           aria-expanded={open}
+          aria-haspopup="listbox"
+          autoComplete="off"
           id={id}
           onChange={(event) => {
             onChange(event.target.value);
@@ -135,12 +138,15 @@ export function TextFilterControl({
           ) : (
             suggestions.map(({ count, label, value }, index) => (
               <button
-                aria-selected={index === 0}
-                className={index === 0 ? "is-best-match" : undefined}
+                aria-selected={index === activeIndex}
+                className={index === activeIndex ? "is-active" : undefined}
                 id={`${id}-suggestion-${index}`}
                 key={valueToken(value)}
                 onClick={() => accept({ count, label, value })}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
                 role="option"
+                tabIndex={-1}
                 type="button"
               >
                 <span>{label}</span>
