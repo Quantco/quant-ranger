@@ -78,7 +78,9 @@ def _results_file_argument_parameter() -> inspect.Parameter:
         annotation=Path,
         default=typer.Argument(
             ...,
-            help="JSON results file written by `quant-ranger update`.",
+            help=(
+                "JSON artifact created by `quant-ranger update --results-file PATH`."
+            ),
         ),
     )
 

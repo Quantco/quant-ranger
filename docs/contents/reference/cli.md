@@ -200,7 +200,7 @@ $ quant-ranger update custom [OPTIONS]
 
 ## `quant-ranger aggregate`
 
-Process update results. Run an aggregator over a JSON artifact written by `quant-ranger update`.
+Process update results. Run an aggregator over the JSON artifact created by passing `--results-file PATH` to `quant-ranger update`.
 
 **Usage**:
 
@@ -230,7 +230,7 @@ $ quant-ranger aggregate log-failures [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
 
 **Options**:
 
@@ -248,7 +248,7 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
 
 **Options**:
 

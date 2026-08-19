@@ -183,8 +183,8 @@ def make_app(
     )
     aggregate_app = typer.Typer(
         help=(
-            "Process update results. Run an aggregator over a JSON artifact "
-            "written by `quant-ranger update`."
+            "Process update results. Run an aggregator over the JSON artifact "
+            "created by passing `--results-file PATH` to `quant-ranger update`."
         ),
         no_args_is_help=True,
         rich_markup_mode="rich",
