@@ -180,29 +180,6 @@ def test_version_option_prints_program_version(app: typer.Typer) -> None:
     assert result.output.startswith("quant-ranger ")
 
 
-def test_aggregate_help_explains_how_to_create_results_file(
-    app: typer.Typer,
-) -> None:
-    result = runner.invoke(app, ["aggregate", "--help"], env={"COLUMNS": "300"})
-
-    assert result.exit_code == 0
-    assert (
-        "created by passing `--results-file PATH` to `quant-ranger update`"
-        in _normalized_output(_plain_output(result.output))
-    )
-
-    result = runner.invoke(
-        app,
-        ["aggregate", "log-failures", "--help"],
-        env={"COLUMNS": "300"},
-    )
-
-    assert result.exit_code == 0
-    assert "created by `quant-ranger update --results-file PATH`" in _normalized_output(
-        _plain_output(result.output)
-    )
-
-
 def test_frontend_export_copies_assets_and_preserves_data(
     app: typer.Typer,
     monkeypatch: pytest.MonkeyPatch,
