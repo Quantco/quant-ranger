@@ -78,13 +78,13 @@ export default function Site() {
       </nav>
       {error ? (
         <main className="standalone-state">
-          <h1>Copier dashboard unavailable</h1>
+          <h1>Copier Dashboard unavailable</h1>
           <p>{error}</p>
           <div className="data-message">
             <p>
               Expected a generated report at <code>{COPIER_DATA_PATH}</code>.
             </p>
-            <a href="#/">Return to the dashboard</a>
+            <a href="#/">Return to Overview</a>
           </div>
         </main>
       ) : page == null ? (
@@ -99,7 +99,7 @@ export default function Site() {
         <main>
           <h1>Page not found</h1>
           <p>
-            Return to the <a href="#/">dashboard overview</a>.
+            Return to <a href="#/">Overview</a>.
           </p>
         </main>
       )}

@@ -4,13 +4,13 @@ export default function Overview() {
   return (
     <main className="dashboard-overview">
       <header className="dashboard-header">
-        <h1>Dashboard</h1>
+        <h1>Overview</h1>
         <p>Explore quant-ranger activity and reports.</p>
       </header>
 
       <section aria-labelledby="copier-dashboard-heading" className="dashboard-overview-section">
         <div className="dashboard-overview-section-heading">
-          <h2 id="copier-dashboard-heading">Copier dashboard</h2>
+          <h2 id="copier-dashboard-heading">Copier Dashboard</h2>
         </div>
         <a className="dashboard-overview-card" href="#/copier">
           <span className="dashboard-overview-card-content">
