@@ -22,14 +22,3 @@ export function useClipboard() {
 
   return { copy, copyState };
 }
-
-export function CopyPageLink() {
-  const { copy, copyState } = useClipboard();
-  const label = copyState === "copied" ? "Link copied" : copyState === "failed" ? "Could not copy link" : "Copy dashboard link";
-
-  return (
-    <button className="text-button" onClick={() => void copy(window.location.href)} type="button">
-      {label}
-    </button>
-  );
-}

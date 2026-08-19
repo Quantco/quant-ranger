@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-import { CopyPageLink } from "./Clipboard";
-
 export function DashboardSidebarShell({
   activeFilterCount,
   children,
@@ -21,14 +19,13 @@ export function DashboardSidebarShell({
         <h2 id={headingId}>{title}</h2>
         {activeFilterCount > 0 && <span>{activeFilterCount} active</span>}
       </div>
-      <div className="dashboard-sidebar-actions">
-        <CopyPageLink />
-        {activeFilterCount > 0 && (
+      {activeFilterCount > 0 && (
+        <div className="dashboard-sidebar-actions">
           <button className="text-button" onClick={onResetFilters} type="button">
             Reset filters
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {children}
     </aside>
   );
