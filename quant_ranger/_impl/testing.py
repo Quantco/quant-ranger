@@ -23,14 +23,22 @@ the keychain fake and get back the list recording requested accounts."""
 
 def make_update_results_artifact(
     scan_failures: Sequence[ScanFailure] = (),
+    *,
+    dry_run: bool = True,
+    generated_at: datetime | None = None,
+    github_api_url: str = "https://api.github.com",
+    updater: str = "copier",
+    updater_options: Mapping[str, Any] | None = None,
+    workflow_url: str | None = None,
 ) -> UpdateResultsArtifact:
     """Build a representative update-results artifact for aggregator tests."""
     return UpdateResultsArtifact(
-        updater="copier",
-        updater_options={},
-        generated_at=datetime(2026, 7, 16, tzinfo=UTC),
-        dry_run=True,
-        github_api_url="https://api.github.com",
+        updater=updater,
+        updater_options=dict(updater_options or {}),
+        generated_at=generated_at or datetime(2026, 7, 16, tzinfo=UTC),
+        dry_run=dry_run,
+        github_api_url=github_api_url,
+        workflow_url=workflow_url,
         results=[],
         scan_failures=list(scan_failures),
     )
