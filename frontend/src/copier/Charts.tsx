@@ -4,8 +4,6 @@ import type { CountedValue, DashboardValue } from "./dashboard";
 
 type PieChartProps = { column: string; data: CountedValue[] };
 
-const PIE_COLORS = ["#2563eb", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#0f766e"];
-
 function displayValueLabel(column: string, value: DashboardValue) {
   const label = dataTableValueLabel(value);
   return column === REPOSITORIES ? label.slice(label.lastIndexOf("/") + 1) : label;
@@ -15,7 +13,7 @@ function sliceColor(value: DashboardValue, index: number) {
   if (value === true) return "var(--color-success-chart)";
   if (value === false) return "var(--color-error-chart)";
   if (value == null || value === "") return "var(--color-muted-foreground)";
-  return PIE_COLORS[index % PIE_COLORS.length];
+  return `hsl(${(220 + index * 137.5) % 360} 68% 45%)`;
 }
 
 function slicePath(start: number, end: number) {
