@@ -38,6 +38,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/krb5-1.22.2-hbde042b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lefthook-2.1.10-hfc2019e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libabseil-20260526.0-cxx17_h7b12aa8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libbrotlicommon-1.2.0-hb03c661_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libbrotlidec-1.2.0-hb03c661_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libbrotlienc-1.2.0-hb03c661_1.conda
@@ -67,11 +68,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mergiraf-0.18.0-hb17b654_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nh3-0.3.6-py310hd8a072f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.18.0-h3d65ac4_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-26.6.0-hc039f44_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.3-h35e630c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pcre2-10.47-haa7fec5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/perl-5.32.1-7_hd590300_perl5.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/prettier-3.9.3-h7e4c9f4_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/pnpm-11.22.0-he83fb06_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/prettier-3.9.3-hdf27b9d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/py-rattler-0.23.2-py310h70157a2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.4-py314h2e6c369_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pynacl-1.6.2-py314h3129cac_3.conda
@@ -232,10 +234,11 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/mergiraf-0.18.0-h069e38c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ncurses-6.6-hf8d1292_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/nh3-0.3.6-py310h8c58d24_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/nodejs-26.5.1-hb82d7cf_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/nodejs-26.6.0-hb82d7cf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/openssl-3.6.3-h546c87b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pcre2-10.47-hf841c20_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/perl-5.32.1-7_h31becfc_perl5.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pnpm-11.22.0-ha59f2ec_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/prettier-3.9.3-ha6c2a1b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/py-rattler-0.23.2-py310h45743d3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/pydantic-core-2.46.4-py314h451b6cc_0.conda
@@ -482,10 +485,11 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mergiraf-0.18.0-h6fdd925_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-h1d4f5a5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nh3-0.3.6-py310h3b8a9b8_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-26.5.1-h00e74ec_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-26.6.0-h00e74ec_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.3-hd24854e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pcre2-10.47-h30297fc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/perl-5.32.1-7_h4614cfb_perl5.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-11.22.0-h465deab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/prettier-3.9.3-he13c965_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/py-rattler-0.23.2-py310hbaa5893_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pydantic-core-2.46.4-py314h54f3292_0.conda
@@ -2514,31 +2518,6 @@ packages:
   run_exports: {}
   size: 672346
   timestamp: 1782129862714
-- conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-24.18.0-h3d65ac4_0.conda
-  sha256: d52dd84f72dc024e5792e1d177ba7ef852122808d4de75c4bfb00f72b502c861
-  md5: d7a1d28fe726da6b1200f66ae4e93390
-  depends:
-  - libgcc >=14
-  - __glibc >=2.28,<3.0.a0
-  - libstdcxx >=14
-  - libuv >=1.52.1,<2.0a0
-  - libzlib >=1.3.2,<2.0a0
-  - libnghttp2 >=1.68.1,<2.0a0
-  - libsqlite >=3.53.2,<4.0a0
-  - zstd >=1.5.7,<1.6.0a0
-  - libbrotlicommon >=1.2.0,<1.3.0a0
-  - libbrotlienc >=1.2.0,<1.3.0a0
-  - libbrotlidec >=1.2.0,<1.3.0a0
-  - icu >=78.3,<79.0a0
-  - c-ares >=1.34.6,<2.0a0
-  - openssl >=3.5.7,<4.0a0
-  license: MIT
-  license_family: MIT
-  run_exports:
-    weak:
-    - nodejs >=24.18.0,<25.0a0
-  size: 17970244
-  timestamp: 1782395968194
 - conda: https://conda.anaconda.org/conda-forge/linux-64/nodejs-26.5.1-hc039f44_0.conda
   sha256: 439ccaab08da773fb401a4e20ba34380618eec902d4794c419bfb66a9f86e1b7
   md5: bf08a42f0fc44064d0c66ca431022a88
@@ -2673,21 +2652,22 @@ packages:
   - __glibc >=2.17,<3.0.a0
   - nodejs >=26.6.0,<27.0a0
   license: MIT
+  license_family: MIT
   run_exports: {}
   size: 7635019
   timestamp: 1786863294594
-- conda: https://conda.anaconda.org/conda-forge/linux-64/prettier-3.9.3-h7e4c9f4_0.conda
-  sha256: ec8af57fabe73c269b762eb8d3f45505ef3528c22a4d4d3994a9b2d70c9c57d9
-  md5: 52df3de33d8bed542df618f403fa5b85
+- conda: https://conda.anaconda.org/conda-forge/linux-64/prettier-3.9.3-hdf27b9d_0.conda
+  sha256: f5c747c93a2e07b36826e47749c0ad10a2086eabdaa77f58c372da161fe88164
+  md5: 80aad096113bc9b62c9d6b454ed474ac
   depends:
   - nodejs
   - __glibc >=2.17,<3.0.a0
-  - nodejs >=24.18.0,<25.0a0
+  - nodejs >=26.4.0,<27.0a0
   license: MIT
   license_family: MIT
   run_exports: {}
-  size: 1370893
-  timestamp: 1782740641804
+  size: 1371081
+  timestamp: 1782740636862
 - conda: https://conda.anaconda.org/conda-forge/linux-64/py-rattler-0.23.2-py310h70157a2_1.conda
   noarch: python
   sha256: 9cad6385db44ffda7cf72ed808670b43a19a469fb851d98d09dbce5b5e164c3b
@@ -4039,6 +4019,7 @@ packages:
   - libstdcxx >=15
   - nodejs >=26.6.0,<27.0a0
   license: MIT
+  license_family: MIT
   run_exports: {}
   size: 7637685
   timestamp: 1786863305256
@@ -6526,6 +6507,7 @@ packages:
   - libcxx >=21
   - nodejs >=26.6.0,<27.0a0
   license: MIT
+  license_family: MIT
   run_exports: {}
   size: 7641425
   timestamp: 1786863380335

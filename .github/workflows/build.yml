@@ -31,11 +31,7 @@ jobs:
           sed -i -e "s/0.0.0/${STEPS_VERSION_OUTPUTS_VERSION}/g" pyproject.toml
         env:
           STEPS_VERSION_OUTPUTS_VERSION: ${{ steps.version.outputs.version }}
-      - name: Build frontend
-        run: |
-          pixi run -e frontend frontend-install
-          pixi run -e frontend frontend-package
-      - name: Build project
+      - name: Build package
         run: pixi run build-wheel
       - name: Check package
         run: pixi run check-wheel

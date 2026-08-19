@@ -69,7 +69,5 @@ jobs:
         uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
         with:
           environments: frontend
-      - name: Install frontend dependencies
-        run: pixi run -e frontend frontend-install
       - name: Build frontend
         run: pixi run -e frontend frontend-build
