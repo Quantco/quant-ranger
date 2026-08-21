@@ -11,7 +11,9 @@ from quant_ranger._impl.logger import Logger
 def export_frontend(output_directory: Path, logger: Logger) -> None:
     """Copy the packaged static frontend without replacing existing data."""
     assets = resources.files("quant_ranger").joinpath("_frontend")
-    if not assets.is_dir():
+    # A missing directory indicates a malformed distribution. Wheel contents are
+    # verified separately in tests/test_wheel.py.
+    if not assets.is_dir():  # pragma: no cover
         raise CliError("This quant-ranger installation has no frontend assets.")
 
     try:

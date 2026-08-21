@@ -45,7 +45,7 @@ from quant_ranger._impl.models import (
     UpdateResult,
 )
 from quant_ranger._impl.runtime import RunContext
-from quant_ranger._impl.testing import FakeGitHubClient
+from quant_ranger._impl.testing import FakeGitHubClient, RecordingLogger
 from quant_ranger._impl.updaters import AnyUpdater, ZizmorUpdater
 from quant_ranger._impl.updaters._copier._migration import CopierMigrationOptions
 from quant_ranger._impl.updaters._custom import CustomUpdaterOptions
@@ -180,7 +180,7 @@ def test_version_option_prints_program_version(app: typer.Typer) -> None:
     assert result.output.startswith("quant-ranger ")
 
 
-def test_frontend_export_copies_assets_and_preserves_data(
+def test_frontend_export_updates_assets_and_preserves_data(
     app: typer.Typer,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -189,6 +189,8 @@ def test_frontend_export_copies_assets_and_preserves_data(
     assets.mkdir()
     (assets / "index.html").write_text("frontend")
     output = tmp_path / "site"
+    output.mkdir()
+    (output / "index.html").write_text("stale frontend")
     updater_data = output / "data" / "updaters"
     updater_data.mkdir(parents=True)
     index = updater_data / "index.json"
@@ -203,6 +205,30 @@ def test_frontend_export_copies_assets_and_preserves_data(
     assert result.exit_code == 0
     assert (output / "index.html").read_text() == "frontend"
     assert index.read_text() == "existing"
+
+
+def test_frontend_export_rejects_output_directory_below_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    logger = RecordingLogger()
+    app = typer.Typer()
+    app.add_typer(cli_frontend_module.make_frontend_app(logger), name="frontend")
+    assets = tmp_path / "_frontend"
+    assets.mkdir()
+    monkeypatch.setattr(cli_frontend_module.resources, "files", lambda _: tmp_path)
+    parent_file = tmp_path / "file"
+    parent_file.write_text("not a directory")
+    output = parent_file / "site"
+
+    result = runner.invoke(
+        app,
+        ["frontend", "export", "--output-directory", str(output)],
+    )
+
+    assert result.exit_code == 2
+    assert len(logger.errors) == 1
+    assert logger.errors[0].startswith(f"Failed to export the frontend to {output}:")
 
 
 def test_update_command_passes_options_to_run_update(
