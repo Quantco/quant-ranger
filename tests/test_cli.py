@@ -619,6 +619,22 @@ def test_github_workflow_url_from_environment(
     )
 
 
+@pytest.mark.parametrize(
+    "missing_variable",
+    ["GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID"],
+)
+def test_github_workflow_url_requires_complete_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    missing_variable: str,
+) -> None:
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.example/")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/ranger")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.delenv(missing_variable)
+
+    assert _github_workflow_url() is None
+
+
 def test_aggregate_command_runs_log_failures_from_results_file(
     app: typer.Typer,
     tmp_path: Path,
