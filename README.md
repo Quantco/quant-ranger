@@ -1,7 +1,7 @@
 # quant-ranger
 
 [![CI](https://img.shields.io/github/actions/workflow/status/quantco/quant-ranger/ci.yml?style=flat-square&branch=main)](https://github.com/quantco/quant-ranger/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue?style=flat-square)](https://ranger.quantco.cloud/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue?style=flat-square)](https://ranger.quantco.tech/)
 [![conda-forge](https://img.shields.io/conda/vn/conda-forge/quant-ranger?logoColor=white&logo=conda-forge&style=flat-square)](https://prefix.dev/channels/conda-forge/packages/quant-ranger)
 [![pypi-version](https://img.shields.io/pypi/v/quant-ranger.svg?logo=pypi&logoColor=white&style=flat-square)](https://pypi.org/project/quant-ranger)
 [![python-version](https://img.shields.io/pypi/pyversions/quant-ranger?logoColor=white&logo=python&style=flat-square)](https://pypi.org/project/quant-ranger)
@@ -33,9 +33,9 @@ quant-ranger update --gh --repository octo-org/octo-repo pixi-update
 Add `--publish-changes` before the updater name to create or update a pull
 request.
 
-See the [documentation](https://ranger.quantco.cloud/) for updaters,
+See the [documentation](https://ranger.quantco.tech/) for updaters,
 authentication, automation, extension APIs, and the
-[CLI reference](https://ranger.quantco.cloud/).
+[CLI reference](https://ranger.quantco.tech/).
 
 ### Installing from PyPI
 
