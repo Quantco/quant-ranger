@@ -3,6 +3,7 @@
 quant-ranger was built to maintain the repositories of QuantCo's GitHub organization.
 This page describes that setup as a worked example for your own deployment.
 We use quant-ranger to keep repositories up-to-date with our [Copier](https://copier.readthedocs.io/) templates and run its [built-in upaters](built-in-updaters/index.md) for updates not handled by [Dependabot](https://github.com/dependabot).
+For a detailed walkthrough, watch quant-ranger author Yannik Tausch's PyCon talk, [“Kickstart Coding at Scale: How Project Template Automation Unlocks Developer Productivity”](https://www.youtube.com/watch?v=HATspzsbLwk).
 
 ## Copier templates
 
