@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 
@@ -212,6 +213,86 @@ def test_pixi_version_update_uses_pixi_version_option(
     assert task_run.github_client.pull_request_calls[0]["options"].body == (
         "Update to [pixi v0.71.0](https://github.com/prefix-dev/pixi/releases/tag/v0.71.0)"
     )
+
+
+def test_pixi_version_update_applies_no_cooldown_by_default(
+    tmp_path: Path,
+) -> None:
+    workflow = write_workflow(tmp_path)
+    now = datetime.now(UTC)
+
+    task_run = run_update_task(
+        tmp_path,
+        github_client=FakeGitHubClient(
+            releases=[("v0.69.0", now - timedelta(days=30))],
+        ),
+    )
+
+    assert task_run.outcome.result == Status.UPDATED
+    # The freshly published latest release wins; the cooldown-aware release list
+    # is not consulted.
+    assert "pixi-version: v0.70.0" in workflow.read_text()
+    assert task_run.github_client.latest_release_published_before_calls == [None]
+
+
+def test_pixi_version_update_uses_exclude_newer_days_option(
+    tmp_path: Path,
+) -> None:
+    workflow = write_workflow(tmp_path)
+    now = datetime.now(UTC)
+
+    task_run = run_update_task(
+        tmp_path,
+        options=PixiVersionOptions(
+            exclude_newer_days=7,
+            setup_pixi_marker="prefix-dev/setup-pixi",
+        ),
+        github_client=FakeGitHubClient(
+            releases=[
+                ("v0.72.0", now - timedelta(days=1)),
+                ("v0.71.0", now - timedelta(days=6, hours=23)),
+                ("v0.70.0", now - timedelta(days=8)),
+                ("v0.69.0", now - timedelta(days=30)),
+            ],
+        ),
+    )
+
+    assert task_run.outcome.result == Status.UPDATED
+    assert "pixi-version: v0.70.0" in workflow.read_text()
+    published_before = task_run.github_client.latest_release_published_before_calls[0]
+    assert published_before is not None
+    assert timedelta(days=7) - (now - published_before) < timedelta(minutes=1)
+
+
+def test_pixi_version_update_skips_cooldown_for_explicit_pixi_version(
+    tmp_path: Path,
+) -> None:
+    workflow = write_workflow(tmp_path)
+
+    task_run = run_update_task(
+        tmp_path,
+        options=PixiVersionOptions(
+            pixi_version="v0.71.0",
+            setup_pixi_marker="prefix-dev/setup-pixi",
+        ),
+        github_client=FakeGitHubClient(
+            releases=[("v0.70.0", datetime.now(UTC) - timedelta(days=30))],
+        ),
+    )
+
+    assert task_run.outcome.result == Status.UPDATED
+    assert "pixi-version: v0.71.0" in workflow.read_text()
+    assert task_run.github_client.latest_release_calls == []
+
+
+def test_pixi_version_options_reject_negative_exclude_newer_days() -> None:
+    with pytest.raises(ValidationError):
+        PixiVersionOptions.model_validate(
+            {
+                "exclude_newer_days": -1,
+                "setup_pixi_marker": "prefix-dev/setup-pixi",
+            }
+        )
 
 
 def test_pixi_version_update_uses_setup_pixi_marker_option(

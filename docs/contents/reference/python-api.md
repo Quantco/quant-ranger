@@ -166,7 +166,7 @@ Small PyGithub-backed client used by updater helpers.
 - **active_repositories** –
 - **get_github_repository** –
 - **get_repository_url** –
-- **get_latest_release** –
+- **get_latest_release** – Return the tag name of the latest release.
 - **get_repo_tags** –
 - **get_repo_tag_message** –
 - **find_files_by_name** –
@@ -288,8 +288,13 @@ get_repository_url(repository_ref: RepositoryRef) -> str
 #### get_latest_release
 
 ```python
-get_latest_release(owner: str, name: str) -> str
+get_latest_release(owner: str, name: str, *, published_before: datetime | None = None) -> str
 ```
+
+Return the tag name of the latest release.
+
+With `published_before`, the newest release published at or before that
+moment is returned instead, skipping drafts and prereleases.
 
 #### get_repo_tags
 
@@ -1660,7 +1665,7 @@ resolve(site_config: SiteConfig) -> OptionInfo | ArgumentInfo
 ### FakeGitHubClient
 
 ```python
-FakeGitHubClient(token: str = 'secret-token', logger: Logger = RecordingLogger(), installation_owner: str | None = None, api_url: str = 'https://api.github.com', github_server_host: str = 'github.com', repository_url: str | None = None, pr_opened: bool = True, publish_changes: bool = False, checkout: RepositoryCheckout | None = None, active_by_owner: dict[str, list[RepositoryRef]] = dict(), installed: list[RepositoryRef] = list(), missing_refs: set[str] = set(), error: GitHubError | None = None, files: dict[str, list[str]] = dict(), file_contents: dict[str, str] = dict(), latest_release: str = 'v0.70.0', repo_tags: dict[tuple[str, str], list[str]] = dict(), repo_tag_error: GitHubError | None = None, tag_messages: dict[tuple[str, str, str], str | None] = dict(), active_repository_calls: list[str] = list(), installed_repository_calls: int = 0, clone_calls: list[RepositoryRef] = list(), find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = list(), file_content_calls: list[tuple[RepositoryRef, str]] = list(), latest_release_calls: list[tuple[str, str]] = list(), repo_tag_calls: list[tuple[str, str]] = list(), pull_request_calls: list[dict[str, Any]] = list()) -> None
+FakeGitHubClient(token: str = 'secret-token', logger: Logger = RecordingLogger(), installation_owner: str | None = None, api_url: str = 'https://api.github.com', github_server_host: str = 'github.com', repository_url: str | None = None, pr_opened: bool = True, publish_changes: bool = False, checkout: RepositoryCheckout | None = None, active_by_owner: dict[str, list[RepositoryRef]] = dict(), installed: list[RepositoryRef] = list(), missing_refs: set[str] = set(), error: GitHubError | None = None, files: dict[str, list[str]] = dict(), file_contents: dict[str, str] = dict(), latest_release: str = 'v0.70.0', releases: list[tuple[str, datetime]] = list(), repo_tags: dict[tuple[str, str], list[str]] = dict(), repo_tag_error: GitHubError | None = None, tag_messages: dict[tuple[str, str, str], str | None] = dict(), active_repository_calls: list[str] = list(), installed_repository_calls: int = 0, clone_calls: list[RepositoryRef] = list(), find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = list(), file_content_calls: list[tuple[RepositoryRef, str]] = list(), latest_release_calls: list[tuple[str, str]] = list(), latest_release_published_before_calls: list[datetime | None] = list(), repo_tag_calls: list[tuple[str, str]] = list(), pull_request_calls: list[dict[str, Any]] = list()) -> None
 ```
 
 `GitHubClient` stand-in for tests that records calls per method.
@@ -1700,6 +1705,7 @@ methods a test exercises need to be configured.
 - **files** (<code>dict\[str, list\[str\]\]</code>) –
 - **file_contents** (<code>dict\[str, str\]</code>) –
 - **latest_release** (<code>str</code>) –
+- **releases** (<code>list\[tuple\[str, datetime\]\]</code>) –
 - **repo_tags** (<code>dict\[tuple\[str, str\], list\[str\]\]</code>) –
 - **repo_tag_error** (<code>GitHubError | None</code>) –
 - **tag_messages** (<code>dict\[tuple\[str, str, str\], str | None\]</code>) –
@@ -1709,6 +1715,7 @@ methods a test exercises need to be configured.
 - **find_files_calls** (<code>list\[tuple\[RepositoryRef, str | Pattern\[str\]\]\]</code>) –
 - **file_content_calls** (<code>list\[tuple\[RepositoryRef, str\]\]</code>) –
 - **latest_release_calls** (<code>list\[tuple\[str, str\]\]</code>) –
+- **latest_release_published_before_calls** (<code>list\[datetime | None\]</code>) –
 - **repo_tag_calls** (<code>list\[tuple\[str, str\]\]</code>) –
 - **pull_request_calls** (<code>list\[dict\[str, Any\]\]</code>) –
 
@@ -1808,6 +1815,12 @@ file_contents: dict[str, str] = field(default_factory=dict)
 latest_release: str = 'v0.70.0'
 ```
 
+#### releases
+
+```python
+releases: list[tuple[str, datetime]] = field(default_factory=list)
+```
+
 #### repo_tags
 
 ```python
@@ -1860,6 +1873,12 @@ file_content_calls: list[tuple[RepositoryRef, str]] = field(default_factory=list
 
 ```python
 latest_release_calls: list[tuple[str, str]] = field(default_factory=list)
+```
+
+#### latest_release_published_before_calls
+
+```python
+latest_release_published_before_calls: list[datetime | None] = field(default_factory=list)
 ```
 
 #### repo_tag_calls
@@ -1919,7 +1938,7 @@ get_file_content(repository_ref: RepositoryRef, path: str) -> str | None
 #### get_latest_release
 
 ```python
-get_latest_release(owner: str, name: str) -> str
+get_latest_release(owner: str, name: str, *, published_before: datetime | None = None) -> str
 ```
 
 #### get_repo_tags

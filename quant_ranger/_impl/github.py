@@ -4,6 +4,7 @@ import re
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import cast
 
@@ -11,6 +12,7 @@ import jwt
 from github import Auth, Github, GithubException, GithubIntegration
 from github.Commit import Commit
 from github.GithubException import UnknownObjectException
+from github.GitRelease import GitRelease
 from github.Installation import Installation
 from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
@@ -352,9 +354,29 @@ class GitHubClient:
     def get_repository_url(self, repository_ref: RepositoryRef) -> str:
         return self.get_github_repository(repository_ref).html_url
 
-    def get_latest_release(self, owner: str, name: str) -> str:
+    def get_latest_release(
+        self,
+        owner: str,
+        name: str,
+        *,
+        published_before: datetime | None = None,
+    ) -> str:
+        """Return the tag name of the latest release.
+
+        With `published_before`, the newest release published at or before that
+        moment is returned instead, skipping drafts and prereleases.
+        """
         repository_ref = RepositoryRef(owner=owner, name=name)
-        release = self.get_github_repository(repository_ref).get_latest_release()
+        github_repo = self.get_github_repository(repository_ref)
+        release = (
+            github_repo.get_latest_release()
+            if published_before is None
+            else self._latest_release_published_before(
+                github_repo,
+                repository_ref,
+                published_before,
+            )
+        )
 
         tag_name = release.tag_name
         if not tag_name:
@@ -362,6 +384,26 @@ class GitHubClient:
                 f"Latest release for {repository_ref.full_name} has no tag name."
             )
         return tag_name
+
+    def _latest_release_published_before(
+        self,
+        github_repo: GitHubRepository,
+        repository_ref: RepositoryRef,
+        published_before: datetime,
+    ) -> GitRelease:
+        # The releases endpoint lists newest first, so the first match is the
+        # latest release old enough to be considered.
+        for release in github_repo.get_releases():
+            if release.draft or release.prerelease:
+                continue
+            published_at = release.published_at or release.created_at
+            if published_at is not None and published_at <= published_before:
+                return release
+
+        raise GitHubError(
+            f"{repository_ref.full_name} has no release published at or before "
+            f"{published_before.isoformat()}."
+        )
 
     def get_repo_tags(self, owner: str, name: str) -> list[str]:
         repository_ref = RepositoryRef(owner=owner, name=name)

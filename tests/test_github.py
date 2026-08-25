@@ -3,6 +3,7 @@ import re
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import Barrier, Lock, get_ident
 from types import SimpleNamespace
@@ -483,6 +484,89 @@ def test_get_latest_release_requires_tag_name() -> None:
         match="Latest release for prefix-dev/pixi has no tag name.",
     ):
         client.get_latest_release("prefix-dev", "pixi")
+
+
+def test_get_latest_release_published_before_skips_recent_releases() -> None:
+    repository = FakeRepository(
+        name="pixi",
+        latest_release_tag="v0.72.0",
+        releases=[
+            FakeRelease(tag_name="v0.72.0", published_at=_at("2026-08-24")),
+            FakeRelease(tag_name="v0.71.0", published_at=_at("2026-08-20")),
+            FakeRelease(tag_name="v0.70.0", published_at=_at("2026-08-10")),
+        ],
+    )
+    client = make_client(FakeGithub(repository=repository))
+
+    version = client.get_latest_release(
+        "prefix-dev",
+        "pixi",
+        published_before=_at("2026-08-18"),
+    )
+
+    assert version == "v0.70.0"
+
+
+def test_get_latest_release_published_before_skips_drafts_and_prereleases() -> None:
+    repository = FakeRepository(
+        name="pixi",
+        releases=[
+            FakeRelease(tag_name="v0.72.0", published_at=_at("2026-08-10"), draft=True),
+            FakeRelease(
+                tag_name="v0.71.0", published_at=_at("2026-08-09"), prerelease=True
+            ),
+            FakeRelease(tag_name="v0.70.0", published_at=_at("2026-08-08")),
+        ],
+    )
+    client = make_client(FakeGithub(repository=repository))
+
+    version = client.get_latest_release(
+        "prefix-dev",
+        "pixi",
+        published_before=_at("2026-08-18"),
+    )
+
+    assert version == "v0.70.0"
+
+
+def test_get_latest_release_published_before_falls_back_to_created_at() -> None:
+    repository = FakeRepository(
+        name="pixi",
+        releases=[
+            FakeRelease(
+                tag_name="v0.70.0",
+                published_at=None,
+                created_at=_at("2026-08-10"),
+            ),
+        ],
+    )
+    client = make_client(FakeGithub(repository=repository))
+
+    version = client.get_latest_release(
+        "prefix-dev",
+        "pixi",
+        published_before=_at("2026-08-18"),
+    )
+
+    assert version == "v0.70.0"
+
+
+def test_get_latest_release_published_before_requires_an_eligible_release() -> None:
+    repository = FakeRepository(
+        name="pixi",
+        releases=[FakeRelease(tag_name="v0.72.0", published_at=_at("2026-08-24"))],
+    )
+    client = make_client(FakeGithub(repository=repository))
+
+    with pytest.raises(
+        GitHubError,
+        match="prefix-dev/pixi has no release published at or before",
+    ):
+        client.get_latest_release(
+            "prefix-dev",
+            "pixi",
+            published_before=_at("2026-08-18"),
+        )
 
 
 def test_get_repo_tags_returns_all_tag_names() -> None:
@@ -1301,6 +1385,19 @@ class FakeGitTreeEntry:
     type: str = "blob"
 
 
+def _at(date: str) -> datetime:
+    return datetime.fromisoformat(date).replace(tzinfo=UTC)
+
+
+@dataclass
+class FakeRelease:
+    tag_name: str
+    published_at: datetime | None = None
+    created_at: datetime | None = None
+    draft: bool = False
+    prerelease: bool = False
+
+
 @dataclass
 class FakeRepository:
     name: str
@@ -1313,6 +1410,7 @@ class FakeRepository:
     clone_url: str = "https://github.example/quantco/example.git"
     branches: list[str] = field(default_factory=lambda: ["main"])
     latest_release_tag: str = "v1.0.0"
+    releases: list[FakeRelease] = field(default_factory=list)
     tree: list[FakeGitTreeEntry] = field(default_factory=list)
     tree_error: GithubException | None = None
     file_contents: dict[str, str | list[str]] = field(default_factory=dict)
@@ -1367,6 +1465,9 @@ class FakeRepository:
 
     def get_latest_release(self) -> Any:
         return SimpleNamespace(tag_name=self.latest_release_tag)
+
+    def get_releases(self) -> list[FakeRelease]:
+        return self.releases
 
     def get_tags(self) -> list[Any]:
         self.get_tags_calls += 1
