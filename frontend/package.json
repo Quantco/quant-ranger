@@ -5,17 +5,42 @@
   "packageManager": "pnpm@11.22.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 3000",
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "pnpm run lint:biome && pnpm run lint:eslint",
+    "lint:check": "pnpm run lint:biome:check && pnpm run lint:eslint",
+    "lint:biome": "biome check --write .",
+    "lint:biome:check": "biome check .",
+    "lint:eslint": "eslint ."
   },
   "dependencies": {
+    "@base-ui/react": "1.7.0",
+    "@octokit/rest": "22.0.1",
+    "@tanstack/react-table": "9.1.2",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.31.0",
+    "lz-string": "1.5.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-router": "8.3.0",
+    "recharts": "3.8.0",
+    "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.10",
+    "@eslint/js": "10.0.1",
+    "@tailwindcss/vite": "4.3.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@vitejs/plugin-react": "6.0.5",
+    "eslint": "10.9.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.11.0",
+    "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.67.0",
     "vite": "8.2.1"
   }
 }

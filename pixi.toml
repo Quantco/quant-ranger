@@ -43,6 +43,12 @@ frontend-preview = "pnpm --dir frontend run dev"
 frontend-build = { cmd = "pnpm --dir frontend run build", depends-on = [
   "frontend-install",
 ] }
+frontend-biome = { cmd = "pnpm --dir frontend run lint:biome", depends-on = [
+  "frontend-install",
+] }
+frontend-eslint = { cmd = "pnpm --dir frontend run lint:eslint", depends-on = [
+  "frontend-install",
+] }
 
 [feature.test.dependencies]
 pytest = "*"

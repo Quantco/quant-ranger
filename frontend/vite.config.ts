@@ -1,14 +1,18 @@
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
 export default defineConfig(({ command }) => ({
-  base: "./",
+  base: './',
   build: {
     emptyOutDir: true,
-    outDir: "../quant_ranger/_frontend",
+    outDir: '../quant_ranger/_frontend'
   },
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    tsconfigPaths: true
+  },
   // Local JSON fixtures are useful during development but must never enter the
   // distributed Python package.
-  publicDir: command === "serve" ? "public" : false,
-}));
+  publicDir: command === 'serve' ? 'public' : false
+}))

@@ -1,4 +1,4 @@
-const SITE_TITLE = "Quant Ranger Dashboard";
+const SITE_TITLE = 'Quant Ranger Dashboard'
 
 export default function Site() {
   return (
@@ -15,5 +15,5 @@ export default function Site() {
         </header>
       </main>
     </>
-  );
+  )
 }

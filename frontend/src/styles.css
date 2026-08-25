@@ -1,11 +1,6 @@
 :root {
   color: #18181b;
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.5;
   --color-foreground: #18181b;
   --color-muted-foreground: #71717a;

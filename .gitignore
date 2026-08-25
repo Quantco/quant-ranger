@@ -167,6 +167,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
+!frontend/src/lib/**
 lib64/
 parts/
 sdist/
@@ -400,6 +402,7 @@ frontend/public/data/
 node_modules/
 quant_ranger/_frontend/
 _site/
+/
 # Legacy local sample data; frontend exports and workflows use _site.
 _pages/
 
