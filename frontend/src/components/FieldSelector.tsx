@@ -1,81 +1,68 @@
-import { useEffect, useRef } from "react";
-
-import { DisclosureIcon } from "./DisclosureIcon";
+import { ChevronIcon } from './ChevronIcon'
+import { Checkbox } from './ui/checkbox'
 
 type FieldSelectorProps = {
-  codeLabels?: boolean;
-  emptyMessage?: string;
-  fields: string[];
-  getFieldLabel?: (field: string) => string;
-  label: string;
-  onChange: (fields: Set<string>) => void;
-  selected: Set<string>;
-  summary?: string;
-};
+  codeLabels?: boolean
+  emptyMessage?: string
+  fields: string[]
+  getFieldLabel?: (field: string) => string
+  label: string
+  onChange: (fields: Set<string>) => void
+  selected: Set<string>
+}
 
-export function FieldSelector({ codeLabels = true, emptyMessage = "No fields available.", fields, getFieldLabel = (field) => field, label, onChange, selected, summary }: FieldSelectorProps) {
-  const allSelected = fields.length > 0 && fields.every((field) => selected.has(field));
-  const selectedCount = fields.filter((field) => selected.has(field)).length;
-  const summaryCheckbox = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (summaryCheckbox.current != null) summaryCheckbox.current.indeterminate = selectedCount > 0 && !allSelected;
-  }, [allSelected, selectedCount]);
-
-  const selectAll = () => onChange(new Set(fields));
-  const clearAll = () => onChange(new Set());
+export function FieldSelector({
+  codeLabels = true,
+  emptyMessage = 'No fields available.',
+  fields,
+  getFieldLabel = (field) => field,
+  label,
+  onChange,
+  selected
+}: FieldSelectorProps) {
+  const allSelected = fields.length > 0 && fields.every((field) => selected.has(field))
+  const selectedCount = fields.filter((field) => selected.has(field)).length
 
   return (
-    <details className="dashboard-sidebar-section column-selector">
-      <summary>
-        <DisclosureIcon />
-        <span>
-          {label} ({summary ?? `${selectedCount} of ${fields.length}`})
+    <details className="group m-0 grid gap-2 border-t border-border pt-3">
+      <summary className="grid min-h-6 grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-center gap-[0.4rem] list-none text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+        <ChevronIcon className="group-hover:text-foreground group-hover:opacity-100 group-open:rotate-90" />
+        <span className="min-w-0 leading-tight">
+          {label} ({selectedCount} of {fields.length})
         </span>
-        <input
-          aria-label={`${allSelected ? "Clear" : "Select"} all ${label.toLocaleLowerCase()}`}
+        <Checkbox
+          aria-label={`Show all ${label.toLocaleLowerCase()}`}
           checked={allSelected}
-          className="selector-summary-checkbox"
+          className="justify-self-center"
           disabled={fields.length === 0}
-          onChange={allSelected ? clearAll : selectAll}
+          onCheckedChange={(checked) => onChange(new Set(checked ? fields : []))}
           onClick={(event) => event.stopPropagation()}
-          ref={summaryCheckbox}
-          title={allSelected ? `Clear all ${label.toLocaleLowerCase()}` : `Select all ${label.toLocaleLowerCase()}`}
-          type="checkbox"
+          title={`Show all ${label.toLocaleLowerCase()}`}
         />
       </summary>
-      <div className="column-selector-actions">
-        <button className="text-button" disabled={allSelected || fields.length === 0} onClick={selectAll} type="button">
-          Select all
-        </button>
-        <button className="text-button" disabled={selectedCount === 0} onClick={clearAll} type="button">
-          Clear all
-        </button>
-      </div>
       {fields.length === 0 ? (
-        <p className="selector-empty">{emptyMessage}</p>
+        <p className="mt-2 mb-0 text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="column-selector-options">
+        <div className="mt-2 grid gap-[0.3rem]">
           {fields.map((field) => {
-            const fieldLabel = getFieldLabel(field);
+            const fieldLabel = getFieldLabel(field)
             return (
-              <label key={field}>
-                <input
+              <label className="flex min-w-0 items-center gap-[0.4rem] text-sm [overflow-wrap:anywhere]" key={field}>
+                <Checkbox
                   checked={selected.has(field)}
-                  onChange={(event) => {
-                    const next = new Set(selected);
-                    if (event.target.checked) next.add(field);
-                    else next.delete(field);
-                    onChange(next);
+                  onCheckedChange={(checked) => {
+                    const next = new Set(selected)
+                    if (checked) next.add(field)
+                    else next.delete(field)
+                    onChange(next)
                   }}
-                  type="checkbox"
                 />
                 {codeLabels ? <code>{fieldLabel}</code> : fieldLabel}
               </label>
-            );
+            )
           })}
         </div>
       )}
     </details>
-  );
+  )
 }

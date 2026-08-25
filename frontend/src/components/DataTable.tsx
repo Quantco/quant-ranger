@@ -1,96 +1,164 @@
-import { useEffect, useRef, useState, type Key, type ReactNode } from "react";
+import {
+  createSortedRowModel,
+  rowSelectionFeature,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+  type RowData,
+  type SortingState
+} from '@tanstack/react-table'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
-import { displayValue, type DisplayValue } from "../value";
+import { cn } from '@/lib/utils'
 
-export interface DataTableColumn<Row> {
-  align?: "left" | "right";
-  id: string;
-  label: ReactNode;
-  maxWidth?: number | string;
-  render?: (value: DisplayValue, row: Row) => ReactNode;
-  sortable?: boolean;
-  tooltip?: (value: DisplayValue, row: Row) => string;
-  title?: string;
-  truncate?: boolean;
-  value: (row: Row) => DisplayValue;
+import { displayValue, type DisplayValue } from '../lib/value'
+import { Button } from './ui/button'
+import { Checkbox } from './ui/checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+
+export interface DataTableColumn<Row extends RowData> {
+  align?: 'left' | 'right'
+  cellClassName?: (value: DisplayValue, row: Row) => string | undefined
+  id: string
+  label: ReactNode
+  maxWidth?: CSSProperties['maxWidth']
+  render?: (value: DisplayValue, row: Row) => ReactNode
+  sortable?: boolean
+  tooltip?: (value: DisplayValue, row: Row) => string
+  title?: string
+  truncate?: boolean
+  value: (row: Row) => DisplayValue
 }
 
-interface DataTableProps<Row> {
-  className?: string;
-  columns: DataTableColumn<Row>[];
-  emptyMessage: string;
-  getRowKey: (row: Row, index: number) => Key;
-  label: string;
-  onSelectionChange?: (rows: Row[]) => void;
-  rows: Row[];
+interface DataTableProps<Row extends RowData> {
+  className?: string
+  columns: DataTableColumn<Row>[]
+  emptyMessage: string
+  getRowKey: (row: Row, index: number) => string
+  label: string
+  onSelectionChange?: (rows: Row[]) => void
+  onSortChange?: (sort: DataTableSort) => void
+  rows: Row[]
+  sort?: DataTableSort | null
 }
 
-export type DataTableSort = { direction: "ascending" | "descending"; id: string };
+export type DataTableSort = { direction: 'ascending' | 'descending'; id: string }
 
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+const dataTableFeatures = tableFeatures({
+  rowSelectionFeature,
+  rowSortingFeature,
+  sortFns: {
+    display: (left, right, columnId) => {
+      const leftValue = left.getValue<DisplayValue>(columnId)
+      const rightValue = right.getValue<DisplayValue>(columnId)
+      if (Object.is(leftValue, rightValue)) return 0
+      if (leftValue instanceof Date && rightValue instanceof Date) return leftValue.valueOf() - rightValue.valueOf()
+      if (typeof leftValue === 'number' && typeof rightValue === 'number') return leftValue - rightValue
+      if (typeof leftValue === 'boolean' && typeof rightValue === 'boolean')
+        return Number(leftValue) - Number(rightValue)
+      return collator.compare(String(leftValue), String(rightValue))
+    }
+  },
+  sortedRowModel: createSortedRowModel()
+})
 
-function compareValues(left: DisplayValue, right: DisplayValue): number {
-  if (Object.is(left, right)) return 0;
-  if (left == null || left === "") return 1;
-  if (right == null || right === "") return -1;
-  if (left instanceof Date && right instanceof Date) return left.getTime() - right.getTime();
-  if (typeof left === "number" && typeof right === "number") return left - right;
-  if (typeof left === "boolean" && typeof right === "boolean") return Number(left) - Number(right);
-  return collator.compare(String(left), String(right));
-}
+type OverflowValueProps = { children: ReactNode; maxWidth?: CSSProperties['maxWidth']; text: string }
 
-function SelectAll({ checked, indeterminate, onChange }: { checked: boolean; indeterminate: boolean; onChange: (checked: boolean) => void }) {
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (input.current) input.current.indeterminate = indeterminate;
-  }, [indeterminate]);
-  return <input aria-label="Select all rows" checked={checked} onChange={(event) => onChange(event.target.checked)} ref={input} type="checkbox" />;
-}
-
-function positionTooltip(trigger: HTMLSpanElement) {
-  const tooltip = trigger.querySelector<HTMLElement>(".data-table-tooltip");
-  if (!tooltip) return;
-  const rect = trigger.getBoundingClientRect();
-  const below = rect.bottom + 4;
-  tooltip.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - tooltip.offsetWidth - 8))}px`;
-  tooltip.style.top = `${below + tooltip.offsetHeight <= innerHeight - 8 ? below : Math.max(8, rect.top - tooltip.offsetHeight - 4)}px`;
-}
-
-function TableValue({ children, maxWidth, text }: { children: ReactNode; maxWidth?: number | string; text: string }) {
-  const trigger = useRef<HTMLSpanElement>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  useEffect(() => {
-    if (showTooltip && trigger.current) positionTooltip(trigger.current);
-  }, [showTooltip]);
-
-  const checkOverflow = () => {
-    const value = trigger.current?.querySelector<HTMLElement>(".data-table-value");
-    setShowTooltip(value != null && value.scrollWidth > value.clientWidth);
-  };
+function OverflowValue({ children, maxWidth, text }: OverflowValueProps) {
+  const value = useRef<HTMLSpanElement>(null)
+  const [open, setOpen] = useState(false)
 
   return (
-    <span
-      className="data-table-truncated"
-      onBlur={() => setShowTooltip(false)}
-      onFocus={checkOverflow}
-      onMouseEnter={checkOverflow}
-      onMouseLeave={() => setShowTooltip(false)}
-      ref={trigger}
-      style={{ maxWidth }}
+    <Tooltip
+      onOpenChange={(nextOpen) => {
+        const element = value.current
+        setOpen(nextOpen && element != null && element.scrollWidth > element.clientWidth)
+      }}
+      open={open}
     >
-      <span className="data-table-value">{children}</span>
-      {showTooltip && (
-        <span aria-hidden="true" className="data-table-tooltip">
-          {text}
+      <TooltipTrigger className="block max-w-64" render={<span style={{ maxWidth }} />}>
+        <span className="block overflow-hidden text-ellipsis whitespace-nowrap" ref={value}>
+          {children}
         </span>
-      )}
-    </span>
-  );
+      </TooltipTrigger>
+      <TooltipContent align="start" side="bottom">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
-export function DataTable<Row>({
-  className = "",
+type ColumnHeaderProps<Row extends RowData> = {
+  column: DataTableColumn<Row>
+  direction?: DataTableSort['direction']
+  onSort: (sort: DataTableSort) => void
+  sticky: boolean
+}
+
+function ColumnHeader<Row extends RowData>({ column, direction, onSort, sticky }: ColumnHeaderProps<Row>) {
+  return (
+    <TableHead
+      aria-sort={direction}
+      className={cn(
+        column.align === 'right' && 'text-right',
+        sticky && 'left-10 z-[3] bg-muted shadow-[1px_0_var(--color-border)]'
+      )}
+      scope="col"
+      title={column.title}
+    >
+      {column.sortable === false ? (
+        column.label
+      ) : (
+        <Button
+          className={cn(
+            'w-full gap-[0.45rem] rounded-none p-0 text-left font-semibold whitespace-nowrap hover:bg-transparent',
+            column.align === 'right' && 'justify-end text-right'
+          )}
+          onClick={() => onSort({ direction: direction === 'ascending' ? 'descending' : 'ascending', id: column.id })}
+          type="button"
+          variant="ghost"
+        >
+          <span>{column.label}</span>
+          <span aria-hidden="true" className="w-[1em] text-center text-muted-foreground">
+            {direction === 'ascending' ? '↑' : direction === 'descending' ? '↓' : '↕'}
+          </span>
+        </Button>
+      )}
+    </TableHead>
+  )
+}
+
+type DataCellProps<Row extends RowData> = { column: DataTableColumn<Row>; row: Row; sticky: boolean }
+
+function DataCell<Row extends RowData>({ column, row, sticky }: DataCellProps<Row>) {
+  const value = column.value(row)
+  const content = column.render?.(value, row) ?? displayValue(value)
+  const tooltip = column.tooltip?.(value, row) ?? displayValue(value)
+
+  return (
+    <TableCell
+      className={cn(
+        column.align === 'right' && 'text-right',
+        sticky && 'sticky left-10 z-[1] bg-white shadow-[1px_0_var(--color-border)]',
+        column.cellClassName?.(value, row)
+      )}
+    >
+      {(column.truncate || column.maxWidth != null) && tooltip !== '-' ? (
+        <OverflowValue maxWidth={column.maxWidth} text={tooltip}>
+          {content}
+        </OverflowValue>
+      ) : (
+        content
+      )}
+    </TableCell>
+  )
+}
+
+export function DataTable<Row extends RowData>({
+  className,
   columns,
   emptyMessage,
   getRowKey,
@@ -98,115 +166,109 @@ export function DataTable<Row>({
   onSelectionChange,
   onSortChange,
   rows,
-  sort,
-}: DataTableProps<Row> & { onSortChange?: (sort: DataTableSort) => void; sort?: DataTableSort | null }) {
-  const entries = rows.map((row, index) => ({ index, key: getRowKey(row, index), row }));
-  const selectionSignature = entries.map(({ key }) => String(key)).join("\0");
-  const [selected, setSelected] = useState<Set<Key>>(() => new Set(entries.map(({ key }) => key)));
-  const [lastSelected, setLastSelected] = useState<Key | null>(null);
-  const [uncontrolledSort, setUncontrolledSort] = useState<DataTableSort | null>(null);
-  const activeSort = sort === undefined ? uncontrolledSort : sort;
+  sort
+}: DataTableProps<Row>) {
+  const selectable = onSelectionChange != null
+  const [uncontrolledSort, setUncontrolledSort] = useState<DataTableSort | null>(null)
+  const activeSort = sort === undefined ? uncontrolledSort : sort
+  const sorting: SortingState =
+    activeSort == null ? [] : [{ desc: activeSort.direction === 'descending', id: activeSort.id }]
+  const tableColumns = useMemo<ColumnDef<typeof dataTableFeatures, Row>[]>(
+    () =>
+      columns.map((column) => ({
+        accessorFn: (row) => {
+          const value = column.value(row)
+          return value == null || value === '' || (value instanceof Date && Number.isNaN(value.valueOf()))
+            ? undefined
+            : value
+        },
+        enableSorting: column.sortable !== false,
+        id: column.id,
+        sortFn: 'display',
+        sortUndefined: 'last'
+      })),
+    [columns]
+  )
+  const table = useTable({
+    columns: tableColumns,
+    data: rows,
+    enableMultiSort: false,
+    enableRowSelection: selectable,
+    features: dataTableFeatures,
+    getRowId: getRowKey,
+    initialState: {
+      rowSelection: selectable ? Object.fromEntries(rows.map((row, index) => [getRowKey(row, index), true])) : {}
+    },
+    state: { sorting }
+  })
+  const { getRowModel, setRowSelection } = table
+  const sortedRows = getRowModel().rows
 
   useEffect(() => {
-    if (!onSelectionChange) return;
-    setSelected(new Set(entries.map(({ key }) => key)));
-    setLastSelected(null);
-    onSelectionChange([...rows]);
-  }, [onSelectionChange, rows, selectionSignature]);
+    if (!onSelectionChange) return
+    setRowSelection(Object.fromEntries(getRowModel().rows.map(({ id }) => [id, true])))
+    onSelectionChange([...rows])
+  }, [getRowModel, onSelectionChange, rows, setRowSelection])
 
-  const sortColumn = columns.find(({ id }) => id === activeSort?.id);
-  const direction = activeSort?.direction === "descending" ? -1 : 1;
-  const sorted = sortColumn == null ? entries : [...entries].sort((left, right) => direction * compareValues(sortColumn.value(left.row), sortColumn.value(right.row)) || left.index - right.index);
+  if (rows.length === 0) return <p>{emptyMessage}</p>
 
-  if (rows.length === 0) return <p>{emptyMessage}</p>;
-
-  const updateSelection = (next: Set<Key>) => {
-    setSelected(next);
-    onSelectionChange?.(sorted.filter(({ key }) => next.has(key)).map(({ row }) => row));
-  };
   const updateSort = (next: DataTableSort) => {
-    if (sort === undefined) setUncontrolledSort(next);
-    onSortChange?.(next);
-  };
-  const selectRow = (key: Key, checked: boolean, range: boolean) => {
-    const next = new Set(selected);
-    const currentIndex = sorted.findIndex((entry) => entry.key === key);
-    const currentEntry = sorted[currentIndex];
-    if (currentEntry == null) return;
-    const lastIndex = sorted.findIndex((entry) => entry.key === lastSelected);
-    const rangeEntries = range && lastIndex >= 0 ? sorted.slice(Math.min(currentIndex, lastIndex), Math.max(currentIndex, lastIndex) + 1) : [currentEntry];
-    for (const entry of rangeEntries) {
-      if (checked) next.add(entry.key);
-      else next.delete(entry.key);
-    }
-    setLastSelected(key);
-    updateSelection(next);
-  };
-  const allSelected = entries.length > 0 && entries.every(({ key }) => selected.has(key));
-  const someSelected = entries.some(({ key }) => selected.has(key));
+    if (sort === undefined) setUncontrolledSort(next)
+    onSortChange?.(next)
+  }
+  const notifySelectionChange = () =>
+    onSelectionChange?.(sortedRows.filter((row) => row.getIsSelected()).map(({ original }) => original))
+  const allSelected = table.getIsAllRowsSelected()
 
   return (
-    <div className={`data-table-scroll ${className}`.trim()}>
-      <table aria-label={label} className="data-table">
-        <thead>
-          <tr>
-            {onSelectionChange && (
-              <th className="data-table-selection" scope="col">
-                <SelectAll checked={allSelected} indeterminate={!allSelected && someSelected} onChange={(checked) => updateSelection(new Set(checked ? entries.map(({ key }) => key) : []))} />
-              </th>
-            )}
-            {columns.map((column) => {
-              const direction = activeSort?.id === column.id ? activeSort.direction : undefined;
-              return (
-                <th aria-sort={direction} className={column.align === "right" ? "data-table-cell-right" : undefined} key={column.id} scope="col" title={column.title}>
-                  {column.sortable === false ? (
-                    column.label
-                  ) : (
-                    <button className="data-table-sort" onClick={() => updateSort({ direction: direction === "ascending" ? "descending" : "ascending", id: column.id })} type="button">
-                      <span>{column.label}</span>
-                      <span aria-hidden="true" className="data-table-sort-indicator">
-                        {direction === "ascending" ? "↑" : direction === "descending" ? "↓" : "↕"}
-                      </span>
-                    </button>
-                  )}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map(({ key, row }) => (
-            <tr key={key}>
-              {onSelectionChange && (
-                <td className="data-table-selection">
-                  <input
-                    aria-label={`Select ${String(key)}`}
-                    checked={selected.has(key)}
-                    onChange={(event) => selectRow(key, event.target.checked, event.nativeEvent instanceof MouseEvent && event.nativeEvent.shiftKey)}
-                    type="checkbox"
-                  />
-                </td>
-              )}
-              {columns.map((column) => {
-                const value = column.value(row);
-                const content = column.render?.(value, row) ?? displayValue(value);
-                const tooltip = column.tooltip?.(value, row) ?? displayValue(value);
-                return (
-                  <td className={column.align === "right" ? "data-table-cell-right" : undefined} key={column.id}>
-                    {(column.truncate || column.maxWidth) && tooltip !== "-" ? (
-                      <TableValue maxWidth={column.maxWidth} text={tooltip}>
-                        {content}
-                      </TableValue>
-                    ) : (
-                      content
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
+    <Table aria-label={label} containerClassName={className}>
+      <TableHeader>
+        <TableRow className="hover:outline-0">
+          {onSelectionChange && (
+            <TableHead className="left-0 z-[4] w-10 min-w-10 text-center" scope="col">
+              <Checkbox
+                aria-label="Select all rows"
+                checked={allSelected}
+                indeterminate={!allSelected && table.getIsSomeRowsSelected()}
+                onCheckedChange={(checked) => {
+                  table.toggleAllRowsSelected(checked, { deselectAll: true })
+                  onSelectionChange(checked ? sortedRows.map(({ original }) => original) : [])
+                }}
+              />
+            </TableHead>
+          )}
+          {columns.map((column, columnIndex) => (
+            <ColumnHeader
+              column={column}
+              direction={activeSort?.id === column.id ? activeSort.direction : undefined}
+              key={column.id}
+              onSort={updateSort}
+              sticky={selectable && columnIndex === 0}
+            />
           ))}
-        </tbody>
-      </table>
-    </div>
-  );
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {sortedRows.map((row) => (
+          <TableRow key={row.id}>
+            {onSelectionChange && (
+              <TableCell className="sticky left-0 z-[2] w-10 min-w-10 bg-white text-center">
+                <Checkbox
+                  aria-label={`Select ${row.id}`}
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(checked, { event }) => {
+                    row.getToggleSelectedHandler()({ nativeEvent: event, target: { checked } })
+                    notifySelectionChange()
+                  }}
+                />
+              </TableCell>
+            )}
+            {columns.map((column, columnIndex) => (
+              <DataCell column={column} key={column.id} row={row.original} sticky={selectable && columnIndex === 0} />
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
 }

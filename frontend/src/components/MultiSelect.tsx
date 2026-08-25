@@ -1,162 +1,190 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from 'react'
 
-import { useAutocomplete } from "./useAutocomplete";
+import { filterOptions } from '../lib/filter-options'
+import { Button } from './ui/button'
+import {
+  Combobox,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue
+} from './ui/combobox'
 
 export type AutocompleteOption = {
-  detail?: string;
-  label: string;
-  value: string;
-};
+  detail?: string
+  label: string
+  value: string
+}
 
 type MultiSelectProps = {
-  codeLabels?: boolean;
-  id: string;
-  label: ReactNode;
-  labelAction?: ReactNode;
-  onChange: (selected: Set<string>) => void;
-  options: AutocompleteOption[];
-  placeholder: string;
-  selected: Set<string>;
-};
+  codeLabels?: boolean
+  id: string
+  label: ReactNode
+  labelAction?: ReactNode
+  onChange: (selected: Set<string>) => void
+  options: AutocompleteOption[]
+  placeholder: string
+  selected: Set<string>
+}
 
-export function MultiSelect({ codeLabels = false, id, label, labelAction, onChange, options, placeholder, selected }: MultiSelectProps) {
-  const [query, setQuery] = useState("");
-  const input = useRef<HTMLInputElement>(null);
-  const selectedOptions = options.filter(({ value }) => selected.has(value));
-  const { accept, activeIndex, activeOptionRef, close, onKeyDown, open, root, setActiveIndex, setOpen, visibleOptions } = useAutocomplete({
-    closeOnAccept: false,
-    onAccept: ({ value }) => {
-      toggleOption(value);
-      setQuery("");
-    },
-    onClose: () => setQuery(""),
-    options,
-    query,
-  });
-  const allVisibleSelected = visibleOptions.length > 0 && visibleOptions.every(({ value }) => selected.has(value));
+export function MultiSelect({
+  codeLabels = false,
+  id,
+  label,
+  labelAction,
+  onChange,
+  options,
+  placeholder,
+  selected
+}: MultiSelectProps) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const anchor = useRef<HTMLDivElement>(null)
+  const input = useRef<HTMLInputElement>(null)
+  const selectedOptions = options.filter(({ value }) => selected.has(value))
+  const visibleOptions = filterOptions(options, query)
+  const allVisibleSelected = visibleOptions.length > 0 && visibleOptions.every(({ value }) => selected.has(value))
 
   const toggleOption = (value: string) => {
-    const next = new Set(selected);
-    if (next.has(value)) next.delete(value);
-    else next.add(value);
-    onChange(next);
-  };
+    const next = new Set(selected)
+    if (next.has(value)) next.delete(value)
+    else next.add(value)
+    onChange(next)
+  }
 
   const toggleVisibleOptions = () => {
-    const next = new Set(selected);
+    const next = new Set(selected)
     for (const { value } of visibleOptions) {
-      if (allVisibleSelected) next.delete(value);
-      else next.add(value);
+      if (allVisibleSelected) next.delete(value)
+      else next.add(value)
     }
-    onChange(next);
-  };
+    onChange(next)
+  }
 
   return (
-    <div className="multi-select" ref={root}>
-      <div className="filter-control-heading">
-        <span className="multi-select-label" id={`${id}-label`}>
+    <div className="grid min-w-0 gap-1">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <span className="min-w-0 text-sm leading-tight font-semibold [overflow-wrap:anywhere]" id={`${id}-label`}>
           {label}
         </span>
         {labelAction}
       </div>
-      <div className="multi-select-control">
-        <div className="multi-select-values" onClick={() => input.current?.focus()}>
-          {selectedOptions.map(({ label: optionLabel, value }) => (
-            <button
-              aria-label={`Remove ${optionLabel}`}
-              className="multi-select-chip"
-              key={value}
-              onClick={(event) => {
-                event.stopPropagation();
-                toggleOption(value);
-                input.current?.focus();
-              }}
-              type="button"
-            >
-              {codeLabels ? <code>{optionLabel}</code> : optionLabel}
-              <span aria-hidden="true">×</span>
-            </button>
-          ))}
-          <input
-            aria-activedescendant={!open || activeIndex < 0 ? undefined : `${id}-option-${activeIndex}`}
-            aria-autocomplete="list"
-            aria-controls={open ? `${id}-options` : undefined}
-            aria-expanded={open}
-            aria-haspopup="listbox"
-            aria-labelledby={`${id}-label`}
-            autoComplete="off"
-            className="multi-select-search"
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={(event) => {
-              if (!onKeyDown(event) && event.key === "Backspace" && query === "" && selectedOptions.length > 0) {
-                const previous = selectedOptions.at(-1);
-                if (previous) toggleOption(previous.value);
-              }
-            }}
-            placeholder={selectedOptions.length === 0 ? placeholder : "Search…"}
-            ref={input}
-            role="combobox"
-            type="search"
-            value={query}
-          />
-        </div>
-        <button
-          aria-label={`Clear ${typeof label === "string" ? label.toLocaleLowerCase() : "selected values"}`}
-          className="multi-select-clear"
-          disabled={selected.size === 0 && query === ""}
-          onClick={() => {
-            onChange(new Set());
-            close();
-          }}
-          title="Clear selection"
-          type="button"
+      <Combobox
+        filteredItems={visibleOptions}
+        inputValue={query}
+        isItemEqualToValue={(option, value) => option.value === value.value}
+        itemToStringLabel={(option) => option.label}
+        itemToStringValue={(option) => option.value}
+        items={options}
+        multiple
+        onInputValueChange={setQuery}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen)
+          if (!nextOpen) setQuery('')
+        }}
+        onValueChange={(nextSelected, details) => {
+          if (details.reason === 'item-press') details.cancel()
+          onChange(new Set(nextSelected.map(({ value }) => value)))
+          setQuery('')
+          setOpen(true)
+          requestAnimationFrame(() => input.current?.focus())
+        }}
+        open={open}
+        value={selectedOptions}
+      >
+        <div
+          className="flex min-h-[2.35rem] rounded-small border border-solid border-border bg-white focus-within:outline-2 focus-within:outline-ring focus-within:outline-offset-1"
+          ref={anchor}
         >
-          <span aria-hidden="true">×</span>
-        </button>
-      </div>
-      {open && (
-        <div className="multi-select-menu">
-          <div className="multi-select-menu-actions">
-            <button className="text-button" disabled={visibleOptions.length === 0} onClick={toggleVisibleOptions} type="button">
-              {allVisibleSelected ? "Clear shown" : "Select shown"}
-            </button>
-            {selected.size > 0 && (
-              <button className="text-button" onClick={() => onChange(new Set())} type="button">
-                Clear all
-              </button>
-            )}
-          </div>
-          <div aria-labelledby={`${id}-label`} aria-multiselectable="true" className="multi-select-options" id={`${id}-options`} role="listbox">
-            {visibleOptions.length === 0 ? (
-              <span className="multi-select-empty">No matching options</span>
-            ) : (
-              visibleOptions.map((option, index) => (
-                <div
-                  aria-selected={selected.has(option.value)}
-                  className={activeIndex === index ? "is-active" : undefined}
-                  id={`${id}-option-${index}`}
-                  key={option.value}
-                  onClick={() => accept(option)}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  ref={activeIndex === index ? activeOptionRef : undefined}
-                  role="option"
-                >
-                  <span aria-hidden="true" className="multi-select-option-check">
-                    {selected.has(option.value) ? "✓" : ""}
-                  </span>
-                  <span>{codeLabels ? <code>{option.label}</code> : option.label}</span>
-                  {option.detail != null && <small>{option.detail}</small>}
-                </div>
-              ))
-            )}
-          </div>
+          <ComboboxChips onClick={() => input.current?.focus()}>
+            <ComboboxValue>
+              {(values: AutocompleteOption[]) => (
+                <>
+                  {values.map(({ label: optionLabel, value }) => (
+                    <Button
+                      aria-label={`Remove ${optionLabel}`}
+                      className="max-w-full gap-1 rounded-[0.3rem] border-primary-light bg-primary-subtle px-[0.4rem] py-[0.18rem] text-xs leading-[1.3] font-normal hover:border-primary hover:bg-primary-subtle"
+                      key={value}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        toggleOption(value)
+                        input.current?.focus()
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {codeLabels ? (
+                        <code className="min-w-0 overflow-hidden text-ellipsis">{optionLabel}</code>
+                      ) : (
+                        optionLabel
+                      )}
+                      <span aria-hidden="true">×</span>
+                    </Button>
+                  ))}
+                  <ComboboxChipsInput
+                    aria-labelledby={`${id}-label`}
+                    onFocus={() => setOpen(true)}
+                    placeholder={selectedOptions.length === 0 ? placeholder : 'Search…'}
+                    ref={input}
+                  />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+          <Button
+            aria-label={`Clear ${typeof label === 'string' ? label.toLocaleLowerCase() : 'selected values'}`}
+            className="w-[2.35rem] flex-none rounded-l-none border-0 border-l border-solid border-l-border text-base disabled:opacity-35"
+            disabled={selected.size === 0 && query === ''}
+            onClick={() => {
+              onChange(new Set())
+              setQuery('')
+              setOpen(false)
+            }}
+            size="icon"
+            title="Clear selection"
+            type="button"
+            variant="ghost"
+          >
+            <span aria-hidden="true">×</span>
+          </Button>
         </div>
-      )}
+        <ComboboxContent anchor={anchor} aria-labelledby={`${id}-label`}>
+          <div className="flex gap-3" onMouseDown={(event) => event.preventDefault()}>
+            <Button
+              className="text-xs"
+              disabled={visibleOptions.length === 0}
+              onClick={toggleVisibleOptions}
+              type="button"
+              variant="link"
+            >
+              {allVisibleSelected ? 'Clear shown' : 'Select shown'}
+            </Button>
+            {selected.size > 0 && (
+              <Button className="text-xs" onClick={() => onChange(new Set())} type="button" variant="link">
+                Clear all
+              </Button>
+            )}
+          </div>
+          {visibleOptions.length === 0 ? (
+            <ComboboxEmpty>No matching options</ComboboxEmpty>
+          ) : (
+            <ComboboxList>
+              {visibleOptions.map((option) => (
+                <ComboboxItem key={option.value} value={option}>
+                  <span className="min-w-0 [overflow-wrap:anywhere]">
+                    {codeLabels ? <code>{option.label}</code> : option.label}
+                  </span>
+                  {option.detail != null && <small className="text-xs text-muted-foreground">{option.detail}</small>}
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          )}
+        </ComboboxContent>
+      </Combobox>
     </div>
-  );
+  )
 }

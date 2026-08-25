@@ -1,126 +1,47 @@
-import type { DataTableSort } from "../components/DataTable";
-import { queryParameters, setsEqual } from "../url-state";
-import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from "./dashboard";
-import type { DashboardSnapshot, FilterValue, TextFilter, ValueFilter } from "./dashboard";
+import LZString from 'lz-string'
 
-export const DEFAULT_FILTER_COLUMNS = [REPOSITORIES, TEMPLATE, VERSION];
-export const DEFAULT_TABLE_COLUMNS = [VALIDATION, TEMPLATE, VERSION];
+import type { DashboardSnapshot } from './dashboard'
+import {
+  COPIER_DASHBOARD_STATE_VERSION,
+  parseStoredDashboardState,
+  restoreDashboardState,
+  storeDashboardState,
+  type CopierDashboardUrlState
+} from './dashboard-url-state'
 
-export interface CopierDashboardUrlState {
-  selectedChartColumns: Set<string>;
-  selectedFilterColumns: Set<string>;
-  selectedTableColumns: Set<string>;
-  sort: DataTableSort | null;
-  textFilters: TextFilter[];
-  valueFilters: ValueFilter[];
+export type { CopierDashboardUrlState, StoredDashboardState } from './dashboard-url-state'
+
+const STATE_PARAMETER = 'state'
+const STATE_PREFIX = `v${COPIER_DASHBOARD_STATE_VERSION}.`
+const MAX_COMPRESSED_STATE_LENGTH = 10_000
+const MAX_DECOMPRESSED_STATE_LENGTH = 100_000
+const { compressToEncodedURIComponent, decompressFromEncodedURIComponent } = LZString
+
+export function readCopierDashboardUrlState(
+  snapshot: DashboardSnapshot,
+  parameters: URLSearchParams
+): CopierDashboardUrlState {
+  const encodedState = parameters.get(STATE_PARAMETER)
+  const storedState = encodedState == null ? null : decodeDashboardState(encodedState)
+  return restoreDashboardState(snapshot, storedState ?? { version: COPIER_DASHBOARD_STATE_VERSION })
 }
 
-function compareStrings(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
+export function copierDashboardSearchParameters(state: CopierDashboardUrlState): URLSearchParams {
+  const stored = storeDashboardState(state)
+  if (Object.keys(stored).length === 1) return new URLSearchParams()
+
+  const encoded = compressToEncodedURIComponent(JSON.stringify(stored))
+  return new URLSearchParams([[STATE_PARAMETER, `${STATE_PREFIX}${encoded}`]])
 }
 
-function compareColumns(left: { column: string }, right: { column: string }): number {
-  return compareStrings(left.column, right.column);
-}
+function decodeDashboardState(encoded: string) {
+  if (!encoded.startsWith(STATE_PREFIX) || encoded.length > MAX_COMPRESSED_STATE_LENGTH) return null
 
-function valueSortKey(value: FilterValue): string {
-  return `${typeof value}:${JSON.stringify(value) ?? ""}`;
-}
-
-function isFilterValue(value: unknown): value is FilterValue {
-  return value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string";
-}
-
-function parseValueFilter(rawFilter: string, columns: Set<string>): ValueFilter | null {
   try {
-    const parsed: unknown = JSON.parse(rawFilter);
-    if (!Array.isArray(parsed)) return null;
-    const column = parsed[0];
-    if (parsed.length !== 2 && (parsed.length !== 3 || typeof parsed[2] !== "boolean")) return null;
-    const rawValues = Array.isArray(parsed[1]) ? parsed[1] : [parsed[1]];
-    const inverted = parsed[2] === true;
-    if (typeof column !== "string" || !columns.has(column) || rawValues.length === 0 || !rawValues.every(isFilterValue)) return null;
-    return { column, inverted: inverted || undefined, values: rawValues };
+    const json = decompressFromEncodedURIComponent(encoded.slice(STATE_PREFIX.length))
+    if (json == null || json.length > MAX_DECOMPRESSED_STATE_LENGTH) return null
+    return parseStoredDashboardState(JSON.parse(json))
   } catch {
-    return null;
+    return null
   }
-}
-
-function parseTextFilter(rawFilter: string, columns: Set<string>): TextFilter | null {
-  try {
-    const parsed: unknown = JSON.parse(rawFilter);
-    if (!Array.isArray(parsed) || (parsed.length !== 2 && parsed.length !== 3)) return null;
-    const [column, query] = parsed;
-    const inverted = parsed[2];
-    return typeof column === "string" && columns.has(column) && typeof query === "string" && query.trim() !== "" && (inverted == null || typeof inverted === "boolean")
-      ? { column, inverted: inverted === true || undefined, query }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-export function readCopierDashboardUrlState(snapshot: DashboardSnapshot, hash = window.location.hash): CopierDashboardUrlState {
-  const parameters = queryParameters(hash);
-  const columns = new Set(snapshot.columns);
-  const filterColumns = new Set(snapshot.columns.filter((column) => column !== COPIER_ANSWERS));
-  const booleanColumns = new Set(snapshot.answer_groups.flatMap(({ fields }) => fields));
-  const valueFilterColumns = new Set([REPOSITORIES, TEMPLATE, VERSION, VALIDATION, ...booleanColumns]);
-  const textFilterColumns = new Set([...filterColumns].filter((column) => !valueFilterColumns.has(column)));
-  const valueFilterByColumn = new Map<string, ValueFilter>();
-  const textFilterByColumn = new Map<string, TextFilter>();
-
-  for (const rawFilter of parameters.getAll("filter")) {
-    const filter = parseValueFilter(rawFilter, valueFilterColumns);
-    if (filter != null) valueFilterByColumn.set(filter.column, filter);
-  }
-  for (const rawFilter of parameters.getAll("search")) {
-    const filter = parseTextFilter(rawFilter, textFilterColumns);
-    if (filter != null) textFilterByColumn.set(filter.column, filter);
-  }
-
-  const selectedFilterColumns = parameters.has("field") ? new Set(parameters.getAll("field").filter((column) => filterColumns.has(column))) : new Set(DEFAULT_FILTER_COLUMNS);
-  for (const column of [...textFilterByColumn.keys(), ...valueFilterByColumn.keys()]) selectedFilterColumns.add(column);
-  const selectedChartColumns = new Set(parameters.getAll("chart").filter((column) => columns.has(column)));
-
-  const selectedTableColumns = parameters.has("column") ? new Set(parameters.getAll("column").filter((column) => column !== REPOSITORIES && columns.has(column))) : new Set(DEFAULT_TABLE_COLUMNS);
-  const sortColumn = parameters.get("sort");
-  const sortDirection = parameters.get("direction");
-  const sort: DataTableSort | null =
-    sortColumn != null && columns.has(sortColumn) && (sortDirection === "ascending" || sortDirection === "descending") ? { direction: sortDirection, id: sortColumn } : null;
-
-  return {
-    selectedChartColumns,
-    selectedFilterColumns,
-    selectedTableColumns,
-    sort,
-    textFilters: [...textFilterByColumn.values()],
-    valueFilters: [...valueFilterByColumn.values()],
-  };
-}
-
-export function copierDashboardHash({ selectedChartColumns, selectedFilterColumns, selectedTableColumns, sort, textFilters, valueFilters }: CopierDashboardUrlState): string {
-  const parameters = new URLSearchParams();
-  for (const { column, inverted, query } of [...textFilters].sort(compareColumns)) parameters.append("search", JSON.stringify(inverted ? [column, query, true] : [column, query]));
-  for (const { column, inverted, values } of [...valueFilters].sort(compareColumns)) {
-    const sortedValues = [...values].sort((left, right) => compareStrings(valueSortKey(left), valueSortKey(right)));
-    parameters.append("filter", JSON.stringify(inverted ? [column, sortedValues, true] : [column, sortedValues]));
-  }
-  for (const column of [...selectedChartColumns].sort()) parameters.append("chart", column);
-
-  if (!setsEqual(selectedFilterColumns, new Set(DEFAULT_FILTER_COLUMNS))) {
-    if (selectedFilterColumns.size === 0) parameters.append("field", "");
-    else for (const column of [...selectedFilterColumns].sort()) parameters.append("field", column);
-  }
-  if (!setsEqual(selectedTableColumns, new Set(DEFAULT_TABLE_COLUMNS))) {
-    if (selectedTableColumns.size === 0) parameters.append("column", "");
-    else for (const column of [...selectedTableColumns].sort()) parameters.append("column", column);
-  }
-  if (sort != null) {
-    parameters.set("sort", sort.id);
-    parameters.set("direction", sort.direction);
-  }
-
-  const query = parameters.toString();
-  return `#/copier${query === "" ? "" : `?${query}`}`;
 }
