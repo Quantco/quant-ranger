@@ -20,11 +20,10 @@ function semanticColor(value: FilterValue) {
 
 function chartColors(domain: FilterValue[]) {
   const categoryCount = domain.filter((value) => semanticColor(value) == null).length
-  let categoryIndex = 0
-
-  return new Map(
-    domain.map((value) => {
-      const color = semanticColor(value) ?? `oklch(65% 0.15 ${(250 + (categoryIndex++ * 360) / categoryCount) % 360})`
+  new Map(
+    domain.map((value, index) => {
+      const hue = (250 + (index * 360) / categoryCount) % 360
+      const color = semanticColor(value) ?? `oklch(65% 0.15 ${hue})`
       return [value, color]
     })
   )
