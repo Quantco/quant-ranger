@@ -1,3 +1,4 @@
+import { ArrowRightIcon } from 'lucide-react'
 import { Link } from 'react-router'
 
 export default function Overview() {
@@ -26,18 +27,7 @@ export default function Overview() {
           </span>
           <span className="inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap text-primary">
             Open
-            <svg
-              aria-hidden="true"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 16 16"
-            >
-              <path d="M3 8h10M9 4l4 4-4 4" />
-            </svg>
+            <ArrowRightIcon aria-hidden="true" className="size-4" />
           </span>
         </Link>
       </section>

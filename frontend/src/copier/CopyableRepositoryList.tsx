@@ -1,37 +1,14 @@
+import { CheckIcon, CopyIcon } from 'lucide-react'
+
 import { Button } from '../components/ui/button'
 import { Textarea } from '../components/ui/textarea'
 import { useClipboard } from '../hooks/useClipboard'
 import { cn } from '../lib/utils'
 
-function CopyIcon({ copied }: { copied: boolean }) {
-  return copied ? (
-    <svg
-      aria-hidden="true"
-      className="size-full"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <path d="m5 12 4 4L19 6" />
-    </svg>
-  ) : (
-    <svg
-      aria-hidden="true"
-      className="size-full"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-    >
-      <rect height="13" rx="2" width="13" x="9" y="9" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  )
+function CopyStateIcon({ copied }: { copied: boolean }) {
+  const Icon = copied ? CheckIcon : CopyIcon
+
+  return <Icon aria-hidden="true" className="size-full" />
 }
 
 export function CopyableRepositoryList({ label, value }: { label: string; value: string }) {
@@ -63,7 +40,7 @@ export function CopyableRepositoryList({ label, value }: { label: string; value:
         type="button"
         variant="ghost"
       >
-        <CopyIcon copied={copyState === 'copied'} />
+        <CopyStateIcon copied={copyState === 'copied'} />
       </Button>
     </div>
   )
