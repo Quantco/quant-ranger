@@ -35,7 +35,7 @@ export type DashboardFilter =
 
 function versionDistribution(data: CountedValue[], versions: string[]) {
   const order = new Map(versions.map((version, index) => [version, index]))
-  return [...data].sort(
+  return data.toSorted(
     (left, right) => (order.get(String(left.value)) ?? Infinity) - (order.get(String(right.value)) ?? Infinity)
   )
 }
