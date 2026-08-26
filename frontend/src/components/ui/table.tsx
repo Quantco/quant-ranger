@@ -25,7 +25,7 @@ function TableHeader({ className, ...props }: ComponentProps<'thead'>) {
 }
 
 function TableBody({ className, ...props }: ComponentProps<'tbody'>) {
-  return <tbody className={cn('[&_tr:last-child_td]:border-b-0', className)} data-slot="table-body" {...props} />
+  return <tbody className={cn('divide-y divide-border', className)} data-slot="table-body" {...props} />
 }
 
 function TableRow({ className, ...props }: ComponentProps<'tr'>) {
@@ -54,10 +54,7 @@ function TableHead({ className, ...props }: ComponentProps<'th'>) {
 function TableCell({ className, ...props }: ComponentProps<'td'>) {
   return (
     <td
-      className={cn(
-        'border-0 border-b border-solid border-border px-[0.55rem] py-[0.4rem] text-left whitespace-nowrap',
-        className
-      )}
+      className={cn('border-0 px-[0.55rem] py-[0.4rem] text-left whitespace-nowrap', className)}
       data-slot="table-cell"
       {...props}
     />

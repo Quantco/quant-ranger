@@ -131,7 +131,11 @@ function ColumnHeader<Row extends RowData>({ column, direction, onSort, sticky }
   )
 }
 
-type DataCellProps<Row extends RowData> = { column: DataTableColumn<Row>; row: Row; sticky: boolean }
+type DataCellProps<Row extends RowData> = {
+  column: DataTableColumn<Row>
+  row: Row
+  sticky: boolean
+}
 
 function DataCell<Row extends RowData>({ column, row, sticky }: DataCellProps<Row>) {
   const value = column.value(row)

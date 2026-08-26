@@ -4,9 +4,9 @@ import { Link } from 'react-router'
 export default function Overview() {
   return (
     <main className="grid content-start gap-6">
-      <header className="[&>p]:text-muted-foreground">
+      <header>
         <h1>Overview</h1>
-        <p>Explore quant-ranger activity and reports.</p>
+        <p className="text-muted-foreground">Explore quant-ranger activity and reports.</p>
       </header>
 
       <section aria-labelledby="copier-dashboard-heading">

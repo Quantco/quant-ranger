@@ -23,11 +23,11 @@ function ComboboxChipsInput({ className, ...props }: ComboboxPrimitive.Input.Pro
   return (
     <ComboboxPrimitive.Input
       className={cn(
-        'min-w-[5.5rem] flex-[1_1_7rem] border-0 bg-transparent px-1 py-[0.15rem] text-sm outline-none [&::-webkit-search-cancel-button]:appearance-none',
+        'min-w-[5.5rem] flex-[1_1_7rem] border-0 bg-transparent px-1 py-[0.15rem] text-sm outline-none',
         className
       )}
       data-slot="combobox-chip-input"
-      type="search"
+      type="text"
       {...props}
     />
   )

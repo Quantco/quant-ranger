@@ -21,9 +21,6 @@ import Overview from './Overview'
 const SITE_TITLE = 'Quant Ranger Dashboard'
 const COPIER_TITLE = 'Copier Dashboard'
 const COPIER_DATA_PATH = 'data/copier/latest.json'
-const DATA_MESSAGE_CLASS =
-  'mt-4 grid gap-2 rounded-medium border border-border bg-muted p-4 [&>:first-child]:mt-0 [&>:last-child]:mb-0 [&>p]:text-muted-foreground'
-const SITE_TITLE_CLASS = 'inline-flex items-center gap-2 font-bold text-foreground no-underline'
 
 type Breadcrumb = {
   label: string
@@ -37,22 +34,6 @@ type SiteRouteHandle = {
   home?: boolean
   title: (match: SiteMatch) => string
 }
-
-const ROUTE_HANDLES = {
-  overview: {
-    breadcrumbs: () => [],
-    home: true,
-    title: () => ''
-  },
-  copier: {
-    breadcrumbs: () => [{ label: COPIER_TITLE }],
-    title: () => COPIER_TITLE
-  },
-  notFound: {
-    breadcrumbs: () => [],
-    title: () => 'Page not found'
-  }
-} satisfies Record<string, SiteRouteHandle>
 
 async function loadCopier({ request }: LoaderFunctionArgs): Promise<DashboardSnapshot> {
   const snapshot = await fetchJson<DashboardSnapshot>(`./${COPIER_DATA_PATH}`, { signal: request.signal })
@@ -80,6 +61,26 @@ function LoadingPage() {
   )
 }
 
+function SiteTitle({ current }: { current: boolean }) {
+  const title = (
+    <span
+      aria-current={current ? 'page' : undefined}
+      className="inline-flex items-center gap-2 font-bold text-foreground"
+    >
+      <img alt="" aria-hidden="true" className="size-6 flex-none" src="./favicon.png" />
+      {SITE_TITLE}
+    </span>
+  )
+
+  return current ? (
+    title
+  ) : (
+    <Link className="no-underline" to="/">
+      {title}
+    </Link>
+  )
+}
+
 // Keep Copier/Recharts out of the initial bundle. The static loader lets data
 // fetching run in parallel with loading this route chunk.
 async function lazyCopierRoute() {
@@ -95,8 +96,8 @@ function CopierError() {
     <main className="ml-[max(1rem,calc((100%_-_1360px)/2))] max-w-[44rem]">
       <h1>{COPIER_TITLE} unavailable</h1>
       <p>{routeErrorMessage(error)}</p>
-      <div className={DATA_MESSAGE_CLASS}>
-        <p>
+      <div className="mt-4 grid gap-2 rounded-medium border border-border bg-muted p-4">
+        <p className="mt-0 mb-2 text-muted-foreground">
           Expected a generated report at <code>{COPIER_DATA_PATH}</code>.
         </p>
         <Link to="/">Return to Overview</Link>
@@ -133,17 +134,7 @@ function Site() {
         aria-label="Breadcrumb"
         className="flex flex-wrap items-center gap-4 border-b border-border bg-primary-subtle px-[max(1rem,calc((100%_-_1360px)/2))] py-3"
       >
-        {handle?.home ? (
-          <span aria-current="page" className={SITE_TITLE_CLASS}>
-            <img alt="" aria-hidden="true" className="size-6 flex-none" src="./favicon.png" />
-            {SITE_TITLE}
-          </span>
-        ) : (
-          <Link className={SITE_TITLE_CLASS} to="/">
-            <img alt="" aria-hidden="true" className="size-6 flex-none" src="./favicon.png" />
-            {SITE_TITLE}
-          </Link>
-        )}
+        <SiteTitle current={handle?.home === true} />
         {breadcrumbs.map(({ label, to }) => (
           <Fragment key={`${to ?? 'current'}:${label}`}>
             <span aria-hidden="true" className="text-muted-foreground">
@@ -170,17 +161,35 @@ export const router = createHashRouter([
   {
     Component: Site,
     children: [
-      { Component: Overview, handle: ROUTE_HANDLES.overview, index: true },
+      {
+        Component: Overview,
+        handle: {
+          breadcrumbs: () => [],
+          home: true,
+          title: () => ''
+        } satisfies SiteRouteHandle,
+        index: true
+      },
       {
         errorElement: <CopierError />,
-        handle: ROUTE_HANDLES.copier,
+        handle: {
+          breadcrumbs: () => [{ label: COPIER_TITLE }],
+          title: () => COPIER_TITLE
+        } satisfies SiteRouteHandle,
         HydrateFallback: LoadingPage,
         lazy: lazyCopierRoute,
         loader: loadCopier,
         path: 'copier',
         shouldRevalidate: keepReportData
       },
-      { Component: NotFound, handle: ROUTE_HANDLES.notFound, path: '*' }
+      {
+        Component: NotFound,
+        handle: {
+          breadcrumbs: () => [],
+          title: () => 'Page not found'
+        } satisfies SiteRouteHandle,
+        path: '*'
+      }
     ],
     path: '/'
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -21,12 +21,34 @@ function snapshotDate(value: string) {
   return formatDateTime(value, { timeZone: 'UTC' }) ?? 'Unknown snapshot date'
 }
 
+function DashboardSection({
+  children,
+  heading,
+  headingId
+}: {
+  children: ReactNode
+  heading: string
+  headingId: string
+}) {
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="border-t border-border py-6 first:border-t-0 first:pt-4 max-[1100px]:first:pt-0"
+    >
+      <h2 className="mt-0 mb-2" id={headingId}>
+        {heading}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) {
   return (
-    <header className="mb-4 [&>p]:text-muted-foreground">
+    <header className="mb-4">
       <h1>Copier Dashboard</h1>
-      <p>Compare Copier templates, versions, and answers across repositories.</p>
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <p className="text-muted-foreground">Compare Copier templates, versions, and answers across repositories.</p>
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span>
           <strong className="text-foreground">{repositoryCount}</strong> repositories
         </span>
@@ -53,11 +75,7 @@ export function RepositoriesSection({
 }) {
   const [showRepositoryNames, setShowRepositoryNames] = useState(false)
   return (
-    <section
-      aria-labelledby="repositories-heading"
-      className="border-t border-border py-6 first:border-t-0 first:pt-4 max-[1100px]:first:pt-0 [&>h2]:mt-0 [&>h2]:mb-2"
-    >
-      <h2 id="repositories-heading">Repositories</h2>
+    <DashboardSection heading="Repositories" headingId="repositories-heading">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p aria-live="polite" className="m-0 text-sm text-muted-foreground">
           <strong>{rows.length}</strong> matching repositories · <strong>{repositoryNames.length}</strong> selected for
@@ -99,7 +117,7 @@ export function RepositoriesSection({
         rows={rows}
         sort={sort}
       />
-    </section>
+    </DashboardSection>
   )
 }
 
@@ -108,11 +126,7 @@ export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
   if (charts.length === 0) return null
 
   return (
-    <section
-      aria-labelledby="pie-charts-heading"
-      className="border-t border-border py-6 first:border-t-0 first:pt-4 max-[1100px]:first:pt-0 [&>h2]:mt-0 [&>h2]:mb-2"
-    >
-      <h2 id="pie-charts-heading">Pie charts</h2>
+    <DashboardSection heading="Pie charts" headingId="pie-charts-heading">
       <p className="text-sm text-muted-foreground">
         Contents of the selected fields across the currently matching repositories.
       </p>
@@ -143,6 +157,6 @@ export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
           )
         })}
       </div>
-    </section>
+    </DashboardSection>
   )
 }

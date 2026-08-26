@@ -25,7 +25,7 @@ export function FieldSelector({
 
   return (
     <details className="group m-0 grid gap-2 border-t border-border pt-3">
-      <summary className="grid min-h-6 grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-center gap-[0.4rem] list-none text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+      <summary className="grid min-h-6 grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-center gap-[0.4rem] list-none text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
         <ChevronIcon className="group-hover:text-foreground group-hover:opacity-100 group-open:rotate-90" />
         <span className="min-w-0 leading-tight">
           {label} ({selectedCount} of {fields.length})
