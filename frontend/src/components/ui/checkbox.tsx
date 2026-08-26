@@ -7,7 +7,7 @@ function Checkbox({ className, indeterminate = false, ...props }: CheckboxPrimit
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        'relative inline-grid size-3.5 shrink-0 cursor-pointer place-items-center rounded-[0.15rem] border border-solid border-primary-light bg-white text-white outline-none data-checked:border-primary data-checked:bg-primary data-indeterminate:border-primary data-indeterminate:bg-primary disabled:cursor-default disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2',
+        'relative inline-grid size-3.5 shrink-0 cursor-pointer place-items-center rounded-sm border border-solid border-primary-light bg-white text-white outline-none data-checked:border-primary data-checked:bg-primary data-indeterminate:border-primary data-indeterminate:bg-primary disabled:cursor-default disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2',
         className
       )}
       data-slot="checkbox"

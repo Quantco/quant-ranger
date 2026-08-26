@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { filterOptions } from '../lib/filter-options'
 import { MultiSelect } from '../components/MultiSelect'
@@ -8,12 +8,14 @@ import {
   ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInputGroup,
   ComboboxItem,
   ComboboxList
 } from '../components/ui/combobox'
 import { displayValue } from '../lib/value'
-import { REPOSITORIES, repositoryName } from './dashboard'
-import type { CountedValue, DashboardValue, FilterValue, TextFilter, ValueFilter } from './dashboard'
+import { repositoryName } from './dashboard'
+import type { CountedValue, DashboardValue, FilterableDashboardColumn, FilterValue } from './dashboard'
+import type { DashboardFilterValue } from './dashboard-state'
 
 const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`
 type TextSuggestion = { count: number; label: string; value: DashboardValue }
@@ -41,7 +43,7 @@ function InvertToggle({
     <Button
       aria-label={`${inverted ? 'Disable' : 'Enable'} inverted ${label} filter`}
       aria-pressed={inverted}
-      className="flex-none rounded-full px-[0.4rem] py-[0.08rem] text-xs leading-[1.35] text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
+      className="flex-none rounded-full px-1.5 py-0.5 text-xs leading-tight text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
       disabled={disabled}
       onClick={() => onChange(!inverted)}
       title={disabled ? 'Add a filter value before inverting' : 'Invert this filter'}
@@ -60,29 +62,31 @@ export function ValueFilterInput({
   onInvert,
   options
 }: {
-  column: string
-  filter?: ValueFilter
+  column: FilterableDashboardColumn
+  filter?: DashboardFilterValue
   onChange: (values: FilterValue[]) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
 }) {
   const optionByToken = new Map(options.map(({ value }) => [valueToken(value), value]))
+  const selectedValues = filter?.values ?? []
+  const repository = column.kind === 'repository'
 
   return (
     <MultiSelect
-      id={`value-filter-${controlId(column)}`}
-      label={<code>{column}</code>}
+      id={`value-filter-${controlId(column.id)}`}
+      label={<code>{column.id}</code>}
       labelAction={
         <InvertToggle
-          disabled={filter == null || filter.values.length === 0}
+          disabled={selectedValues.length === 0}
           inverted={filter?.inverted === true}
-          label={column}
+          label={column.id}
           onChange={onInvert}
         />
       }
       onChange={(tokens) =>
         onChange(
-          [...tokens].flatMap((token) => {
+          tokens.flatMap((token) => {
             const value = optionByToken.get(token)
             return value === undefined ? [] : [value]
           })
@@ -91,13 +95,13 @@ export function ValueFilterInput({
       options={options.map(({ count, value }) => {
         const label = displayValue(value)
         return {
-          detail: column === REPOSITORIES ? undefined : repositoryCount(count),
-          label: column === REPOSITORIES ? repositoryName(label) : label,
+          detail: repository ? undefined : repositoryCount(count),
+          label: repository ? repositoryName(label) : label,
           value: valueToken(value)
         }
       })}
-      placeholder={column === REPOSITORIES ? 'Type to add repositories…' : 'Type to add values…'}
-      selected={new Set((filter?.values ?? []).map(valueToken))}
+      placeholder={repository ? 'Type to add repositories…' : 'Type to add values…'}
+      selected={selectedValues.map(valueToken)}
     />
   )
 }
@@ -109,16 +113,15 @@ export function TextFilterInput({
   onInvert,
   options
 }: {
-  column: string
-  filter?: TextFilter
+  column: FilterableDashboardColumn
+  filter?: DashboardFilterValue
   onChange: (query: string) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
 }) {
-  const query = filter?.query ?? ''
-  const id = `text-filter-${controlId(column)}`
+  const query = String(filter?.values[0] ?? '')
+  const id = `text-filter-${controlId(column.id)}`
   const [open, setOpen] = useState(false)
-  const anchor = useRef<HTMLDivElement>(null)
   const suggestionOptions = options.map(({ count, value }) => ({ count, label: displayValue(value), value }))
   const suggestions = filterOptions(suggestionOptions, query, 8)
 
@@ -146,20 +149,17 @@ export function TextFilterInput({
     >
       <div className="grid min-w-0 gap-1">
         <div className="flex min-w-0 items-center justify-between gap-2">
-          <label className="min-w-0 text-sm leading-tight font-semibold [overflow-wrap:anywhere]" htmlFor={id}>
-            <code>{column}</code>
+          <label className="min-w-0 wrap-anywhere text-sm leading-tight font-semibold" htmlFor={id}>
+            <code>{column.id}</code>
           </label>
           <InvertToggle
             disabled={filter == null || query.trim() === ''}
             inverted={filter?.inverted === true}
-            label={column}
+            label={column.id}
             onChange={onInvert}
           />
         </div>
-        <div
-          className="flex min-h-[2.35rem] rounded-small border border-solid border-border bg-white focus-within:outline-2 focus-within:outline-ring focus-within:outline-offset-1"
-          ref={anchor}
-        >
+        <ComboboxInputGroup>
           <ComboboxChipsInput
             id={id}
             onFocus={() => {
@@ -167,15 +167,15 @@ export function TextFilterInput({
             }}
             placeholder="Search values…"
           />
-        </div>
-        <ComboboxContent anchor={anchor}>
+        </ComboboxInputGroup>
+        <ComboboxContent>
           {suggestions.length === 0 ? (
             <ComboboxEmpty>No matching values</ComboboxEmpty>
           ) : (
             <ComboboxList>
               {suggestions.map((option) => (
                 <ComboboxItem key={valueToken(option.value)} showIndicator={false} value={option}>
-                  <span className="min-w-0 [overflow-wrap:anywhere]">{option.label}</span>
+                  <span className="min-w-0 flex-1 wrap-anywhere">{option.label}</span>
                   <small className="text-sm text-muted-foreground">{repositoryCount(option.count)}</small>
                 </ComboboxItem>
               ))}

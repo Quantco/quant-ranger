@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react'
 
+import { cn } from '../lib/utils'
 import { Button } from './ui/button'
 
 export function DashboardSidebarShell({
   children,
+  className,
   headingId,
   onReset,
   title
 }: {
   children: ReactNode
+  className?: string
   headingId: string
   onReset: () => void
   title: string
@@ -16,7 +19,7 @@ export function DashboardSidebarShell({
   return (
     <aside
       aria-labelledby={headingId}
-      className="grid gap-3 rounded-medium border border-border bg-muted p-4 min-[1101px]:sticky min-[1101px]:top-4 min-[1101px]:max-h-[calc(100vh-2rem)] min-[1101px]:overflow-auto"
+      className={cn('grid gap-3 rounded-lg border border-border bg-muted p-4 lg:sticky lg:top-4', className)}
     >
       <h2 className="m-0" id={headingId}>
         {title}

@@ -1,15 +1,14 @@
-import { DataTable, type DataTableColumn, type DataTableSort } from '../components/DataTable'
+import { DataTable, type DataTableColumn } from '../components/DataTable'
 import { cn } from '../lib/utils'
 import { displayValue, type DisplayValue } from '../lib/value'
-import { COPIER_ANSWERS, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type DashboardRow } from './dashboard'
+import { repositoryName, VALIDATION, type DashboardColumn, type DashboardRow } from './dashboard'
+import { dashboardColumn, type DashboardTable } from './dashboard-table'
 
-const BASE_COLUMNS = new Set([REPOSITORIES, COPIER_ANSWERS, TEMPLATE, VERSION, VALIDATION])
-
-function renderValue(value: DisplayValue, row: DashboardRow, column: string) {
-  if (column === REPOSITORIES && row.url) {
+function renderValue(value: DisplayValue, row: DashboardRow, column: DashboardColumn) {
+  if (column.kind === 'repository' && row.url) {
     return (
       <a href={row.url} rel="noreferrer" target="_blank">
-        {displayValue(value)}
+        {repositoryName(displayValue(value))}
       </a>
     )
   }
@@ -19,39 +18,24 @@ function renderValue(value: DisplayValue, row: DashboardRow, column: string) {
   return displayValue(value)
 }
 
-export function RepositoryTable({
-  columns,
-  onSelectionChange,
-  onSortChange,
-  rows,
-  sort
-}: {
-  columns: string[]
-  onSelectionChange: (rows: DashboardRow[]) => void
-  onSortChange: (sort: DataTableSort) => void
-  rows: DashboardRow[]
-  sort: DataTableSort | null
-}) {
-  const tableColumns: DataTableColumn<DashboardRow>[] = columns.map((column) => ({
-    cellClassName: (value) =>
-      typeof value === 'boolean' ? (value ? 'bg-success-subtle' : 'bg-error-subtle') : undefined,
-    id: column,
-    label: BASE_COLUMNS.has(column) ? column : <code>{column}</code>,
-    render: (value, row) => renderValue(value, row, column),
-    title: column,
-    truncate: true,
-    value: (row) => row.values[column]
-  }))
+export function RepositoryTable({ table }: { table: DashboardTable }) {
+  const columns: DataTableColumn<DashboardRow>[] = table.getVisibleLeafColumns().map((tableColumn) => {
+    const { id } = tableColumn
+    const column = dashboardColumn(tableColumn)
+    return {
+      cellClassName: (value) =>
+        typeof value === 'boolean' ? (value ? 'bg-success-subtle' : 'bg-error-subtle') : undefined,
+      id,
+      label: column.kind === 'answer' ? <code>{id}</code> : id,
+      render: (value, row) => renderValue(value, row, column),
+      title: id,
+      tooltip: (value, row) =>
+        id === VALIDATION && row.validationFailure ? row.validationFailure : displayValue(value),
+      truncate: true,
+      value: (row) => row.values[id]
+    }
+  })
   return (
-    <DataTable
-      columns={tableColumns}
-      emptyMessage="No matching repositories."
-      getRowKey={(row) => row.repository}
-      label="Repository Inventory"
-      onSelectionChange={onSelectionChange}
-      onSortChange={onSortChange}
-      rows={rows}
-      sort={sort}
-    />
+    <DataTable columns={columns} emptyMessage="No matching repositories." label="Repository Inventory" table={table} />
   )
 }

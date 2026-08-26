@@ -6,10 +6,7 @@ export function ChevronIcon({ className }: { className?: string }) {
   return (
     <ChevronRightIcon
       aria-hidden="true"
-      className={cn(
-        'size-4 flex-none origin-center p-[0.08rem] text-primary opacity-80 transition-[color,opacity,transform] duration-[120ms]',
-        className
-      )}
+      className={cn('size-4 flex-none origin-center text-primary opacity-80 transition duration-150', className)}
     />
   )
 }

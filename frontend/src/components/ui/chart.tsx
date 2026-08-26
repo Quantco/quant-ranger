@@ -48,18 +48,18 @@ export function ChartLegendContent({
   if (!payload?.length) return null
 
   return (
-    <div className={cn('grid max-h-full gap-1.5 overflow-auto pr-2 [scrollbar-gutter:stable]', className)}>
+    <div className={cn('grid max-h-full gap-1.5 overflow-auto pr-2', className)}>
       {payload.map((item) => {
         const key = String(payloadValue(item.payload, nameKey) ?? item.dataKey ?? 'value')
         const value = payloadValue(item.payload, valueKey)
         return (
-          <div className="grid grid-cols-[0.65rem_minmax(0,1fr)_auto] items-center gap-2" key={key}>
+          <div className="flex items-center gap-2" key={key}>
             <span
               aria-hidden="true"
-              className="size-[0.65rem] rounded-[0.15rem]"
+              className="size-2.5 flex-none rounded-sm"
               style={{ backgroundColor: item.color }}
             />
-            <span className="min-w-0 [overflow-wrap:anywhere]">{config[key]?.label ?? item.value}</span>
+            <span className="min-w-0 flex-1 wrap-anywhere">{config[key]?.label ?? item.value}</span>
             {value != null && <strong className="tabular-nums">{String(value)}</strong>}
           </div>
         )

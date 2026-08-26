@@ -11,17 +11,14 @@ function DialogTrigger(props: DialogPrimitive.Trigger.Props) {
 function DialogContent({ className, ...props }: DialogPrimitive.Popup.Props) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Backdrop
-        className="fixed inset-0 z-50 min-h-dvh bg-black/35 supports-[-webkit-touch-callout:none]:absolute"
-        data-slot="dialog-backdrop"
-      />
+      <DialogPrimitive.Backdrop className="fixed inset-0 z-50 min-h-dvh bg-black/35" data-slot="dialog-backdrop" />
       <DialogPrimitive.Viewport
         className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4"
         data-slot="dialog-viewport"
       >
         <DialogPrimitive.Popup
           className={cn(
-            'max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100vw-2rem))] overflow-auto rounded-small border border-border bg-white p-4 text-foreground shadow-[0_8px_24px_rgb(15_23_42/15%)] outline-none',
+            'max-h-full w-full max-w-lg overflow-auto rounded-md border border-border bg-white p-4 text-foreground shadow-xl outline-none',
             className
           )}
           data-slot="dialog-content"

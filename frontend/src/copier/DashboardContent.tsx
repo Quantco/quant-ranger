@@ -2,20 +2,14 @@ import { useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import type { DataTableSort } from '../components/DataTable'
 import { ChevronIcon } from '../components/ChevronIcon'
 import { Button } from '../components/ui/button'
 import { formatDateTime } from '../lib/date'
 import { PieChart } from './Charts'
 import { CopyableRepositoryList } from './CopyableRepositoryList'
 import { RepositoryTable } from './RepositoryTable'
-import type { CountedValue, DashboardRow, FilterValue } from './dashboard'
-
-type PieChartData = {
-  column: string
-  data: CountedValue[]
-  domain: FilterValue[]
-}
+import type { DashboardChart } from './dashboard-analytics'
+import type { DashboardTable } from './dashboard-table'
 
 function snapshotDate(value: string) {
   return formatDateTime(value, { timeZone: 'UTC' }) ?? 'Unknown snapshot date'
@@ -33,7 +27,7 @@ function DashboardSection({
   return (
     <section
       aria-labelledby={headingId}
-      className="border-t border-border py-6 first:border-t-0 first:pt-4 max-[1100px]:first:pt-0"
+      className="border-t border-border py-6 first:border-t-0 first:pt-0 lg:first:pt-4"
     >
       <h2 className="mt-0 mb-2" id={headingId}>
         {heading}
@@ -59,27 +53,21 @@ export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt:
 }
 
 export function RepositoriesSection({
-  columns,
-  onSelectionChange,
-  onSortChange,
+  matchingRepositoryCount,
   repositoryNames,
-  rows,
-  sort
+  table
 }: {
-  columns: string[]
-  onSelectionChange: (rows: DashboardRow[]) => void
-  onSortChange: (sort: DataTableSort | null) => void
+  matchingRepositoryCount: number
   repositoryNames: string[]
-  rows: DashboardRow[]
-  sort: DataTableSort | null
+  table: DashboardTable
 }) {
   const [showRepositoryNames, setShowRepositoryNames] = useState(false)
   return (
     <DashboardSection heading="Repositories" headingId="repositories-heading">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p aria-live="polite" className="m-0 text-sm text-muted-foreground">
-          <strong>{rows.length}</strong> matching repositories · <strong>{repositoryNames.length}</strong> selected for
-          copying
+          <strong>{matchingRepositoryCount}</strong> matching repositories · <strong>{repositoryNames.length}</strong>{' '}
+          selected for copying
         </p>
         <Button
           aria-expanded={showRepositoryNames}
@@ -95,7 +83,7 @@ export function RepositoriesSection({
       {showRepositoryNames && (
         <div className="mt-2">
           <p className="text-sm text-muted-foreground">These lists contain the repository rows selected below.</p>
-          <div className="mt-3 grid gap-4 min-[801px]:grid-cols-2">
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
             <div>
               <h3>Comma-separated</h3>
               <CopyableRepositoryList label="Comma-separated" value={repositoryNames.join(',')} />
@@ -110,18 +98,12 @@ export function RepositoriesSection({
       <p className="text-sm text-muted-foreground">
         Use the filters in the sidebar to narrow the table. Select a column heading to sort.
       </p>
-      <RepositoryTable
-        columns={columns}
-        onSelectionChange={onSelectionChange}
-        onSortChange={onSortChange}
-        rows={rows}
-        sort={sort}
-      />
+      <RepositoryTable table={table} />
     </DashboardSection>
   )
 }
 
-export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
+export function PieChartsSection({ charts }: { charts: DashboardChart[] }) {
   const [expandedChart, setExpandedChart] = useState<string | null>(null)
   if (charts.length === 0) return null
 
@@ -130,22 +112,22 @@ export function PieChartsSection({ charts }: { charts: PieChartData[] }) {
       <p className="text-sm text-muted-foreground">
         Contents of the selected fields across the currently matching repositories.
       </p>
-      <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-3">
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
         {charts.map(({ column, data, domain }) => {
-          const expanded = expandedChart === column
+          const expanded = expandedChart === column.id
           return (
             <div
-              className={cn('min-w-0 rounded-medium border border-border bg-white p-3', expanded && 'col-span-full')}
-              key={column}
+              className={cn('min-w-0 rounded-lg border border-border bg-white p-3', expanded && 'col-span-full')}
+              key={column.id}
             >
               <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h3 className="m-0 min-w-0 text-sm [overflow-wrap:anywhere]">
-                  <code>{column}</code>
+                <h3 className="m-0 min-w-0 wrap-anywhere text-sm">
+                  {column.kind === 'answer' ? <code>{column.id}</code> : column.id}
                 </h3>
                 <Button
                   aria-expanded={expanded}
                   className="flex-none"
-                  onClick={() => setExpandedChart(expanded ? null : column)}
+                  onClick={() => setExpandedChart(expanded ? null : column.id)}
                   type="button"
                   variant="link"
                 >

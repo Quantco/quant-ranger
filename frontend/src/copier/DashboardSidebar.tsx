@@ -3,15 +3,15 @@ import type { ReactNode } from 'react'
 import { DashboardSidebarShell } from '../components/DashboardSidebar'
 import { FieldSelector } from '../components/FieldSelector'
 import { MultiSelect } from '../components/MultiSelect'
-import { REPOSITORIES } from './dashboard'
 
 type FieldSelection = {
   fields: string[]
-  onChange: (fields: Set<string>) => void
-  selected: Set<string>
+  onChange: (fields: string[]) => void
+  selected: string[]
 }
 
 type DashboardSidebarProps = {
+  className?: string
   filterFields: FieldSelection
   filterInputs: ReactNode
   onReset: () => void
@@ -19,25 +19,16 @@ type DashboardSidebarProps = {
   tableColumns: FieldSelection
 }
 
-function replaceSelection(current: Set<string>, fields: string[], replacement: Set<string>) {
-  const fieldSet = new Set(fields)
-  return new Set([...current].filter((field) => !fieldSet.has(field)).concat([...replacement]))
-}
-
 export function DashboardSidebar({
+  className,
   filterFields,
   filterInputs,
   onReset,
   pieCharts,
   tableColumns
 }: DashboardSidebarProps) {
-  const optionalTableColumns = tableColumns.fields.filter((column) => column !== REPOSITORIES)
-  const visibleSelectedTableColumns = new Set(
-    optionalTableColumns.filter((column) => tableColumns.selected.has(column))
-  )
-
   return (
-    <DashboardSidebarShell headingId="sidebar-heading" onReset={onReset} title="Explore data">
+    <DashboardSidebarShell className={className} headingId="sidebar-heading" onReset={onReset} title="Explore data">
       <section className="m-0 grid gap-3 border-t border-border pt-3">
         <MultiSelect
           codeLabels
@@ -52,12 +43,10 @@ export function DashboardSidebar({
       </section>
 
       <FieldSelector
-        fields={optionalTableColumns}
+        fields={tableColumns.fields}
         label="Table columns"
-        onChange={(columns) =>
-          tableColumns.onChange(replaceSelection(tableColumns.selected, optionalTableColumns, columns))
-        }
-        selected={visibleSelectedTableColumns}
+        onChange={tableColumns.onChange}
+        selected={tableColumns.selected}
       />
       <FieldSelector
         fields={pieCharts.fields}

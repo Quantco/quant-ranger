@@ -134,33 +134,36 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
     )
 
     payload = json.loads(output_file.read_text())
-    assert payload["generated_at"] == artifact.generated_at.isoformat()
+    assert payload["generatedAt"] == artifact.generated_at.isoformat()
     assert payload["columns"] == [
-        "Repositories",
-        ".copier-answers.yml",
-        "Template",
-        "Version",
-        "Validation",
-        "build_docs",
-    ]
-    assert payload["version_options"] == [
-        {"template": None, "versions": ["v2.0.0"]},
-        {"template": "python", "versions": ["v2.0.0"]},
-    ]
-    assert payload["answer_groups"] == [
         {
-            "id": "boolean-template-options",
-            "title": "Boolean Template Options",
-            "template": None,
-            "fields": ["build_docs"],
+            "id": "Repositories",
+            "filter": {"kind": "values", "optionOrder": "frequency"},
+            "kind": "repository",
+        },
+        {"id": ".copier-answers.yml", "filter": None, "kind": "metadata"},
+        {
+            "id": "Template",
+            "filter": {"kind": "values", "optionOrder": "frequency"},
+            "kind": "metadata",
         },
         {
-            "id": "python-boolean-template-options",
-            "title": "Boolean Template Options",
-            "template": "python",
-            "fields": ["build_docs"],
+            "id": "Version",
+            "filter": {"kind": "values", "optionOrder": "version"},
+            "kind": "metadata",
+        },
+        {
+            "id": "Validation",
+            "filter": {"kind": "values", "optionOrder": "frequency"},
+            "kind": "metadata",
+        },
+        {
+            "id": "build_docs",
+            "filter": {"kind": "values", "optionOrder": "answer"},
+            "kind": "answer",
         },
     ]
+    assert payload["versions"] == ["v2.0.0"]
     assert [row["repository"] for row in payload["rows"]] == [
         "quantco/with-copier",
         "quantco/without-copier",
@@ -199,7 +202,7 @@ def test_copier_dashboard_aggregator_marks_invalid_metadata(
 
     row = json.loads(output_file.read_text())["rows"][0]
     assert row["values"]["Template"] is None
-    assert row["validation_failure"] == "_src_path=wrong-type"
+    assert row["validationFailure"] == "_src_path=wrong-type"
 
 
 def test_copier_dashboard_aggregator_reports_unwritable_output(

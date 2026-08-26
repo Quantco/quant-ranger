@@ -11,16 +11,17 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
     <main>
       <DashboardHeader generatedAt={dashboard.generatedAt} repositoryCount={dashboard.repositoryCount} />
 
-      <div className="grid grid-cols-1 items-start gap-4 min-[1101px]:grid-cols-[minmax(20rem,22rem)_minmax(0,1fr)] min-[1101px]:gap-6">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-4 lg:gap-6">
         <DashboardSidebar
+          className="lg:col-span-1"
           filterFields={dashboard.filterFields}
-          filterInputs={<DashboardFilters filters={dashboard.filters} {...dashboard.filterActions} />}
+          filterInputs={<DashboardFilters filters={dashboard.filters} />}
           onReset={dashboard.onReset}
           pieCharts={dashboard.pieCharts}
           tableColumns={dashboard.tableColumns}
         />
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:col-span-3">
           <RepositoriesSection {...dashboard.repositories} />
           <PieChartsSection charts={dashboard.charts} />
         </div>

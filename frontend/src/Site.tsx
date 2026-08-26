@@ -14,7 +14,7 @@ import {
   type ShouldRevalidateFunctionArgs
 } from 'react-router'
 
-import type { DashboardSnapshot } from './copier/dashboard'
+import { parseDashboardSnapshot, type DashboardSnapshot } from './copier/dashboard'
 import { fetchJson } from './lib/fetch-json'
 import Overview from './Overview'
 
@@ -36,9 +36,9 @@ type SiteRouteHandle = {
 }
 
 async function loadCopier({ request }: LoaderFunctionArgs): Promise<DashboardSnapshot> {
-  const snapshot = await fetchJson<DashboardSnapshot>(`./${COPIER_DATA_PATH}`, { signal: request.signal })
+  const snapshot = await fetchJson(`./${COPIER_DATA_PATH}`, { signal: request.signal })
   if (snapshot == null) throw new Error('No Copier report data was found.')
-  return snapshot
+  return parseDashboardSnapshot(snapshot)
 }
 
 function keepReportData({ currentUrl, defaultShouldRevalidate, nextUrl }: ShouldRevalidateFunctionArgs) {
@@ -93,10 +93,10 @@ async function lazyCopierRoute() {
 function CopierError() {
   const error = useRouteError()
   return (
-    <main className="ml-[max(1rem,calc((100%_-_1360px)/2))] max-w-[44rem]">
+    <main className="max-w-3xl">
       <h1>{COPIER_TITLE} unavailable</h1>
       <p>{routeErrorMessage(error)}</p>
-      <div className="mt-4 grid gap-2 rounded-medium border border-border bg-muted p-4">
+      <div className="mt-4 grid gap-2 rounded-lg border border-border bg-muted p-4">
         <p className="mt-0 mb-2 text-muted-foreground">
           Expected a generated report at <code>{COPIER_DATA_PATH}</code>.
         </p>
@@ -130,25 +130,24 @@ function Site() {
   return (
     <>
       <title>{pageTitle ? `${pageTitle} · ${SITE_TITLE}` : SITE_TITLE}</title>
-      <nav
-        aria-label="Breadcrumb"
-        className="flex flex-wrap items-center gap-4 border-b border-border bg-primary-subtle px-[max(1rem,calc((100%_-_1360px)/2))] py-3"
-      >
-        <SiteTitle current={handle?.home === true} />
-        {breadcrumbs.map(({ label, to }) => (
-          <Fragment key={`${to ?? 'current'}:${label}`}>
-            <span aria-hidden="true" className="text-muted-foreground">
-              /
-            </span>
-            {to ? (
-              <Link to={to}>{label}</Link>
-            ) : (
-              <span aria-current="page" className="text-muted-foreground [overflow-wrap:anywhere]">
-                {label}
+      <nav aria-label="Breadcrumb" className="border-b border-border bg-primary-subtle">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-4 px-4 py-3">
+          <SiteTitle current={handle?.home === true} />
+          {breadcrumbs.map(({ label, to }) => (
+            <Fragment key={`${to ?? 'current'}:${label}`}>
+              <span aria-hidden="true" className="text-muted-foreground">
+                /
               </span>
-            )}
-          </Fragment>
-        ))}
+              {to ? (
+                <Link to={to}>{label}</Link>
+              ) : (
+                <span aria-current="page" className="wrap-anywhere text-muted-foreground">
+                  {label}
+                </span>
+              )}
+            </Fragment>
+          ))}
+        </div>
       </nav>
       {loadingPage ? <LoadingPage /> : <Outlet />}
       <ScrollRestoration />

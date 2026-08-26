@@ -21,8 +21,6 @@
   --color-pr-open: #1a7f37;
   --color-pr-closed: #cf222e;
   --color-pr-merged: #8250df;
-  --radius-small: 0.375rem;
-  --radius-medium: 0.5rem;
 }
 
 @layer base {
@@ -33,35 +31,29 @@
   }
 
   main {
-    width: min(1360px, calc(100% - 2rem));
-    margin: 0 auto;
-    padding: 1.5rem 0 3rem;
+    @apply mx-auto w-full max-w-7xl px-4 py-6 pb-12;
   }
 
   h1,
   h2,
   h3 {
-    font-weight: 650;
-    line-height: 1.25;
+    @apply font-semibold leading-tight;
   }
 
   h1 {
-    margin: 0 0 0.375rem;
-    font-size: 1.5rem;
+    @apply mt-0 mb-1.5 text-2xl;
   }
 
   h2 {
-    margin: 2rem 0 0.5rem;
-    font-size: 1.25rem;
+    @apply mt-8 mb-2 text-xl;
   }
 
   h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
+    @apply mt-0 mb-2 text-base;
   }
 
   p {
-    margin: 0.5rem 0;
+    @apply my-2;
   }
 
   a {
@@ -74,12 +66,12 @@
   }
 
   details {
-    margin-top: 0.75rem;
+    @apply mt-3;
   }
 
   summary {
+    @apply font-semibold;
     color: var(--color-primary);
     cursor: pointer;
-    font-weight: 600;
   }
 }

@@ -24,7 +24,7 @@ export function CopyableRepositoryList({ label, value }: { label: string; value:
     <div className="relative">
       <Textarea
         aria-label={`${label} repository names`}
-        className="min-h-32 pr-[2.9rem] font-mono"
+        className="min-h-32 pr-12 font-mono"
         onFocus={(event) => event.currentTarget.select()}
         readOnly
         value={value}
@@ -32,7 +32,7 @@ export function CopyableRepositoryList({ label, value }: { label: string; value:
       <Button
         aria-label={copyLabel}
         className={cn(
-          'absolute top-[0.45rem] right-[0.45rem] grid size-8 rounded-[0.3rem] border border-border bg-white p-[0.4rem] text-muted-foreground hover:bg-muted hover:text-foreground',
+          'absolute top-2 right-2 grid size-8 rounded-md border border-border bg-white p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground',
           copyState === 'copied' && 'text-success'
         )}
         onClick={() => void copy(value)}

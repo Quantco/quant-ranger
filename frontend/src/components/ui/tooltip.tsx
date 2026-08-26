@@ -35,7 +35,7 @@ function TooltipContent({
       >
         <TooltipPrimitive.Popup
           className={cn(
-            'z-50 max-h-[50vh] w-max max-w-[min(44rem,calc(100vw-2rem))] overflow-auto rounded-sm border border-solid border-border bg-white px-[0.6rem] py-[0.45rem] text-foreground shadow-[0_4px_16px_rgb(0_0_0/15%)] [overflow-wrap:anywhere] whitespace-pre-wrap select-text',
+            'z-50 max-h-80 w-max max-w-3xl overflow-auto rounded-sm border border-solid border-border bg-white px-2.5 py-2 wrap-anywhere text-foreground shadow-lg whitespace-pre-wrap select-text',
             className
           )}
           data-slot="tooltip-content"

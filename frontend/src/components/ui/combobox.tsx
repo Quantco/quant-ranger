@@ -4,6 +4,22 @@ import { CheckIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const Combobox = ComboboxPrimitive.Root
+const ComboboxChip = ComboboxPrimitive.Chip
+const ComboboxChipRemove = ComboboxPrimitive.ChipRemove
+const ComboboxClear = ComboboxPrimitive.Clear
+
+function ComboboxInputGroup({ className, ...props }: ComboboxPrimitive.InputGroup.Props) {
+  return (
+    <ComboboxPrimitive.InputGroup
+      className={cn(
+        'flex min-h-10 rounded-md border border-solid border-border bg-white focus-within:outline-2 focus-within:outline-ring focus-within:outline-offset-1',
+        className
+      )}
+      data-slot="combobox-input-group"
+      {...props}
+    />
+  )
+}
 
 function ComboboxValue(props: ComboboxPrimitive.Value.Props) {
   return <ComboboxPrimitive.Value data-slot="combobox-value" {...props} />
@@ -12,7 +28,7 @@ function ComboboxValue(props: ComboboxPrimitive.Value.Props) {
 function ComboboxChips({ className, ...props }: ComboboxPrimitive.Chips.Props) {
   return (
     <ComboboxPrimitive.Chips
-      className={cn('flex min-w-0 flex-1 flex-wrap items-center gap-1 p-[0.3rem]', className)}
+      className={cn('flex min-w-0 flex-1 flex-wrap items-center gap-1 p-1', className)}
       data-slot="combobox-chips"
       {...props}
     />
@@ -22,10 +38,7 @@ function ComboboxChips({ className, ...props }: ComboboxPrimitive.Chips.Props) {
 function ComboboxChipsInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
   return (
     <ComboboxPrimitive.Input
-      className={cn(
-        'min-w-[5.5rem] flex-[1_1_7rem] border-0 bg-transparent px-1 py-[0.15rem] text-sm outline-none',
-        className
-      )}
+      className={cn('min-w-24 flex-1 border-0 bg-transparent px-1 py-0.5 text-sm outline-none', className)}
       data-slot="combobox-chip-input"
       type="text"
       {...props}
@@ -55,7 +68,7 @@ function ComboboxContent({
       >
         <ComboboxPrimitive.Popup
           className={cn(
-            'grid max-h-[min(22rem,var(--available-height))] w-[var(--anchor-width)] gap-2 overflow-hidden rounded-small border border-solid border-border bg-white p-2 text-foreground shadow-[0_8px_20px_rgb(15_23_42/10%)] outline-none',
+            'grid max-h-(--available-height) w-(--anchor-width) gap-2 overflow-hidden rounded-md border border-solid border-border bg-white p-2 text-foreground shadow-lg outline-none',
             className
           )}
           data-slot="combobox-content"
@@ -86,8 +99,8 @@ function ComboboxItem({
   return (
     <ComboboxPrimitive.Item
       className={cn(
-        'grid w-full cursor-pointer items-center gap-2 rounded-sm px-1 py-[0.35rem] text-left text-xs outline-none select-none hover:bg-muted data-highlighted:bg-primary-subtle data-disabled:pointer-events-none data-disabled:opacity-45',
-        showIndicator ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto] px-2',
+        'flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 text-left text-xs outline-none select-none hover:bg-muted data-highlighted:bg-primary-subtle data-disabled:pointer-events-none data-disabled:opacity-45',
+        showIndicator ? 'px-1' : 'px-2',
         className
       )}
       data-slot="combobox-item"
@@ -96,7 +109,7 @@ function ComboboxItem({
       {showIndicator && (
         <span
           aria-hidden="true"
-          className="grid size-3.5 place-items-center rounded-[0.15rem] border border-solid border-primary-light text-primary"
+          className="grid size-3.5 flex-none place-items-center rounded-sm border border-solid border-primary-light text-primary"
         >
           <ComboboxPrimitive.ItemIndicator className="grid place-items-center">
             <CheckIcon className="size-3" strokeWidth={3} />
@@ -120,10 +133,14 @@ function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
 
 export {
   Combobox,
+  ComboboxChip,
+  ComboboxChipRemove,
   ComboboxChips,
   ComboboxChipsInput,
+  ComboboxClear,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInputGroup,
   ComboboxItem,
   ComboboxList,
   ComboboxValue

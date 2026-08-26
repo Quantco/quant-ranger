@@ -16,16 +16,16 @@ export default function Overview() {
           </h2>
         </div>
         <Link
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-medium border border-border bg-white p-3 text-foreground no-underline hover:border-primary-light hover:bg-primary-subtle focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 min-[801px]:gap-4 min-[801px]:px-4"
+          className="flex items-center gap-2 rounded-lg border border-border bg-white p-3 text-foreground no-underline hover:border-primary-light hover:bg-primary-subtle focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 md:gap-4 md:px-4"
           to="/copier"
         >
-          <span className="grid min-w-0 gap-1">
-            <strong className="text-base font-[650] text-primary">Copier repositories</strong>
+          <span className="grid min-w-0 flex-1 gap-1">
+            <strong className="text-base font-semibold text-primary">Copier repositories</strong>
             <span className="text-sm text-muted-foreground">
               Compare template versions, validation results, and Copier answers.
             </span>
           </span>
-          <span className="inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap text-primary">
+          <span className="inline-flex flex-none items-center gap-1 text-sm font-semibold whitespace-nowrap text-primary">
             Open
             <ArrowRightIcon aria-hidden="true" className="size-4" />
           </span>

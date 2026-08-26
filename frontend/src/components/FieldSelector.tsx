@@ -7,8 +7,8 @@ type FieldSelectorProps = {
   fields: string[]
   getFieldLabel?: (field: string) => string
   label: string
-  onChange: (fields: Set<string>) => void
-  selected: Set<string>
+  onChange: (fields: string[]) => void
+  selected: string[]
 }
 
 export function FieldSelector({
@@ -20,14 +20,14 @@ export function FieldSelector({
   onChange,
   selected
 }: FieldSelectorProps) {
-  const allSelected = fields.length > 0 && fields.every((field) => selected.has(field))
-  const selectedCount = fields.filter((field) => selected.has(field)).length
+  const allSelected = fields.length > 0 && fields.every((field) => selected.includes(field))
+  const selectedCount = fields.filter((field) => selected.includes(field)).length
 
   return (
     <details className="group m-0 grid gap-2 border-t border-border pt-3">
-      <summary className="grid min-h-6 grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-center gap-[0.4rem] list-none text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
+      <summary className="flex min-h-6 items-center gap-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2">
         <ChevronIcon className="group-hover:text-foreground group-hover:opacity-100 group-open:rotate-90" />
-        <span className="min-w-0 leading-tight">
+        <span className="min-w-0 flex-1 leading-tight">
           {label} ({selectedCount} of {fields.length})
         </span>
         <Checkbox
@@ -35,7 +35,7 @@ export function FieldSelector({
           checked={allSelected}
           className="justify-self-center"
           disabled={fields.length === 0}
-          onCheckedChange={(checked) => onChange(new Set(checked ? fields : []))}
+          onCheckedChange={(checked) => onChange(checked ? fields : [])}
           onClick={(event) => event.stopPropagation()}
           title={`Show all ${label.toLocaleLowerCase()}`}
         />
@@ -43,18 +43,17 @@ export function FieldSelector({
       {fields.length === 0 ? (
         <p className="mt-2 mb-0 text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="mt-2 grid gap-[0.3rem]">
+        <div className="mt-2 grid gap-1">
           {fields.map((field) => {
             const fieldLabel = getFieldLabel(field)
             return (
-              <label className="flex min-w-0 items-center gap-[0.4rem] text-sm [overflow-wrap:anywhere]" key={field}>
+              <label className="flex min-w-0 items-center gap-1.5 wrap-anywhere text-sm" key={field}>
                 <Checkbox
-                  checked={selected.has(field)}
+                  checked={selected.includes(field)}
                   onCheckedChange={(checked) => {
-                    const next = new Set(selected)
-                    if (checked) next.add(field)
-                    else next.delete(field)
-                    onChange(next)
+                    onChange(
+                      checked ? [...selected, field] : selected.filter((selectedField) => selectedField !== field)
+                    )
                   }}
                 />
                 {codeLabels ? <code>{fieldLabel}</code> : fieldLabel}

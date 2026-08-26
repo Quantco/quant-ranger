@@ -1,7 +1,7 @@
 import json
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Annotated, TypedDict, override
+from typing import Annotated, Literal, TypedDict, override
 
 import typer
 from packaging.version import Version
@@ -32,6 +32,7 @@ _BASE_COLUMNS = (
     _VERSION,
     _VALIDATION,
 )
+_VALUE_FILTER_COLUMNS = {_REPOSITORIES, _TEMPLATE, _VERSION, _VALIDATION}
 _METADATA_FIELDS = {"_src_path": _TEMPLATE, "_commit": _VERSION}
 
 
@@ -39,19 +40,18 @@ class _DashboardRow(TypedDict):
     repository: str
     url: str
     values: dict[str, JsonValue]
-    validation_failure: str
+    validationFailure: str
 
 
-class _VersionOptions(TypedDict):
-    template: str | None
-    versions: list[str]
+class _DashboardFilter(TypedDict):
+    kind: Literal["text", "values"]
+    optionOrder: Literal["answer", "frequency", "version"]
 
 
-class _AnswerGroup(TypedDict):
+class _DashboardColumn(TypedDict):
+    filter: _DashboardFilter | None
     id: str
-    title: str
-    template: str | None
-    fields: list[str]
+    kind: Literal["answer", "metadata", "repository"]
 
 
 class CopierDashboardOptions(AggregatorOptions):
@@ -111,10 +111,10 @@ class CopierDashboardAggregator(
         answer_fields = _answer_fields(
             [output for _, output in outputs],
         )
-        columns = [*_BASE_COLUMNS, *answer_fields]
+        column_ids = [*_BASE_COLUMNS, *answer_fields]
         web_url = github_web_url(artifact.github_api_url)
         rows = [
-            _dashboard_row(item, output, columns, answer_fields, web_url)
+            _dashboard_row(item, output, column_ids, answer_fields, web_url)
             for item, output in outputs
         ]
         template_options = sorted(
@@ -124,12 +124,14 @@ class CopierDashboardAggregator(
                 if isinstance((template := row["values"][_TEMPLATE]), str) and template
             }
         )
+        categorical_answer_fields = _categorical_answer_fields(
+            rows, answer_fields, template_options
+        )
         payload = {
-            "generated_at": artifact.generated_at.isoformat(),
-            "columns": columns,
-            "version_options": _version_options(rows, template_options),
-            "answer_groups": _answer_groups(rows, answer_fields, template_options),
+            "generatedAt": artifact.generated_at.isoformat(),
+            "columns": _dashboard_columns(column_ids, categorical_answer_fields),
             "rows": rows,
+            "versions": _versions(rows),
         }
 
         output_file = self.options.output_file
@@ -164,7 +166,7 @@ def _dashboard_row(
     github_url: str,
 ) -> _DashboardRow:
     values: dict[str, JsonValue] = {column: "" for column in columns}
-    values[_REPOSITORIES] = item.repository_ref.name
+    values[_REPOSITORIES] = item.repository_ref.full_name
     answers = output.copier_answers
     if answers is not None:
         values[_COPIER_ANSWERS] = True
@@ -185,7 +187,7 @@ def _dashboard_row(
         repository=item.repository_ref.full_name,
         url=f"{github_url}/{item.repository_ref.full_name}",
         values=values,
-        validation_failure=_validation_failure(output.validation_errors),
+        validationFailure=_validation_failure(output.validation_errors),
     )
 
 
@@ -203,24 +205,6 @@ def _validation_failure(
     return ", ".join(labels)
 
 
-def _version_options(
-    rows: Sequence[_DashboardRow],
-    template_options: Sequence[str],
-) -> list[_VersionOptions]:
-    return [
-        _VersionOptions(template=None, versions=_versions(rows)),
-        *(
-            _VersionOptions(
-                template=template,
-                versions=_versions(
-                    [row for row in rows if row["values"][_TEMPLATE] == template]
-                ),
-            )
-            for template in template_options
-        ),
-    ]
-
-
 def _versions(rows: Sequence[_DashboardRow]) -> list[str]:
     versions = {
         version
@@ -230,39 +214,59 @@ def _versions(rows: Sequence[_DashboardRow]) -> list[str]:
     return sorted(versions, key=lambda value: (Version(value), value), reverse=True)
 
 
-def _answer_groups(
+def _categorical_answer_fields(
     rows: Sequence[_DashboardRow],
     answer_fields: Sequence[str],
     template_options: Sequence[str],
-) -> list[_AnswerGroup]:
-    groups: list[_AnswerGroup] = []
-    scopes: list[tuple[str | None, Sequence[_DashboardRow]]] = [
-        (None, rows),
-        *(
-            (
-                template,
+) -> set[str]:
+    fields = set(_boolean_answer_fields(rows, answer_fields))
+    for template in template_options:
+        fields.update(
+            _boolean_answer_fields(
                 [row for row in rows if row["values"][_TEMPLATE] == template],
-            )
-            for template in template_options
-        ),
-    ]
-    for template, scope_rows in scopes:
-        fields = _boolean_answer_fields(scope_rows, answer_fields)
-        if not fields:
-            continue
-        groups.append(
-            _AnswerGroup(
-                id=(
-                    "boolean-template-options"
-                    if template is None
-                    else f"{template}-boolean-template-options"
-                ),
-                title="Boolean Template Options",
-                template=template,
-                fields=fields,
+                answer_fields,
             )
         )
-    return groups
+    return fields
+
+
+def _dashboard_columns(
+    column_ids: Sequence[str], categorical_answer_fields: set[str]
+) -> list[_DashboardColumn]:
+    columns: list[_DashboardColumn] = []
+    for column in column_ids:
+        if column == _COPIER_ANSWERS:
+            filter_definition = None
+        else:
+            filter_definition = _DashboardFilter(
+                kind=(
+                    "values"
+                    if column in _VALUE_FILTER_COLUMNS
+                    or column in categorical_answer_fields
+                    else "text"
+                ),
+                optionOrder=(
+                    "version"
+                    if column == _VERSION
+                    else "answer"
+                    if column in categorical_answer_fields
+                    else "frequency"
+                ),
+            )
+        columns.append(
+            _DashboardColumn(
+                filter=filter_definition,
+                id=column,
+                kind=(
+                    "repository"
+                    if column == _REPOSITORIES
+                    else "metadata"
+                    if column in _BASE_COLUMNS
+                    else "answer"
+                ),
+            )
+        )
+    return columns
 
 
 def _boolean_answer_fields(

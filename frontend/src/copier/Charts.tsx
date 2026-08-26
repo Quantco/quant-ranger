@@ -2,14 +2,14 @@ import { Pie, PieChart as RechartsPieChart } from 'recharts'
 
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '../components/ui/chart'
 import { displayValue } from '../lib/value'
-import { REPOSITORIES, repositoryName } from './dashboard'
-import type { CountedValue, DashboardValue, FilterValue } from './dashboard'
+import { repositoryName } from './dashboard'
+import type { CountedValue, DashboardColumn, DashboardValue, FilterValue } from './dashboard'
 
-type PieChartProps = { column: string; data: CountedValue[]; domain: FilterValue[]; expanded: boolean }
+type PieChartProps = { column: DashboardColumn; data: CountedValue[]; domain: FilterValue[]; expanded: boolean }
 
-function displayValueLabel(column: string, value: DashboardValue) {
+function displayValueLabel(column: DashboardColumn, value: DashboardValue) {
   const label = displayValue(value)
-  return column === REPOSITORIES ? repositoryName(label) : label
+  return column.kind === 'repository' ? repositoryName(label) : label
 }
 
 function semanticColor(value: FilterValue) {
@@ -44,7 +44,7 @@ export function PieChart({ column, data, domain, expanded }: PieChartProps) {
 
   return (
     <ChartContainer className={expanded ? 'h-64' : 'h-40'} config={config} key={expanded ? 'expanded' : 'compact'}>
-      <RechartsPieChart accessibilityLayer aria-label={`${column} distribution`}>
+      <RechartsPieChart accessibilityLayer aria-label={`${column.id} distribution`}>
         <Pie
           cx="28%"
           data={slices}
