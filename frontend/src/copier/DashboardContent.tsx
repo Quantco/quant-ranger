@@ -52,18 +52,17 @@ export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt:
   )
 }
 
-export function RepositoriesSection({
+function RepositoryCopyPanel({
   matchingRepositoryCount,
-  repositoryNames,
-  table
+  repositoryNames
 }: {
   matchingRepositoryCount: number
   repositoryNames: string[]
-  table: DashboardTable
 }) {
   const [showRepositoryNames, setShowRepositoryNames] = useState(false)
+
   return (
-    <DashboardSection heading="Repositories" headingId="repositories-heading">
+    <>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p aria-live="polite" className="m-0 text-sm text-muted-foreground">
           <strong>{matchingRepositoryCount}</strong> matching repositories · <strong>{repositoryNames.length}</strong>{' '}
@@ -95,11 +94,51 @@ export function RepositoriesSection({
           </div>
         </div>
       )}
+    </>
+  )
+}
+
+export function RepositoriesSection({
+  matchingRepositoryCount,
+  repositoryNames,
+  table
+}: {
+  matchingRepositoryCount: number
+  repositoryNames: string[]
+  table: DashboardTable
+}) {
+  return (
+    <DashboardSection heading="Repositories" headingId="repositories-heading">
+      <RepositoryCopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
       <p className="text-sm text-muted-foreground">
         Use the filters in the sidebar to narrow the table. Select a column heading to sort.
       </p>
       <RepositoryTable table={table} />
     </DashboardSection>
+  )
+}
+
+function PieChartCard({
+  chart: { column, data, domain },
+  expanded,
+  onToggle
+}: {
+  chart: DashboardChart
+  expanded: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div className={cn('min-w-0 rounded-lg border border-border bg-white p-3', expanded && 'col-span-full')}>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h3 className="m-0 min-w-0 wrap-anywhere text-sm">
+          {column.kind === 'answer' ? <code>{column.id}</code> : column.id}
+        </h3>
+        <Button aria-expanded={expanded} className="flex-none" onClick={onToggle} type="button" variant="link">
+          {expanded ? 'Show smaller' : 'Show larger'}
+        </Button>
+      </div>
+      <PieChart column={column} data={data} domain={domain} expanded={expanded} />
+    </div>
   )
 }
 
@@ -113,29 +152,15 @@ export function PieChartsSection({ charts }: { charts: DashboardChart[] }) {
         Contents of the selected fields across the currently matching repositories.
       </p>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
-        {charts.map(({ column, data, domain }) => {
-          const expanded = expandedChart === column.id
+        {charts.map((chart) => {
+          const expanded = expandedChart === chart.column.id
           return (
-            <div
-              className={cn('min-w-0 rounded-lg border border-border bg-white p-3', expanded && 'col-span-full')}
-              key={column.id}
-            >
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h3 className="m-0 min-w-0 wrap-anywhere text-sm">
-                  {column.kind === 'answer' ? <code>{column.id}</code> : column.id}
-                </h3>
-                <Button
-                  aria-expanded={expanded}
-                  className="flex-none"
-                  onClick={() => setExpandedChart(expanded ? null : column.id)}
-                  type="button"
-                  variant="link"
-                >
-                  {expanded ? 'Show smaller' : 'Show larger'}
-                </Button>
-              </div>
-              <PieChart column={column} data={data} domain={domain} expanded={expanded} />
-            </div>
+            <PieChartCard
+              chart={chart}
+              expanded={expanded}
+              key={chart.column.id}
+              onToggle={() => setExpandedChart(expanded ? null : chart.column.id)}
+            />
           )
         })}
       </div>
