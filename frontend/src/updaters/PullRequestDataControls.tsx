@@ -1,5 +1,5 @@
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 import { formatDateTime, formatRelativeTime } from '../lib/date'
 import type { LivePullRequestModel } from './useLivePullRequests'
 

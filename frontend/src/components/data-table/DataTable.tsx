@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils'
 
 import { displayValue } from '../lib/value'
 import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './data-table-model'
-import { Button } from './ui/button'
-import { Checkbox } from './ui/checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { Button } from './ui/Button'
+import { Checkbox } from './ui/Checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/Tooltip'
 
 export type DataTableColumn<Row extends RowData> = DataTableColumnDefinition<Row> & {
   id: string

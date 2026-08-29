@@ -1,6 +1,6 @@
 import { Pie, PieChart as RechartsPieChart } from 'recharts'
 
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '../components/ui/chart'
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '../components/ui/Chart'
 import { displayValue } from '../lib/value'
 import { repositoryName } from './dashboard'
 import type { CountedValue, DashboardColumn, DashboardValue, FilterValue } from './dashboard'

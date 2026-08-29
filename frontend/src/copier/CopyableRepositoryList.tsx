@@ -1,8 +1,8 @@
 import { CheckIcon, CopyIcon } from 'lucide-react'
 
-import { Button } from '../components/ui/button'
-import { Textarea } from '../components/ui/textarea'
-import { useClipboard } from '../hooks/useClipboard'
+import { Button } from '../components/ui/Button'
+import { Textarea } from '../components/ui/Textarea'
+import { useClipboard } from './useClipboard'
 import { cn } from '../lib/utils'
 
 function CopyStateIcon({ copied }: { copied: boolean }) {

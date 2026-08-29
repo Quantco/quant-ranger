@@ -1,5 +1,5 @@
 import js from '@eslint/js'
-import { configs as javascriptConfigs } from '@eslint/js'
+const javascriptConfigs = js.configs
 import { configs as typescriptConfigs } from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import reactHooks from 'eslint-plugin-react-hooks'

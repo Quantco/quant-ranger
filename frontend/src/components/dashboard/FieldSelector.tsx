@@ -1,5 +1,5 @@
-import { ChevronIcon } from './ChevronIcon'
-import { Checkbox } from './ui/checkbox'
+import { ChevronIcon } from '../ui/ChevronIcon'
+import { Checkbox } from '../ui/Checkbox'
 
 interface FieldSelectorProps {
   codeLabels?: boolean

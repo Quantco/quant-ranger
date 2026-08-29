@@ -2,10 +2,10 @@ import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { ChevronIcon } from '../components/ChevronIcon'
-import { DashboardSection } from '../components/DashboardSection'
+import { ChevronIcon } from '../components/ui/ChevronIcon'
+import { DashboardSection } from '../components/dashboard/DashboardSection'
 import { DataTable, type DataTableModel } from '../components/DataTable'
-import { Button } from '../components/ui/button'
+import { Button } from '../components/ui/Button'
 import { formatDateTime } from '../lib/date'
 import { PieChart } from './Charts'
 import { CopyableRepositoryList } from './CopyableRepositoryList'

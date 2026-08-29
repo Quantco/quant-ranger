@@ -1,7 +1,7 @@
-import { DashboardSidebarShell } from '../components/DashboardSidebar'
-import { FieldSelector } from '../components/FieldSelector'
-import { MultiSelect } from '../components/MultiSelect'
-import { Input } from '../components/ui/input'
+import { DashboardSidebarShell } from '../components/dashboard/DashboardSidebar'
+import { FieldSelector } from '../components/dashboard/FieldSelector'
+import { MultiSelect } from '../components/dashboard/MultiSelect'
+import { Input } from '../components/ui/Input'
 import { updaterResultColumnLabel, type UpdaterFilterDefinition, type UpdaterResultColumnId } from './result-columns'
 
 interface UpdaterSidebarProps {

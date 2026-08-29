@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 
-import { DashboardSection } from '../components/DashboardSection'
+import { DashboardSection } from '../components/dashboard/DashboardSection'
 import { DataTable, useDataTable, type DataTableColumn } from '../components/DataTable'
-import { Button } from '../components/ui/button'
-import { Dialog, DialogClose, DialogContent, DialogTitle } from '../components/ui/dialog'
+import { Button } from '../components/ui/Button'
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '../components/ui/Dialog'
 import { displayValue } from '../lib/value'
 import type { UpdaterReportFailure, UpdaterReportResult } from './updater-report'
 

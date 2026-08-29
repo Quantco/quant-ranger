@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 
 import { router } from './app/router'
-import { TooltipProvider } from './components/ui/tooltip'
+import { TooltipProvider } from './components/ui/Tooltip'
 import './styles.css'
 
 const root = document.getElementById('root')
