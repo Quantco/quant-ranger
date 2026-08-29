@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 import { DashboardSection } from '../components/dashboard/DashboardSection'
-import { DataTable } from '../components/DataTable'
+import { DataTable } from '../components/data-table/DataTable'
 import { formatDateTime } from '../lib/date'
 import { FailureSection } from './FailureSection'
 import { PullRequestDataPanel } from './PullRequestDataPanel'

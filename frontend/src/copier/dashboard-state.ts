@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import * as z from 'zod/mini'
 
-import { reduceExplorerState, type ExplorerAction, type ExplorerState } from '../components/explorer-state'
+import { reduceExplorerState, type ExplorerAction, type ExplorerState } from '../components/data-table/explorer-state'
 import { useCompressedUrlReducer } from '../lib/useCompressedUrlState'
 import { dashboardValueSchema, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type FilterValue } from './dashboard'
 import { isFilterableDashboardColumn, type DashboardColumnModel, type DashboardFilterKind } from './dashboard-columns'

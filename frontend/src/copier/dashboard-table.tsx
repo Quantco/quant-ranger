@@ -1,7 +1,7 @@
 import { sortFn_alphanumeric, type FilterFn } from '@tanstack/react-table'
 
-import { DataTableOverflowValue, type DataTableColumn } from '../components/DataTable'
-import type { dataTableFeatures, DataTableInstance } from '../components/data-table-model'
+import { DataTableOverflowValue, type DataTableColumn } from '../components/data-table/DataTable'
+import type { dataTableFeatures, DataTableInstance } from '../components/data-table/data-table-model'
 import { cn } from '../lib/utils'
 import { displayValue, type DisplayValue } from '../lib/value'
 import { REPOSITORIES, repositoryName, VALIDATION, type DashboardRow, type DashboardValue } from './dashboard'

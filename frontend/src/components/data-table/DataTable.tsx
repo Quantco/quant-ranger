@@ -3,12 +3,12 @@ import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { displayValue } from '../lib/value'
+import { displayValue } from '../../lib/value'
 import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './data-table-model'
-import { Button } from './ui/Button'
-import { Checkbox } from './ui/Checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/Tooltip'
+import { Button } from '../ui/Button'
+import { Checkbox } from '../ui/Checkbox'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/Table'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/Tooltip'
 
 export type DataTableColumn<Row extends RowData> = DataTableColumnDefinition<Row> & {
   id: string

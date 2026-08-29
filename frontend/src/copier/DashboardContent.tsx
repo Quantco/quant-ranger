@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 import { ChevronIcon } from '../components/ui/ChevronIcon'
 import { DashboardSection } from '../components/dashboard/DashboardSection'
-import { DataTable, type DataTableModel } from '../components/DataTable'
+import { DataTable, type DataTableModel } from '../components/data-table/DataTable'
 import { Button } from '../components/ui/Button'
 import { formatDateTime } from '../lib/date'
 import { PieChart } from './Charts'
