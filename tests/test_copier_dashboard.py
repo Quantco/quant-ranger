@@ -125,6 +125,8 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
                         "_src_path": "gh:quantco/copier-template-python.git",
                         "_commit": "v2.0.0",
                         "build_docs": True,
+                        "platforms": ["linux", "macos"],
+                        "settings": {"mode": "strict"},
                     }
                 ),
             ),
@@ -142,6 +144,8 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
         {"id": "Version", "kind": "metadata"},
         {"id": "Validation", "kind": "metadata"},
         {"id": "build_docs", "kind": "answer"},
+        {"id": "platforms", "kind": "answer"},
+        {"id": "settings", "kind": "answer"},
     ]
     assert payload["versions"] == ["v2.0.0"]
     assert [row["repository"] for row in payload["rows"]] == [
@@ -151,6 +155,8 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
     assert payload["rows"][0]["url"] == "https://github.example/quantco/with-copier"
     assert payload["rows"][0]["values"]["build_docs"] is True
     assert payload["rows"][1]["values"][".copier-answers.yml"] is False
+    assert payload["rows"][0]["values"]["platforms"] == '["linux","macos"]'
+    assert payload["rows"][0]["values"]["settings"] == '{"mode":"strict"}'
 
 
 def test_copier_dashboard_aggregator_marks_invalid_metadata(
