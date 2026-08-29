@@ -340,7 +340,7 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
         ).stdout.strip()
 
         self.checkout.add(self._relative_lockfile_path.as_posix())
-        pr_opened = self.context.github_client.create_pull_request(
+        pull_request = self.context.github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=self._pull_request_title(config),
@@ -355,10 +355,10 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
             ),
             self.context.logger,
         )
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
     def _pull_request_title(self, config: PixiUpdateConfig) -> str:
         if self._relative_lockfile_directory == Path("."):

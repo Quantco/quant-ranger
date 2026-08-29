@@ -177,6 +177,7 @@ class UpdateOutcome[OutputT: UpdateOutput = UpdateOutput](Diagnostics):
     """The outcome returned by updater implementation code."""
 
     result: Status
+    pull_request_number: int | None = None
     output: SerializeAsAny[OutputT] | None = None
 
 
@@ -188,6 +189,7 @@ class UpdateResult[
 
     result: Status
     item: SerializeAsAny[ItemT]
+    pull_request_number: int | None = None
     output: SerializeAsAny[OutputT] | None = None
 
     @staticmethod
@@ -202,6 +204,7 @@ class UpdateResult[
         return UpdateResult[ResultOutputT, ResultItemT](
             result=outcome.result,
             item=item,
+            pull_request_number=outcome.pull_request_number,
             output=outcome.output,
             message=outcome.message,
             details=outcome.details,

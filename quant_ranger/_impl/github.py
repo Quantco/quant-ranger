@@ -47,6 +47,12 @@ class PullRequestOptions:
     labels: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True, slots=True)
+class PullRequestResult:
+    updated: bool
+    number: int | None
+
+
 # See: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats
 _GITHUB_APP_INSTALLATION_TOKEN_PREFIX = "ghs_"
 
@@ -512,7 +518,7 @@ class GitHubClient:
         repository_checkout: RepositoryCheckout,
         options: PullRequestOptions,
         logger: Logger,
-    ) -> bool:
+    ) -> PullRequestResult:
         target_branch = (
             options.target_branch
             or self.get_github_repository(
@@ -546,7 +552,10 @@ class GitHubClient:
             if any(not _is_safe_to_overwrite(commit) for commit in commits):
                 if not self.force_push:
                     logger.info("Pull request has manual changes. Refusing to update.")
-                    return False
+                    return PullRequestResult(
+                        updated=False,
+                        number=pull_request.number,
+                    )
                 logger.warning(
                     "Pull request has manual changes. Overwriting them because "
                     "--force-push is set."
@@ -565,9 +574,11 @@ class GitHubClient:
                     diff_lines=self.pr_details_diff_lines,
                 ),
             )
-
         if not self.publish_changes:
-            return True
+            return PullRequestResult(
+                updated=True,
+                number=pull_request.number if pull_request is not None else None,
+            )
 
         repository_checkout.force_push_branch(
             options.source_branch,
@@ -592,7 +603,7 @@ class GitHubClient:
 
         if options.labels:
             pull_request.add_to_labels(*options.labels)
-        return True
+        return PullRequestResult(updated=True, number=pull_request.number)
 
     def _commit_author(self) -> CommitAuthor:
         with self._commit_author_lock:

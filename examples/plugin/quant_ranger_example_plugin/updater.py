@@ -36,7 +36,7 @@ class EnsureConfigTask(
 
         config_path.write_text(desired)
         self.checkout.add(".example-config")
-        pull_request_opened = self.context.github_client.create_pull_request(
+        pull_request = self.context.github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title="chore: configure example tool",
@@ -48,7 +48,8 @@ class EnsureConfigTask(
             self.context.logger,
         )
         return UpdateOutcome(
-            result=Status.UPDATED if pull_request_opened else Status.SKIPPED,
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
         )
 
 

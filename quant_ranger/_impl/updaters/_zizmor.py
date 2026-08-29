@@ -64,7 +64,7 @@ class ZizmorUpdateTask(UpdateTask[UpdateItem]):
 
         self.checkout.add_all()
         pull_request_template = self.context.site_config.pull_request_templates.zizmor
-        pr_opened = github_client.create_pull_request(
+        pull_request = github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=pull_request_template.title,
@@ -75,10 +75,10 @@ class ZizmorUpdateTask(UpdateTask[UpdateItem]):
             logger,
         )
 
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
 
 class ZizmorUpdater(Updater[UpdateItem]):

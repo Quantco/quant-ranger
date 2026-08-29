@@ -13,7 +13,7 @@ pre-commit:
     # Biome may rewrite frontend files, so run it before parallel checks such as ESLint.
     - name: biome
       glob: "frontend/**"
-      run: pixi {run} frontend-biome
+      run: pixi {run} frontend-format
     - group:
         parallel: true
         jobs:
@@ -36,7 +36,7 @@ pre-commit:
               CI: "1"
           - name: eslint
             glob: "frontend/**"
-            run: pixi {run} frontend-eslint
+            run: pixi {run} frontend-lint
           - name: taplo
             glob: "*.toml"
             run: pixi {run} taplo format {staged_files}

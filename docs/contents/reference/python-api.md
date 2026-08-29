@@ -28,6 +28,7 @@ complete implementation.
 - **Logger** – Small logging interface shared by CLI helpers and updaters.
 - **PathUpdateItem** – Update item for tasks scoped to a repository path.
 - **PullRequestOptions** –
+- **PullRequestResult** –
 - **RepositoryCheckout** – Git operations for a local checkout of a repository ref.
 - **RepositoryRef** – Remote repository identity selected for an update run.
 - **RunContext** – Runtime dependencies shared across scanner and updater operations.
@@ -331,7 +332,7 @@ clone_repository(repository_ref: RepositoryRef, *, directory: str | Path | None 
 #### create_pull_request
 
 ```python
-create_pull_request(repository_checkout: RepositoryCheckout, options: PullRequestOptions, logger: Logger) -> bool
+create_pull_request(repository_checkout: RepositoryCheckout, options: PullRequestOptions, logger: Logger) -> PullRequestResult
 ```
 
 #### check_ref_exists
@@ -479,6 +480,29 @@ target_branch: str | None = None
 
 ```python
 labels: list[str] = field(default_factory=list)
+```
+
+### PullRequestResult
+
+```python
+PullRequestResult(updated: bool, number: int | None) -> None
+```
+
+**Attributes:**
+
+- **updated** (<code>bool</code>) –
+- **number** (<code>int | None</code>) –
+
+#### updated
+
+```python
+updated: bool
+```
+
+#### number
+
+```python
+number: int | None
 ```
 
 ### RepositoryCheckout
@@ -854,12 +878,19 @@ The outcome returned by updater implementation code.
 **Attributes:**
 
 - **result** (<code>Status</code>) –
+- **pull_request_number** (<code>int | None</code>) –
 - **output** (<code>SerializeAsAny\[UpdateOutcome[OutputT]\] | None</code>) –
 
 #### result
 
 ```python
 result: Status
+```
+
+#### pull_request_number
+
+```python
+pull_request_number: int | None = None
 ```
 
 #### output
@@ -898,6 +929,7 @@ The structured result of running one update item.
 
 - **result** (<code>Status</code>) –
 - **item** (<code>SerializeAsAny\[UpdateResult[ItemT]\]</code>) –
+- **pull_request_number** (<code>int | None</code>) –
 - **output** (<code>SerializeAsAny\[UpdateResult[OutputT]\] | None</code>) –
 
 #### result
@@ -910,6 +942,12 @@ result: Status
 
 ```python
 item: SerializeAsAny[ItemT]
+```
+
+#### pull_request_number
+
+```python
+pull_request_number: int | None = None
 ```
 
 #### output
@@ -1733,7 +1771,7 @@ resolve(site_config: SiteConfig) -> OptionInfo | ArgumentInfo
 ### FakeGitHubClient
 
 ```python
-FakeGitHubClient(token: str = 'secret-token', logger: Logger = RecordingLogger(), installation_owner: str | None = None, api_url: str = 'https://api.github.com', github_server_host: str = 'github.com', repository_url: str | None = None, pr_opened: bool = True, publish_changes: bool = False, checkout: RepositoryCheckout | None = None, active_by_owner: dict[str, list[RepositoryRef]] = dict(), installed: list[RepositoryRef] = list(), missing_refs: set[str] = set(), error: GitHubError | None = None, files: dict[str, list[str]] = dict(), file_contents: dict[str, str] = dict(), latest_release: str = 'v0.70.0', repo_tags: dict[tuple[str, str], list[str]] = dict(), repo_tag_error: GitHubError | None = None, tag_messages: dict[tuple[str, str, str], str | None] = dict(), active_repository_calls: list[str] = list(), installed_repository_calls: int = 0, clone_calls: list[RepositoryRef] = list(), find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = list(), file_content_calls: list[tuple[RepositoryRef, str]] = list(), latest_release_calls: list[tuple[str, str]] = list(), repo_tag_calls: list[tuple[str, str]] = list(), pull_request_calls: list[dict[str, Any]] = list()) -> None
+FakeGitHubClient(token: str = 'secret-token', logger: Logger = RecordingLogger(), installation_owner: str | None = None, api_url: str = 'https://api.github.com', github_server_host: str = 'github.com', repository_url: str | None = None, pr_opened: bool = True, publish_changes: bool = False, pull_request_number: int | None = None, checkout: RepositoryCheckout | None = None, active_by_owner: dict[str, list[RepositoryRef]] = dict(), installed: list[RepositoryRef] = list(), missing_refs: set[str] = set(), error: GitHubError | None = None, files: dict[str, list[str]] = dict(), file_contents: dict[str, str] = dict(), latest_release: str = 'v0.70.0', repo_tags: dict[tuple[str, str], list[str]] = dict(), repo_tag_error: GitHubError | None = None, tag_messages: dict[tuple[str, str, str], str | None] = dict(), active_repository_calls: list[str] = list(), installed_repository_calls: int = 0, clone_calls: list[RepositoryRef] = list(), find_files_calls: list[tuple[RepositoryRef, str | re.Pattern[str]]] = list(), file_content_calls: list[tuple[RepositoryRef, str]] = list(), latest_release_calls: list[tuple[str, str]] = list(), repo_tag_calls: list[tuple[str, str]] = list(), pull_request_calls: list[dict[str, Any]] = list()) -> None
 ```
 
 `GitHubClient` stand-in for tests that records calls per method.
@@ -1765,6 +1803,7 @@ methods a test exercises need to be configured.
 - **repository_url** (<code>str | None</code>) –
 - **pr_opened** (<code>bool</code>) –
 - **publish_changes** (<code>bool</code>) –
+- **pull_request_number** (<code>int | None</code>) –
 - **checkout** (<code>RepositoryCheckout | None</code>) –
 - **active_by_owner** (<code>dict\[str, list\[RepositoryRef\]\]</code>) –
 - **installed** (<code>list\[RepositoryRef\]</code>) –
@@ -1831,6 +1870,12 @@ pr_opened: bool = True
 
 ```python
 publish_changes: bool = False
+```
+
+#### pull_request_number
+
+```python
+pull_request_number: int | None = None
 ```
 
 #### checkout
@@ -2010,7 +2055,7 @@ get_repo_tag_message(owner: str, name: str, tag: str) -> str | None
 #### create_pull_request
 
 ```python
-create_pull_request(checkout: RepositoryCheckout, options: PullRequestOptions, logger: Logger) -> bool
+create_pull_request(checkout: RepositoryCheckout, options: PullRequestOptions, logger: Logger) -> PullRequestResult
 ```
 
 ### LogLevel

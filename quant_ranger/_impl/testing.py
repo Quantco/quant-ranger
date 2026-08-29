@@ -11,7 +11,11 @@ from rich.console import Console, RenderableType
 
 from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.git import RepositoryCheckout
-from quant_ranger._impl.github import GitHubError, PullRequestOptions
+from quant_ranger._impl.github import (
+    GitHubError,
+    PullRequestOptions,
+    PullRequestResult,
+)
 from quant_ranger._impl.helpers import ExecOutput
 from quant_ranger._impl.logger import Logger, LogLevel
 from quant_ranger._impl.models import RepositoryRef, ScanFailure
@@ -167,6 +171,7 @@ class FakeGitHubClient:
     repository_url: str | None = None
     pr_opened: bool = True
     publish_changes: bool = False
+    pull_request_number: int | None = None
     checkout: RepositoryCheckout | None = None
     active_by_owner: dict[str, list[RepositoryRef]] = field(default_factory=dict)
     installed: list[RepositoryRef] = field(default_factory=list)
@@ -254,7 +259,7 @@ class FakeGitHubClient:
         checkout: RepositoryCheckout,
         options: PullRequestOptions,
         logger: Logger,
-    ) -> bool:
+    ) -> PullRequestResult:
         self.pull_request_calls.append(
             {
                 "checkout": checkout,
@@ -263,7 +268,10 @@ class FakeGitHubClient:
                 "publish_changes": self.publish_changes,
             }
         )
-        return self.pr_opened
+        return PullRequestResult(
+            updated=self.pr_opened,
+            number=self.pull_request_number,
+        )
 
 
 class RecordingCheckout(RepositoryCheckout):

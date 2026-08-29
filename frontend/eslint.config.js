@@ -1,8 +1,10 @@
 import js from '@eslint/js'
+const javascriptConfigs = js.configs
+import { configs as typescriptConfigs } from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import reactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import pluginTailwind from 'eslint-plugin-better-tailwindcss'
 
 const typescriptFiles = ['**/*.{ts,tsx}']
 
@@ -10,7 +12,7 @@ export default defineConfig(
   globalIgnores(['node_modules/**', 'pnpm-lock.yaml']),
   {
     files: ['**/*.{js,mjs,cjs}'],
-    extends: [js.configs.recommended],
+    extends: [javascriptConfigs.recommended],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: globals.node,
@@ -19,7 +21,11 @@ export default defineConfig(
   },
   {
     files: typescriptFiles,
-    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    extends: [
+      javascriptConfigs.recommended,
+      ...typescriptConfigs.strictTypeChecked,
+      typescriptConfigs.stylisticTypeChecked
+    ],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: globals.browser,
@@ -30,16 +36,14 @@ export default defineConfig(
       sourceType: 'module'
     },
     rules: {
-      '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-misused-promises': [
-        'error',
-        {
-          checksVoidReturn: {
-            attributes: false
-          }
-        }
-      ],
+      '@typescript-eslint/consistent-type-exports': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
+      '@typescript-eslint/no-import-type-side-effects': 'error',
+      '@typescript-eslint/no-unsafe-type-assertion': 'error',
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      '@typescript-eslint/strict-boolean-expressions': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
     }
   },
@@ -55,13 +59,24 @@ export default defineConfig(
     }
   },
   {
-    // These modules validate data from URL parameters and local storage before
-    // exposing typed values. The standard library types JSON arrays as any[].
-    files: ['src/copier/dashboard-url.ts', 'src/updaters/usePullRequests.ts'],
+    files: typescriptFiles,
+    plugins: { 'better-tailwindcss': pluginTailwind },
     rules: {
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off'
+      ...pluginTailwind.configs['recommended-warn'].rules,
+      'better-tailwindcss/enforce-consistent-class-order': 'error',
+      'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
+      'better-tailwindcss/enforce-consistent-variable-syntax': 'warn',
+      'better-tailwindcss/no-conflicting-classes': 'error',
+      'better-tailwindcss/no-duplicate-classes': 'warn',
+      'better-tailwindcss/no-restricted-classes': 'error',
+      'better-tailwindcss/no-unnecessary-whitespace': 'warn',
+      'better-tailwindcss/no-unknown-classes': 'error'
+    },
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: './src/styles.css',
+        rootFontSize: 16
+      }
     }
   }
 )

@@ -233,6 +233,7 @@ $ quant-ranger aggregate [OPTIONS] COMMAND [ARGS]...
 * `log-failures`: Print recorded failures.
 * `incident-io-alerts`: Send a per-repository incident.io alert...
 * `copier-dashboard`: Write Copier dashboard JSON.
+* `updater-report`: Write public JSON for one updater feed.
 
 ### `quant-ranger aggregate log-failures`
 
@@ -294,6 +295,26 @@ $ quant-ranger aggregate copier-dashboard [OPTIONS] RESULTS_FILE
 **Options**:
 
 * `-o, --output-file PATH`: Path at which to write the browser-ready dashboard JSON.  [required]
+* `--help`: Show this message and exit.
+
+### `quant-ranger aggregate updater-report`
+
+Write public JSON for one updater feed.
+
+**Usage**:
+
+```console
+$ quant-ranger aggregate updater-report [OPTIONS] RESULTS_FILE
+```
+
+**Arguments**:
+
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
+
+**Options**:
+
+* `-o, --output-directory PATH`: Updater data root in which to write the index and report directory.  [required]
+* `--title TEXT`: Display title; defaults to the updater name.
 * `--help`: Show this message and exit.
 
 ## `quant-ranger frontend`

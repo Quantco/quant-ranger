@@ -47,6 +47,7 @@ def test_write_results_file_writes_updater_results_and_scan_failures(
                     "branch": None,
                 }
             },
+            "pull_request_number": 42,
             "output": None,
             "message": None,
             "details": None,
@@ -154,4 +155,5 @@ def _sample_result() -> UpdateResult:
     return UpdateResult(
         result=Status.UPDATED,
         item=UpdateItem(repository_ref=RepositoryRef(owner="quantco", name="example")),
+        pull_request_number=42,
     )

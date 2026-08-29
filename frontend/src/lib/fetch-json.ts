@@ -1,13 +1,14 @@
-export async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
-  const headers = new Headers(init?.headers)
-  // Prevent Vite's SPA fallback from serving index.html for missing development data.
-  headers.set('Accept', 'application/json')
-
+export async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
   let response: Response
   try {
-    response = await fetch(url, { ...init, cache: 'no-cache', headers })
+    response = await fetch(url, {
+      cache: 'no-cache',
+      // Prevent Vite's SPA fallback from serving index.html for missing development data.
+      headers: { Accept: 'application/json' },
+      signal
+    })
   } catch (error) {
-    if (init?.signal?.aborted) throw error
+    signal.throwIfAborted()
     throw new Error(`Could not request ${url}. Check your connection and reload the page.`, {
       cause: error
     })

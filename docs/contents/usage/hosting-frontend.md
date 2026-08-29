@@ -5,6 +5,7 @@ description: Export and host the static quant-ranger frontend.
 import CodeBlock from '@theme/CodeBlock';
 import deployFrontend from '!!raw-loader!../../../examples/github-pages/deploy-frontend.yml';
 import copierDashboard from '!!raw-loader!../../../examples/github-pages/copier-dashboard.yml';
+import updaterReport from '!!raw-loader!../../../examples/github-pages/updater-report.yml';
 
 # Hosting the frontend
 
@@ -55,12 +56,38 @@ All workflows that write to this branch must use the same `quant-ranger-pages` c
 
 The Copier inventory uses its specialized updater and aggregator to write
 `data/copier/latest.json`.
+The example also runs the `updater-report` aggregator so failures and run metadata appear in the updater overview.
 
 <CodeBlock language="yaml" title=".github/workflows/copier-dashboard.yml">
   {copierDashboard}
 </CodeBlock>
 
 Changing its schedule or repository selection does not require rebuilding the frontend.
+
+## Publish an updater report
+
+Each updater run should write a results artifact and pass it to the `updater-report` aggregator.
+The updater name and its normalized options determine a stable feed ID:
+
+- rerunning the same updater with the same options replaces its report.
+- running the same updater with different options creates a separate report.
+
+The aggregator writes:
+
+```text
+data/updaters/
+├── index.json
+└── <feed-id>/
+    └── latest.json
+```
+
+The index must be preserved and updated alongside the report, so the updater workflow below checks out the current `gh-pages` branch before aggregation.
+The shared concurrency group prevents simultaneous deployments from losing index entries.
+This example runs `pixi-version`; replace that command and its options with the updater you schedule.
+
+<CodeBlock language="yaml" title=".github/workflows/updater-report.yml">
+  {updaterReport}
+</CodeBlock>
 
 ## Authenticate data-refresh workflows
 
@@ -74,6 +101,7 @@ Frontend releases and report data have independent lifecycles:
 
 - **New quant-ranger frontend:** `index.html` and `assets/`
 - **Copier inventory refresh:** `data/copier/latest.json`
+- **Generic updater run:** `data/updaters/index.json` and its feed
 
 The examples use [`peaceiris/actions-gh-pages`](https://github.com/peaceiris/actions-gh-pages) because it supports retaining the rest of a Pages branch while deploying a subdirectory.
 GitHub's Pages artifact deployment replaces the complete site and is therefore better suited to deployments where one workflow owns every file.

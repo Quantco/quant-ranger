@@ -2,8 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 
+import { router } from './app/router'
 import { TooltipProvider } from './components/ui/tooltip'
-import { router } from './Site'
 import './styles.css'
 
 const root = document.getElementById('root')

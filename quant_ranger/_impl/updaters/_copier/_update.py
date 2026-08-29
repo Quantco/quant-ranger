@@ -219,7 +219,7 @@ class CopierUpdateTask(UpdateTask[CopierUpdateItem]):
         # quant-ranger opens the update PR.
         changelog = _MENTION_PATTERN.sub(r"\1", changelog)
 
-        pr_opened = self.context.github_client.create_pull_request(
+        pull_request = self.context.github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=f"chore: Update copier template to {latest_tag}",
@@ -230,10 +230,10 @@ class CopierUpdateTask(UpdateTask[CopierUpdateItem]):
             ),
             self.context.logger,
         )
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
 
 class CopierUpdater(Updater[CopierUpdateItem]):

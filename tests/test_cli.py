@@ -680,6 +680,33 @@ def test_aggregate_command_runs_log_failures_from_results_file(
     assert "scan boom" in result.output
 
 
+def test_aggregate_command_writes_updater_report(
+    app: typer.Typer,
+    tmp_path: Path,
+) -> None:
+    results_file = _write_sample_results_file(tmp_path / "results.json")
+    output_directory = tmp_path / "report"
+
+    result = runner.invoke(
+        app,
+        [
+            "aggregate",
+            "updater-report",
+            str(results_file),
+            "--output-directory",
+            str(output_directory),
+        ],
+    )
+
+    assert result.exit_code == 0
+    index = json.loads((output_directory / "index.json").read_text())
+    feed_id = index["feeds"][0]["feed_id"]
+    payload = json.loads((output_directory / feed_id / "latest.json").read_text())
+    assert payload["feed_id"] == feed_id
+    assert payload["updater"] == "zizmor"
+    assert payload["results"][0]["repository"] == "quantco/example"
+
+
 def test_aggregate_command_logs_unexpected_exceptions(
     tmp_path: Path,
 ) -> None:

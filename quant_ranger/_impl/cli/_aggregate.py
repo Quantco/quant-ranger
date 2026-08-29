@@ -10,6 +10,7 @@ from quant_ranger._impl.aggregators import (
     CopierDashboardAggregator,
     IncidentIoAlertsAggregator,
     LogFailuresAggregator,
+    UpdaterReportAggregator,
 )
 from quant_ranger._impl.artifacts import (
     parse_update_results,
@@ -28,6 +29,7 @@ BUILTIN_AGGREGATORS: tuple[type[AnyAggregator], ...] = (
     LogFailuresAggregator,
     IncidentIoAlertsAggregator,
     CopierDashboardAggregator,
+    UpdaterReportAggregator,
 )
 
 
