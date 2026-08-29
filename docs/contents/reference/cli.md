@@ -68,6 +68,7 @@ $ quant-ranger update [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `zizmor`: Fix configured zizmor findings.
+* `copier-dashboard`: Collect Copier dashboard data.
 * `copier`: Update a Copier template.
 * `copier-migration`: Apply a Copier-answer migration.
 * `pixi-version`: Update pinned Pixi versions.
@@ -84,6 +85,20 @@ Fix configured zizmor findings. Applies the packaged automatic fixes to GitHub A
 
 ```console
 $ quant-ranger update zizmor [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `quant-ranger update copier-dashboard`
+
+Collect Copier dashboard data.
+
+**Usage**:
+
+```console
+$ quant-ranger update copier-dashboard [OPTIONS]
 ```
 
 **Options**:
@@ -217,6 +232,7 @@ $ quant-ranger aggregate [OPTIONS] COMMAND [ARGS]...
 
 * `log-failures`: Print recorded failures.
 * `incident-io-alerts`: Send a per-repository incident.io alert...
+* `copier-dashboard`: Write Copier dashboard JSON.
 
 ### `quant-ranger aggregate log-failures`
 
@@ -259,6 +275,25 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 * `--source-url TEXT`: Link attached to each alert, e.g. the GitHub Actions run that produced the results file.  [required]
 * `--team TEXT`: Team name sent as `team` metadata, for alert sources that route alerts by a team attribute.  [required]
 * `--api-url TEXT`: incident.io API base URL.  [default: https://api.incident.io]
+* `--help`: Show this message and exit.
+
+### `quant-ranger aggregate copier-dashboard`
+
+Write Copier dashboard JSON.
+
+**Usage**:
+
+```console
+$ quant-ranger aggregate copier-dashboard [OPTIONS] RESULTS_FILE
+```
+
+**Arguments**:
+
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
+
+**Options**:
+
+* `-o, --output-file PATH`: Path at which to write the browser-ready dashboard JSON.  [required]
 * `--help`: Show this message and exit.
 
 ## `quant-ranger frontend`

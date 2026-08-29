@@ -3,6 +3,7 @@ from collections.abc import Iterable, Sequence
 from urllib.parse import urlsplit
 
 import yaml
+from packaging.version import InvalidVersion, Version
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from quant_ranger._impl.git import RepositoryCheckout
@@ -12,6 +13,26 @@ from quant_ranger._impl.logger import Logger
 from quant_ranger._impl.models import RepositoryRef
 
 COPIER_ANSWERS_FILE = ".copier-answers.yml"
+
+
+def is_valid_version_tag(value: str) -> bool:
+    """Whether a Copier ``_commit`` value is a PEP 440 version tag."""
+    try:
+        Version(value)
+        return True
+    except InvalidVersion:
+        return False
+
+
+def normalize_template_name(value: object) -> str:
+    """Return the final Copier template name from a supported source string."""
+    if not isinstance(value, str):
+        return ""
+
+    normalized = value.split("?", maxsplit=1)[0].split("#", maxsplit=1)[0]
+    normalized = normalized.rstrip("/").rsplit("/", maxsplit=1)[-1]
+    normalized = normalized.rsplit(":", maxsplit=1)[-1]
+    return normalized.removesuffix(".git").removeprefix("copier-template-")
 
 
 def _trusted_template_src_paths(templates: Iterable[str]) -> frozenset[str]:

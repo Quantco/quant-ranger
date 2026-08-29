@@ -4,6 +4,7 @@ description: Export and host the static quant-ranger frontend.
 
 import CodeBlock from '@theme/CodeBlock';
 import deployFrontend from '!!raw-loader!../../../examples/github-pages/deploy-frontend.yml';
+import copierDashboard from '!!raw-loader!../../../examples/github-pages/copier-dashboard.yml';
 
 # Hosting the frontend
 
@@ -49,3 +50,30 @@ Then configure GitHub Pages to deploy from the root of that branch before adding
 Rerun it after updating quant-ranger to publish a newer frontend.
 `keep_files` retains the data already present on the Pages branch.
 All workflows that write to this branch must use the same `quant-ranger-pages` concurrency group so that their deployments cannot overlap.
+
+## Publish the Copier inventory
+
+The Copier inventory uses its specialized updater and aggregator to write
+`data/copier/latest.json`.
+
+<CodeBlock language="yaml" title=".github/workflows/copier-dashboard.yml">
+  {copierDashboard}
+</CodeBlock>
+
+Changing its schedule or repository selection does not require rebuilding the frontend.
+
+## Authenticate data-refresh workflows
+
+The data-refresh examples use a `QUANT_RANGER_TOKEN` repository secret for repository access.
+Use a fine-grained token or GitHub App credentials that can read the repositories being scanned.
+The workflow's built-in `github.token` is used separately to update the `gh-pages` branch.
+
+## Updating only JSON
+
+Frontend releases and report data have independent lifecycles:
+
+- **New quant-ranger frontend:** `index.html` and `assets/`
+- **Copier inventory refresh:** `data/copier/latest.json`
+
+The examples use [`peaceiris/actions-gh-pages`](https://github.com/peaceiris/actions-gh-pages) because it supports retaining the rest of a Pages branch while deploying a subdirectory.
+GitHub's Pages artifact deployment replaces the complete site and is therefore better suited to deployments where one workflow owns every file.

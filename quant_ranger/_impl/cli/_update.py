@@ -20,6 +20,7 @@ from quant_ranger._impl.runtime import RunContext
 from quant_ranger._impl.site_config import SiteConfig
 from quant_ranger._impl.updaters import (
     AnyUpdater,
+    CopierDashboardUpdater,
     CopierMigrationUpdater,
     CopierUpdater,
     CustomUpdater,
@@ -34,6 +35,7 @@ from ._helpers import command_signature
 
 BUILTIN_UPDATERS: tuple[type[AnyUpdater], ...] = (
     ZizmorUpdater,
+    CopierDashboardUpdater,
     CopierUpdater,
     CopierMigrationUpdater,
     PixiVersionUpdater,
