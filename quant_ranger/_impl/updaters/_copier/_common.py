@@ -25,7 +25,11 @@ def is_valid_version_tag(value: str) -> bool:
 
 
 def normalize_template_name(value: object) -> str:
-    """Return the final Copier template name from a supported source string."""
+    """Return the final Copier template name.
+
+    For example, ``https://github.com/quantco/copier-template-python.git``
+    becomes ``"python"``.
+    """
     if not isinstance(value, str):
         return ""
 
