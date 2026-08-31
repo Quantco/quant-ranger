@@ -402,11 +402,8 @@ frontend/public/
 node_modules/
 quant_ranger/_frontend/
 _site/
-/
-# Legacy local sample data; frontend exports and workflows use _site.
-_pages/
 
-# Claude
+# Ckaude
 .claude/*.local.*
 .claude/worktrees/
 .claude/settings.local.json
