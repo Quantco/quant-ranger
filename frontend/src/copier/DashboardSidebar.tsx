@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
-import { DashboardSidebarShell } from '../components/dashboard/DashboardSidebar'
-import { FieldSelector } from '../components/dashboard/FieldSelector'
-import { MultiSelect } from '../components/dashboard/MultiSelect'
+import { DashboardSidebarShell } from '@/components/dashboard/DashboardSidebar'
+import { FieldSelector } from '@/components/dashboard/FieldSelector'
+import { MultiSelect } from '@/components/dashboard/MultiSelect'
 
 interface FieldSelection {
   fields: string[]

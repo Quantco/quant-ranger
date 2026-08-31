@@ -1,7 +1,7 @@
 import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox'
 import { CheckIcon } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
 const Combobox = ComboboxPrimitive.Root
 const ComboboxChip = ComboboxPrimitive.Chip

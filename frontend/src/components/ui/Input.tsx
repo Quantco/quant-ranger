@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
 function Input({ className, type, ...props }: ComponentProps<'input'>) {
   return (

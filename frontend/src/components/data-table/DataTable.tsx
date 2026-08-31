@@ -1,14 +1,14 @@
 import { useTable, type Cell, type Header, type RowData } from '@tanstack/react-table'
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
-import { displayValue } from '../../lib/value'
+import { displayValue } from '@/lib/value'
 import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './data-table-model'
-import { Button } from '../ui/Button'
-import { Checkbox } from '../ui/Checkbox'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/Table'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/Tooltip'
+import { Button } from '@/components/ui/Button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/Tooltip'
+import { Checkbox } from '@/components/ui/Checkbox'
 
 export type DataTableColumn<Row extends RowData> = DataTableColumnDefinition<Row> & {
   id: string

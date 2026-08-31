@@ -1,6 +1,6 @@
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { formatDateTime, formatRelativeTime } from '../lib/date'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { formatDateTime, formatRelativeTime } from '@/lib/date'
 import type { LivePullRequestModel } from './useLivePullRequests'
 
 type PullRequestDataControlsModel = Pick<

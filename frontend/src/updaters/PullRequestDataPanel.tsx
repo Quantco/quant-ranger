@@ -1,4 +1,4 @@
-import { DashboardSection } from '../components/dashboard/DashboardSection'
+import { DashboardSection } from '@/components/dashboard/DashboardSection'
 import { PullRequestDataControls } from './PullRequestDataControls'
 import { PullRequestDataStatus } from './PullRequestDataStatus'
 import type { LivePullRequestModel } from './useLivePullRequests'

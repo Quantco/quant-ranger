@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 
-import { createDataTableModel } from '../components/data-table/DataTable'
-import { replaceExplorerFilter } from '../components/data-table/explorer-state'
-import { useExplorerTable } from '../components/data-table/useExplorerTable'
+import { createDataTableModel } from '@/components/data-table/DataTable'
+import { replaceExplorerFilter } from '@/components/data-table/explorer-state'
+import { useExplorerTable } from '@/components/data-table/useExplorerTable'
 import { dashboardCharts, dashboardFilters } from './dashboard-analytics'
 import { REPOSITORIES, type DashboardSnapshot } from './dashboard'
 import { createDashboardColumns, isFilterableDashboardColumn } from './dashboard-columns'

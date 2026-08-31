@@ -1,10 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { Link } from 'react-router'
 
-import { DataTable, useDataTable } from '../components/data-table/DataTable'
-import type { dataTableFeatures } from '../components/data-table/data-table-model'
-import { formatDateTime } from '../lib/date'
-import { displayValue } from '../lib/value'
+import { DataTable, useDataTable } from '@/components/data-table/DataTable'
+import type { dataTableFeatures } from '@/components/data-table/data-table-model'
+import { formatDateTime } from '@/lib/date'
+import { displayValue } from '@/lib/value'
 import type { UpdaterFeedSummary } from './updater-report'
 
 function updaterOptions(value: Record<string, unknown>) {

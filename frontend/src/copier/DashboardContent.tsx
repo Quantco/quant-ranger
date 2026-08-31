@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
-import { ChevronIcon } from '../components/ui/ChevronIcon'
-import { DashboardSection } from '../components/dashboard/DashboardSection'
-import { DataTable, type DataTableModel } from '../components/data-table/DataTable'
-import { Button } from '../components/ui/Button'
-import { formatDateTime } from '../lib/date'
+import { ChevronIcon } from '@/components/ui/ChevronIcon'
+import { DashboardSection } from '@/components/dashboard/DashboardSection'
+import { DataTable, type DataTableModel } from '@/components/data-table/DataTable'
+import { Button } from '@/components/ui/Button'
+import { formatDateTime } from '@/lib/date'
 import { PieChart } from './Charts'
 import { CopyableRepositoryList } from './CopyableRepositoryList'
 import type { DashboardChart } from './dashboard-analytics'

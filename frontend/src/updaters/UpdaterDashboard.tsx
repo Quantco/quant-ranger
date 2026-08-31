@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
-import { DashboardSection } from '../components/dashboard/DashboardSection'
-import { DataTable } from '../components/data-table/DataTable'
-import { formatDateTime } from '../lib/date'
+import { DashboardSection } from '@/components/dashboard/DashboardSection'
+import { DataTable } from '@/components/data-table/DataTable'
+import { formatDateTime } from '@/lib/date'
 import { FailureSection } from './FailureSection'
 import { PullRequestDataPanel } from './PullRequestDataPanel'
 import { UpdaterSidebar } from './UpdaterSidebar'

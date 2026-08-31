@@ -398,7 +398,7 @@ output/
 
 # Dashboard development
 .local/
-frontend/public/data/
+frontend/public/
 node_modules/
 quant_ranger/_frontend/
 _site/

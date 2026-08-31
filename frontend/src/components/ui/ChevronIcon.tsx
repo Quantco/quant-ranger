@@ -1,6 +1,6 @@
 import { ChevronRightIcon } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
 export function ChevronIcon({ className }: { className?: string }) {
   return (

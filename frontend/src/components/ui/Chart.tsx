@@ -1,7 +1,7 @@
 import { createContext, useContext, type ComponentProps, type ReactNode } from 'react'
 import { Legend, ResponsiveContainer, Tooltip, type LegendPayload } from 'recharts'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
 export type ChartConfig = Record<string, { label: ReactNode }>
 

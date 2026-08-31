@@ -1,9 +1,9 @@
 import { sortFn_alphanumeric, type FilterFn } from '@tanstack/react-table'
 
-import { DataTableOverflowValue, type DataTableColumn } from '../components/data-table/DataTable'
-import type { dataTableFeatures, DataTableInstance } from '../components/data-table/data-table-model'
-import { cn } from '../lib/utils'
-import { displayValue, type DisplayValue } from '../lib/value'
+import { DataTableOverflowValue, type DataTableColumn } from '@/components/data-table/DataTable'
+import type { dataTableFeatures, DataTableInstance } from '@/components/data-table/data-table-model'
+import { cn } from '@/lib/class-merge'
+import { displayValue, type DisplayValue } from '@/lib/value'
 import { REPOSITORIES, repositoryName, VALIDATION, type DashboardRow, type DashboardValue } from './dashboard'
 import type { DashboardColumnModel, DashboardFilterKind } from './dashboard-columns'
 import { hasDashboardFilterValue, type DashboardFilterValue } from './dashboard-state'

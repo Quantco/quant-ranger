@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 
-import { DashboardSection } from '../components/dashboard/DashboardSection'
-import { DataTable, useDataTable, type DataTableColumn } from '../components/data-table/DataTable'
-import { Button } from '../components/ui/Button'
-import { Dialog, DialogClose, DialogContent, DialogTitle } from '../components/ui/Dialog'
-import { displayValue } from '../lib/value'
+import { DashboardSection } from '@/components/dashboard/DashboardSection'
+import { DataTable, useDataTable, type DataTableColumn } from '@/components/data-table/DataTable'
+import { Button } from '@/components/ui/Button'
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/Dialog'
+import { displayValue } from '@/lib/value'
 import type { UpdaterReportFailure, UpdaterReportResult } from './updater-report'
 
 type ReportFailure = UpdaterReportFailure | UpdaterReportResult

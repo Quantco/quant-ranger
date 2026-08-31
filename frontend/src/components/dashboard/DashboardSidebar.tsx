@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { cn } from '../../lib/utils'
-import { Button } from '../ui/Button'
+import { cn } from '@/lib/class-merge'
+import { Button } from '@/components/ui/Button'
 
 export function DashboardSidebarShell({
   children,

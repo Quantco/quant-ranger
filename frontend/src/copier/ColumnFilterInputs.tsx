@@ -1,8 +1,8 @@
 import { useState } from 'react'
 
-import { LabeledControl } from '../components/dashboard/LabeledControl'
-import { MultiSelect } from '../components/dashboard/MultiSelect'
-import { Button } from '../components/ui/Button'
+import { LabeledControl } from '@/components/dashboard/LabeledControl'
+import { MultiSelect } from '@/components/dashboard/MultiSelect'
+import { Button } from '@/components/ui/Button'
 import {
   Combobox,
   ComboboxChipsInput,
@@ -11,9 +11,9 @@ import {
   ComboboxInputGroup,
   ComboboxItem,
   ComboboxList
-} from '../components/ui/Combobox'
-import { filterOptions } from '../lib/filter-options'
-import { displayValue } from '../lib/value'
+} from '@/components/ui/Combobox'
+import { filterOptions } from '@/lib/filter-options'
+import { displayValue } from '@/lib/value'
 import { repositoryName } from './dashboard'
 import type { CountedValue, DashboardValue, FilterValue } from './dashboard'
 import type { FilterableDashboardColumn } from './dashboard-columns'

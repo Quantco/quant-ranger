@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-merge'
 
 function Table({ className, containerClassName, ...props }: ComponentProps<'table'> & { containerClassName?: string }) {
   return (

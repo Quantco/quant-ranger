@@ -2,10 +2,10 @@ import type { FilterFn } from '@tanstack/react-table'
 import { GitMerge, GitPullRequest, GitPullRequestClosed, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import type { DataTableColumn } from '../components/data-table/DataTable'
-import type { dataTableFeatures } from '../components/data-table/data-table-model'
-import { cn } from '../lib/utils'
-import { displayValue, type DisplayValue } from '../lib/value'
+import type { DataTableColumn } from '@/components/data-table/DataTable'
+import type { dataTableFeatures } from '@/components/data-table/data-table-model'
+import { cn } from '@/lib/class-merge'
+import { displayValue, type DisplayValue } from '@/lib/value'
 import { ageColor, ageInDays, formatAge } from './pull-request-age'
 import {
   getLoadedPullRequest,

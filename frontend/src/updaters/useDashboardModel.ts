@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 
-import { createDataTableModel } from '../components/data-table/DataTable'
-import { replaceExplorerFilter } from '../components/data-table/explorer-state'
-import { useExplorerTable } from '../components/data-table/useExplorerTable'
+import { createDataTableModel } from '@/components/data-table/DataTable'
+import { replaceExplorerFilter } from '@/components/data-table/explorer-state'
+import { useExplorerTable } from '@/components/data-table/useExplorerTable'
 import { useUpdaterDashboardUrlState } from './dashboard-url-state'
 import { hasPullRequest, pullRequestKey } from './pull-request'
 import {

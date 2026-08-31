@@ -1,5 +1,7 @@
 import { Link, Outlet, ScrollRestoration, useLocation, useMatches, useNavigation, type UIMatch } from 'react-router'
 
+import faviconUrl from '@/favicon.png'
+
 const SITE_TITLE = 'Quant Ranger Dashboard'
 
 export type RouteTitleResolver<Data = unknown> = (match: UIMatch<Data>) => string
@@ -15,7 +17,7 @@ function resolveRouteTitle(match: UIMatch | undefined): string {
 function AppTitle({ current }: { current: boolean }) {
   const content = (
     <>
-      <img alt="" aria-hidden="true" className="size-6 flex-none" src="./favicon.png" />
+      <img alt="" aria-hidden="true" className="size-6 flex-none" src={faviconUrl} />
       {SITE_TITLE}
     </>
   )
