@@ -15,7 +15,7 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxValue
-} from '../ui/Combobox'
+} from '@/components/ui/Combobox'
 
 export interface AutocompleteOption {
   detail?: string

@@ -1,6 +1,6 @@
 import { Link, Outlet, ScrollRestoration, useLocation, useMatches, useNavigation, type UIMatch } from 'react-router'
 
-import faviconUrl from '@/favicon.png'
+import faviconUrl from '../../favicon.png'
 
 const SITE_TITLE = 'Quant Ranger Dashboard'
 

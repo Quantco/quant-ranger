@@ -33,6 +33,24 @@ from quant_ranger._impl.updaters._copier._dashboard import (
 from quant_ranger.site_config import SiteConfig
 
 
+def _update_dashboard(content: str | None) -> UpdateOutcome[CopierDashboardOutput]:
+    github_client = FakeGitHubClient(
+        file_contents=({".copier-answers.yml": content} if content is not None else {})
+    )
+    return CopierDashboardUpdater(UpdateOptions())._update(
+        _item("example"),
+        RunContext(
+            github_client=cast(GitHubClient, github_client),
+            site_config=SiteConfig(),
+            logger=RecordingLogger(),
+        ),
+    )
+
+
+def _item(name: str) -> UpdateItem:
+    return UpdateItem(repository_ref=RepositoryRef(owner="quantco", name=name))
+
+
 def test_copier_dashboard_validation_failure_includes_all_details() -> None:
     outcome = _update_dashboard("_commit: main\n")
 
@@ -267,21 +285,3 @@ def test_copier_dashboard_aggregator_rejects_incomplete_data(
 
     with pytest.raises(CliError, match="Cannot build the Copier Dashboard"):
         aggregator.aggregate(results, RecordingLogger(), artifact)
-
-
-def _item(name: str) -> UpdateItem:
-    return UpdateItem(repository_ref=RepositoryRef(owner="quantco", name=name))
-
-
-def _update_dashboard(content: str | None) -> UpdateOutcome[CopierDashboardOutput]:
-    github_client = FakeGitHubClient(
-        file_contents=({".copier-answers.yml": content} if content is not None else {})
-    )
-    return CopierDashboardUpdater(UpdateOptions())._update(
-        _item("example"),
-        RunContext(
-            github_client=cast(GitHubClient, github_client),
-            site_config=SiteConfig(),
-            logger=RecordingLogger(),
-        ),
-    )

@@ -76,14 +76,14 @@ function routeErrorMessage(error: unknown): string {
 // Keep dashboard-specific dependencies out of the initial bundle. Static
 // loaders let data fetching run in parallel with loading each route chunk.
 async function lazyCopierRoute() {
-  const { default: CopierDashboard } = await import('../copier/CopierDashboard')
+  const { default: CopierDashboard } = await import('@/copier/CopierDashboard')
   return {
     Component: () => <CopierDashboard snapshot={useLoaderData<typeof loadCopier>()} />
   }
 }
 
 async function lazyUpdaterRoute() {
-  const { default: UpdaterDashboard } = await import('../updaters/UpdaterDashboard')
+  const { default: UpdaterDashboard } = await import('@/updaters/UpdaterDashboard')
   return {
     Component: () => <UpdaterDashboard report={useLoaderData<typeof loadUpdater>()} />
   }
