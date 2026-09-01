@@ -1,8 +1,14 @@
 import warnings as _warnings
 from importlib import metadata as _metadata
 
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.git import RepositoryCheckout
-from quant_ranger._impl.github import GitHubClient, GitHubError, PullRequestOptions
+from quant_ranger._impl.github import (
+    GitHubClient,
+    GitHubError,
+    PullRequestOptions,
+    PullRequestResult,
+)
 from quant_ranger._impl.helpers import (
     CommandError,
     ExecOutput,
@@ -35,6 +41,7 @@ __all__ = [
     "Logger",
     "PathUpdateItem",
     "PullRequestOptions",
+    "PullRequestResult",
     "RepositoryCheckout",
     "RepositoryRef",
     "RunContext",
@@ -48,6 +55,7 @@ __all__ = [
     "UpdateOutcome",
     "UpdateOutput",
     "UpdateResult",
+    "UpdateResultsArtifact",
     "__version__",
     "get_exec_output_silently",
 ]

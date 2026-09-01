@@ -7,8 +7,10 @@ import typer
 
 from quant_ranger._impl.aggregators import (
     AnyAggregator,
+    CopierDashboardAggregator,
     IncidentIoAlertsAggregator,
     LogFailuresAggregator,
+    UpdaterReportAggregator,
 )
 from quant_ranger._impl.artifacts import (
     parse_update_results,
@@ -26,6 +28,8 @@ from ._helpers import command_signature
 BUILTIN_AGGREGATORS: tuple[type[AnyAggregator], ...] = (
     LogFailuresAggregator,
     IncidentIoAlertsAggregator,
+    CopierDashboardAggregator,
+    UpdaterReportAggregator,
 )
 
 
@@ -78,7 +82,9 @@ def _results_file_argument_parameter() -> inspect.Parameter:
         annotation=Path,
         default=typer.Argument(
             ...,
-            help="JSON results file written by `quant-ranger update`.",
+            help=(
+                "JSON artifact created by `quant-ranger update --results-file PATH`."
+            ),
         ),
     )
 
@@ -125,7 +131,7 @@ def _run_aggregator_from_results_file(
     )
 
     logger.info(f'Running aggregator "{aggregator.name}"...')
-    aggregator.aggregate(results, logger, artifact.scan_failures, artifact.updater)
+    aggregator.aggregate(results, logger, artifact)
 
 
 def _check_aggregator_result_compatibility(

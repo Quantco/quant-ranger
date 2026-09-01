@@ -10,6 +10,10 @@ pre-commit:
   jobs:
     - name: pixi-install
       run: pixi install -e default -e docs --quiet --no-progress
+    # Biome may rewrite frontend files, so run it before parallel checks such as ESLint.
+    - name: biome
+      glob: "frontend/**"
+      run: pixi {run} frontend-format
     - group:
         parallel: true
         jobs:
@@ -30,6 +34,9 @@ pre-commit:
             run: pixi {run} prettier --write --no-error-on-unmatched-pattern --list-different --ignore-unknown {staged_files}
             env:
               CI: "1"
+          - name: eslint
+            glob: "frontend/**"
+            run: pixi {run} frontend-lint
           - name: taplo
             glob: "*.toml"
             run: pixi {run} taplo format {staged_files}

@@ -164,7 +164,11 @@ def test_zizmor_creates_pull_request_for_changes(
     )
     checkout = RecordingCheckout(tmp_path, clean=False)
     logger = RecordingLogger()
-    github_client = FakeGitHubClient(pr_opened=True, publish_changes=False)
+    github_client = FakeGitHubClient(
+        pr_opened=True,
+        pull_request_number=42,
+        publish_changes=False,
+    )
     pull_request_template = replace(
         DEFAULT_PULL_REQUEST_TEMPLATES.zizmor,
         branch_prefix="zizmor-updater",
@@ -193,6 +197,7 @@ def test_zizmor_creates_pull_request_for_changes(
     ).run()
 
     assert result.result == Status.UPDATED
+    assert result.pull_request_number == 42
     assert checkout.added
     assert len(github_client.pull_request_calls) == 1
     call = github_client.pull_request_calls[0]
@@ -269,7 +274,7 @@ def test_zizmor_skips_when_pull_request_has_manual_changes(
         fake_exec,
     )
     checkout = RecordingCheckout(tmp_path, clean=False)
-    github_client = FakeGitHubClient(pr_opened=False)
+    github_client = FakeGitHubClient(pr_opened=False, pull_request_number=43)
 
     result = ZizmorUpdateTask(
         checkout,
@@ -289,5 +294,6 @@ def test_zizmor_skips_when_pull_request_has_manual_changes(
     ).run()
 
     assert result.result == Status.SKIPPED
+    assert result.pull_request_number == 43
     assert checkout.added
     assert len(github_client.pull_request_calls) == 1

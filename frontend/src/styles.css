@@ -1,0 +1,77 @@
+@import "tailwindcss" source(".");
+
+@theme static {
+  --color-primary: #334155;
+  --color-primary-subtle: #f1f5f9;
+  --color-primary-light: #cbd5e1;
+  --color-foreground: #18181b;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-border: #e4e4e7;
+  --color-ring: #94a3b8;
+  --color-success: #16a34a;
+  --color-success-subtle: #dcfce7;
+  --color-success-chart: color-mix(in srgb, var(--color-success-subtle) 70%, var(--color-success));
+  --color-error: #dc2626;
+  --color-error-subtle: #fee2e2;
+  --color-error-chart: color-mix(in srgb, var(--color-error-subtle) 70%, var(--color-error));
+  --color-warning: #92400e;
+  --color-warning-subtle: #fef3c7;
+  --color-chart-neutral: var(--color-muted-foreground);
+  --color-pr-open: #1a7f37;
+  --color-pr-closed: #cf222e;
+  --color-pr-merged: #8250df;
+}
+
+@layer base {
+  :root {
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  main {
+    @apply mx-auto w-full max-w-7xl px-4 py-6 pb-12;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold leading-tight;
+  }
+
+  h1 {
+    @apply mt-0 mb-1.5 text-2xl;
+  }
+
+  h2 {
+    @apply mt-8 mb-2 text-xl;
+  }
+
+  h3 {
+    @apply mt-0 mb-2 text-base;
+  }
+
+  p {
+    @apply my-2;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  code {
+    font-family: var(--font-mono);
+  }
+
+  details {
+    @apply mt-3;
+  }
+
+  summary {
+    @apply font-semibold;
+    color: var(--color-primary);
+    cursor: pointer;
+  }
+}

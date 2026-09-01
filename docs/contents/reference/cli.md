@@ -37,6 +37,7 @@ $ quant-ranger [OPTIONS] [COMMAND] [ARGS]...
 
 * `update`: Run repository update tasks.
 * `aggregate`: Process update results.
+* `frontend`: Export the static frontend.
 
 ## `quant-ranger update`
 
@@ -67,6 +68,7 @@ $ quant-ranger update [OPTIONS] COMMAND [ARGS]...
 **Commands**:
 
 * `zizmor`: Fix configured zizmor findings.
+* `copier-dashboard`: Collect Copier dashboard data.
 * `copier`: Update a Copier template.
 * `copier-migration`: Apply a Copier-answer migration.
 * `pixi-version`: Update pinned Pixi versions.
@@ -83,6 +85,20 @@ Fix configured zizmor findings. Applies the packaged automatic fixes to GitHub A
 
 ```console
 $ quant-ranger update zizmor [OPTIONS]
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+### `quant-ranger update copier-dashboard`
+
+Collect Copier dashboard data.
+
+**Usage**:
+
+```console
+$ quant-ranger update copier-dashboard [OPTIONS]
 ```
 
 **Options**:
@@ -199,7 +215,7 @@ $ quant-ranger update custom [OPTIONS]
 
 ## `quant-ranger aggregate`
 
-Process update results. Run an aggregator over a JSON artifact written by `quant-ranger update`.
+Process update results. Run an aggregator over the JSON artifact created by passing `--results-file PATH` to `quant-ranger update`.
 
 **Usage**:
 
@@ -216,6 +232,8 @@ $ quant-ranger aggregate [OPTIONS] COMMAND [ARGS]...
 
 * `log-failures`: Print recorded failures.
 * `incident-io-alerts`: Send a per-repository incident.io alert...
+* `copier-dashboard`: Write Copier dashboard JSON.
+* `updater-report`: Write public JSON for one updater feed.
 
 ### `quant-ranger aggregate log-failures`
 
@@ -229,7 +247,7 @@ $ quant-ranger aggregate log-failures [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
 
 **Options**:
 
@@ -247,7 +265,7 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
 
 **Options**:
 
@@ -258,4 +276,76 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 * `--source-url TEXT`: Link attached to each alert, e.g. the GitHub Actions run that produced the results file.  [required]
 * `--team TEXT`: Team name sent as `team` metadata, for alert sources that route alerts by a team attribute.  [required]
 * `--api-url TEXT`: incident.io API base URL.  [default: https://api.incident.io]
+* `--help`: Show this message and exit.
+
+### `quant-ranger aggregate copier-dashboard`
+
+Write Copier dashboard JSON.
+
+**Usage**:
+
+```console
+$ quant-ranger aggregate copier-dashboard [OPTIONS] RESULTS_FILE
+```
+
+**Arguments**:
+
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
+
+**Options**:
+
+* `-o, --output-file PATH`: Path at which to write the browser-ready dashboard JSON.  [required]
+* `--help`: Show this message and exit.
+
+### `quant-ranger aggregate updater-report`
+
+Write public JSON for one updater feed.
+
+**Usage**:
+
+```console
+$ quant-ranger aggregate updater-report [OPTIONS] RESULTS_FILE
+```
+
+**Arguments**:
+
+* `RESULTS_FILE`: JSON artifact created by `quant-ranger update --results-file PATH`.  [required]
+
+**Options**:
+
+* `-o, --output-directory PATH`: Updater data root in which to write the index and report directory.  [required]
+* `--title TEXT`: Display title; defaults to the updater name.
+* `--help`: Show this message and exit.
+
+## `quant-ranger frontend`
+
+Export the packaged static frontend for self-hosting.
+
+**Usage**:
+
+```console
+$ quant-ranger frontend [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+**Commands**:
+
+* `export`: Write the frontend to a directory.
+
+### `quant-ranger frontend export`
+
+Write the packaged static frontend to a directory.
+
+**Usage**:
+
+```console
+$ quant-ranger frontend export [OPTIONS]
+```
+
+**Options**:
+
+* `-o, --output-directory PATH`: Directory in which to write the static site.  [required]
 * `--help`: Show this message and exit.

@@ -16,7 +16,7 @@ from typer.testing import CliRunner
 from typer.utils import DefaultFactoryAndDefaultValueError
 
 from quant_ranger._impl.aggregators import AnyAggregator
-from quant_ranger._impl.artifacts import write_results_file
+from quant_ranger._impl.artifacts import UpdateResultsArtifact, write_results_file
 from quant_ranger._impl.cli._aggregate import (
     AggregateRunOptions,
     make_aggregate_command,
@@ -28,7 +28,7 @@ from quant_ranger._impl.cli._app import (
     make_app,
 )
 from quant_ranger._impl.cli._helpers import command_signature
-from quant_ranger._impl.cli._update import make_update_command
+from quant_ranger._impl.cli._update import _github_workflow_url, make_update_command
 from quant_ranger._impl.github import GitHubClient, GitHubError
 from quant_ranger._impl.helpers import CliError, CommandError, ExecOutput
 from quant_ranger._impl.logger import ConsoleLogger, Logger
@@ -45,7 +45,7 @@ from quant_ranger._impl.models import (
     UpdateResult,
 )
 from quant_ranger._impl.runtime import RunContext
-from quant_ranger._impl.testing import FakeGitHubClient
+from quant_ranger._impl.testing import FakeGitHubClient, RecordingLogger
 from quant_ranger._impl.updaters import AnyUpdater, ZizmorUpdater
 from quant_ranger._impl.updaters._copier._migration import CopierMigrationOptions
 from quant_ranger._impl.updaters._custom import CustomUpdaterOptions
@@ -60,6 +60,7 @@ from quant_ranger.updaters import Updater, UpdateTask
 runner = CliRunner()
 cli_aggregate_module = import_module("quant_ranger._impl.cli._aggregate")
 cli_app_module = import_module("quant_ranger._impl.cli._app")
+cli_frontend_module = import_module("quant_ranger._impl.cli._frontend")
 cli_update_module = import_module("quant_ranger._impl.cli._update")
 
 
@@ -177,6 +178,57 @@ def test_version_option_prints_program_version(app: typer.Typer) -> None:
 
     assert result.exit_code == 0
     assert result.output.startswith("quant-ranger ")
+
+
+def test_frontend_export_updates_assets_and_preserves_data(
+    app: typer.Typer,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    assets = tmp_path / "_frontend"
+    assets.mkdir()
+    (assets / "index.html").write_text("frontend")
+    output = tmp_path / "site"
+    output.mkdir()
+    (output / "index.html").write_text("stale frontend")
+    updater_data = output / "data" / "updaters"
+    updater_data.mkdir(parents=True)
+    index = updater_data / "index.json"
+    index.write_text("existing")
+    monkeypatch.setattr(cli_frontend_module.resources, "files", lambda _: tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["frontend", "export", "--output-directory", str(output)],
+    )
+
+    assert result.exit_code == 0
+    assert (output / "index.html").read_text() == "frontend"
+    assert index.read_text() == "existing"
+
+
+def test_frontend_export_rejects_output_directory_below_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    logger = RecordingLogger()
+    app = typer.Typer()
+    app.add_typer(cli_frontend_module.make_frontend_app(logger), name="frontend")
+    assets = tmp_path / "_frontend"
+    assets.mkdir()
+    monkeypatch.setattr(cli_frontend_module.resources, "files", lambda _: tmp_path)
+    parent_file = tmp_path / "file"
+    parent_file.write_text("not a directory")
+    output = parent_file / "site"
+
+    result = runner.invoke(
+        app,
+        ["frontend", "export", "--output-directory", str(output)],
+    )
+
+    assert result.exit_code == 2
+    assert len(logger.errors) == 1
+    assert logger.errors[0].startswith(f"Failed to export the frontend to {output}:")
 
 
 def test_update_command_passes_options_to_run_update(
@@ -555,6 +607,34 @@ def test_update_command_passes_results_file_to_run_update(
     assert calls[0]["results_file"] == results_file
 
 
+def test_github_workflow_url_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.example/")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/ranger")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+
+    assert (
+        _github_workflow_url() == "https://github.example/acme/ranger/actions/runs/123"
+    )
+
+
+@pytest.mark.parametrize(
+    "missing_variable",
+    ["GITHUB_SERVER_URL", "GITHUB_REPOSITORY", "GITHUB_RUN_ID"],
+)
+def test_github_workflow_url_requires_complete_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    missing_variable: str,
+) -> None:
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.example/")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/ranger")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    monkeypatch.delenv(missing_variable)
+
+    assert _github_workflow_url() is None
+
+
 def test_aggregate_command_runs_log_failures_from_results_file(
     app: typer.Typer,
     tmp_path: Path,
@@ -578,6 +658,8 @@ def test_aggregate_command_runs_log_failures_from_results_file(
                 message="scan boom",
             ),
         ),
+        dry_run=True,
+        github_api_url="https://api.github.com",
     )
 
     result = runner.invoke(
@@ -598,6 +680,33 @@ def test_aggregate_command_runs_log_failures_from_results_file(
     assert "scan boom" in result.output
 
 
+def test_aggregate_command_writes_updater_report(
+    app: typer.Typer,
+    tmp_path: Path,
+) -> None:
+    results_file = _write_sample_results_file(tmp_path / "results.json")
+    output_directory = tmp_path / "report"
+
+    result = runner.invoke(
+        app,
+        [
+            "aggregate",
+            "updater-report",
+            str(results_file),
+            "--output-directory",
+            str(output_directory),
+        ],
+    )
+
+    assert result.exit_code == 0
+    index = json.loads((output_directory / "index.json").read_text())
+    feed_id = index["feeds"][0]["feed_id"]
+    payload = json.loads((output_directory / feed_id / "latest.json").read_text())
+    assert payload["feed_id"] == feed_id
+    assert payload["updater"] == "zizmor"
+    assert payload["results"][0]["repository"] == "quantco/example"
+
+
 def test_aggregate_command_logs_unexpected_exceptions(
     tmp_path: Path,
 ) -> None:
@@ -609,10 +718,9 @@ def test_aggregate_command_logs_unexpected_exceptions(
             self,
             results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
-            del results, logger, scan_failures
+            del results, logger, artifact
             raise RuntimeError("boom")
 
     results_file = _write_sample_results_file(tmp_path / "results.json")
@@ -636,10 +744,9 @@ def test_aggregate_command_passes_deliberate_exits_through(
             self,
             results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
-            del results, logger, scan_failures
+            del results, logger, artifact
             raise typer.Exit(3)
 
     results_file = _write_sample_results_file(tmp_path / "results.json")
@@ -666,10 +773,9 @@ def test_aggregate_command_exits_via_sigint_on_keyboard_interrupt(
             self,
             results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
-            del results, logger, scan_failures
+            del results, logger, artifact
             raise KeyboardInterrupt
 
     exit_calls = 0
@@ -705,8 +811,7 @@ def test_aggregate_command_rejects_item_type_mismatch(
             self,
             results: Sequence[UpdateResult[UpdateOutput, PathUpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
             raise NotImplementedError
 
@@ -714,9 +819,9 @@ def test_aggregate_command_rejects_item_type_mismatch(
         self: PathItemAggregator,
         results: Sequence[UpdateResult[UpdateOutput, PathUpdateItem]],
         logger: Logger,
-        scan_failures: Sequence[ScanFailure],
+        artifact: UpdateResultsArtifact,
     ) -> None:
-        del self, results, logger, scan_failures
+        del self, results, logger, artifact
         raise AssertionError("aggregate should not be called")
 
     custom_app = _custom_aggregate_app(PathItemAggregator)
@@ -748,8 +853,7 @@ def test_aggregate_command_rejects_output_type_mismatch(
             self,
             results: Sequence[UpdateResult[SpecificOutput, UpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
             raise NotImplementedError
 
@@ -757,9 +861,9 @@ def test_aggregate_command_rejects_output_type_mismatch(
         self: SpecificOutputAggregator,
         results: Sequence[UpdateResult[SpecificOutput, UpdateItem]],
         logger: Logger,
-        scan_failures: Sequence[ScanFailure],
+        artifact: UpdateResultsArtifact,
     ) -> None:
-        del self, results, logger, scan_failures
+        del self, results, logger, artifact
         raise AssertionError("aggregate should not be called")
 
     custom_app = _custom_aggregate_app(SpecificOutputAggregator)
@@ -1813,6 +1917,8 @@ def _write_sample_results_file(results_file: Path) -> Path:
         updater=ZizmorUpdater(UpdateOptions()),
         results=[_sample_result()],
         scan_failures=(),
+        dry_run=True,
+        github_api_url="https://api.github.com",
     )
     return results_file
 

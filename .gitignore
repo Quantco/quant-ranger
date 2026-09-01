@@ -167,6 +167,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!frontend/src/lib/
+!frontend/src/lib/**
 lib64/
 parts/
 sdist/
@@ -394,7 +396,14 @@ $RECYCLE.BIN/
 # rattler-build
 output/
 
-# Claude
+# Dashboard development
+.local/
+frontend/public/
+node_modules/
+quant_ranger/_frontend/
+_site/
+
+# Ckaude
 .claude/*.local.*
 .claude/worktrees/
 .claude/settings.local.json

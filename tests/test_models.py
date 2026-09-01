@@ -114,6 +114,7 @@ def test_update_result_from_outcome_copies_item_output_and_details() -> None:
     )
     outcome = UpdateOutcome[RecordingOutput](
         result=Status.UPDATED,
+        pull_request_number=42,
         output=RecordingOutput(changed=True),
         message="done",
         details="Traceback: boom",
@@ -124,6 +125,7 @@ def test_update_result_from_outcome_copies_item_output_and_details() -> None:
     assert result == UpdateResult(
         result=Status.UPDATED,
         item=item,
+        pull_request_number=42,
         output=RecordingOutput(changed=True),
         message="done",
         details=outcome.details,
@@ -172,6 +174,7 @@ def test_models_dump_json_compatible_values() -> None:
             },
             "path": "pixi.lock",
         },
+        "pull_request_number": None,
         "output": {"changed": False},
         "message": None,
         "details": None,

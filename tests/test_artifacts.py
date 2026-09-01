@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -28,6 +29,13 @@ def test_write_results_file_writes_updater_results_and_scan_failures(
 
     artifact = read_results_file(results_file)
     assert artifact.updater == "zizmor"
+    assert artifact.updater_options == {}
+    assert artifact.dry_run is True
+    assert artifact.github_api_url == "https://github.example/api/v3"
+    assert (
+        artifact.workflow_url == "https://github.example/acme/ranger/actions/runs/123"
+    )
+    assert isinstance(artifact.generated_at, datetime)
     assert artifact.scan_failures == [_sample_scan_failure()]
     assert artifact.results == [
         {
@@ -39,6 +47,7 @@ def test_write_results_file_writes_updater_results_and_scan_failures(
                     "branch": None,
                 }
             },
+            "pull_request_number": 42,
             "output": None,
             "message": None,
             "details": None,
@@ -128,6 +137,9 @@ def _write_sample_results_file(results_file: Path) -> Path:
         updater=ZizmorUpdater(UpdateOptions()),
         results=[_sample_result()],
         scan_failures=[_sample_scan_failure()],
+        dry_run=True,
+        github_api_url="https://github.example/api/v3",
+        workflow_url="https://github.example/acme/ranger/actions/runs/123",
     )
     return results_file
 
@@ -143,4 +155,5 @@ def _sample_result() -> UpdateResult:
     return UpdateResult(
         result=Status.UPDATED,
         item=UpdateItem(repository_ref=RepositoryRef(owner="quantco", name="example")),
+        pull_request_number=42,
     )

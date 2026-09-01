@@ -199,7 +199,7 @@ class PixiVersionUpdateTask(
             return UpdateOutcome(result=Status.UP_TO_DATE)
         self.checkout.add_all()
 
-        pr_opened = self.context.github_client.create_pull_request(
+        pull_request = self.context.github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=config.autoupdate_commit_message,
@@ -212,10 +212,10 @@ class PixiVersionUpdateTask(
             self.context.logger,
         )
 
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
     def _update_workflow_files(self, latest_pixi_version: str) -> list[Path]:
         updated_files: list[Path] = []

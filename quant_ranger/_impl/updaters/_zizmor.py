@@ -2,7 +2,7 @@ from importlib.resources import as_file, files
 from typing import override
 from urllib.parse import urlsplit
 
-from quant_ranger._impl.github import PullRequestOptions
+from quant_ranger._impl.github import PullRequestOptions, github_web_url
 from quant_ranger._impl.helpers import CommandError, get_exec_output_silently
 from quant_ranger._impl.models import Status, UpdateItem, UpdateOutcome
 from quant_ranger._impl.scanners import RepositoriesScanner
@@ -64,7 +64,7 @@ class ZizmorUpdateTask(UpdateTask[UpdateItem]):
 
         self.checkout.add_all()
         pull_request_template = self.context.site_config.pull_request_templates.zizmor
-        pr_opened = github_client.create_pull_request(
+        pull_request = github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=pull_request_template.title,
@@ -75,10 +75,10 @@ class ZizmorUpdateTask(UpdateTask[UpdateItem]):
             logger,
         )
 
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
 
 class ZizmorUpdater(Updater[UpdateItem]):
@@ -96,14 +96,9 @@ def _github_enterprise_host(api_url: str) -> str | None:
 
     Returns `None` for github.com, where zizmor needs no host configuration.
     """
-    hostname = (urlsplit(api_url).hostname or "").lower()
-    if hostname in ("", "api.github.com"):
+    hostname = (urlsplit(github_web_url(api_url)).hostname or "").lower()
+    if hostname in ("", "github.com"):
         return None
-    # zizmor expects the web hostname in GH_HOST and derives the API URL itself:
-    # for *.ghe.com (Enterprise Cloud) it prepends "api.", for anything else
-    # (self-hosted GHES) it appends "/api/v3".
-    if hostname.endswith(".ghe.com"):
-        return hostname.removeprefix("api.")
     return hostname
 
 

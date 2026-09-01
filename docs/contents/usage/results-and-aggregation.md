@@ -22,7 +22,8 @@ Its script must write any required output itself.
 
 ## Run an aggregator
 
-Pass the result file after the aggregator name:
+An aggregator requires an artifact from an earlier update run.
+Create it by passing `--results-file PATH` to `quant-ranger update`, then pass the same path after the aggregator name:
 
 ```bash
 quant-ranger aggregate log-failures results.json
