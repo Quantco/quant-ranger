@@ -1,6 +1,7 @@
 import re
 import threading
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Literal, override
 
@@ -37,6 +38,7 @@ PIXI_VERSION_PATTERN = re.compile(
     rf"(pixi-version:\s*)['\"]?({PIXI_VERSION_FORMAT.pattern})['\"]?"
 )
 PIXI_LOCKFILE = "pixi.lock"
+DEFAULT_EXCLUDE_NEWER_DAYS = 0
 
 
 def _validate_pixi_version(value: str | None) -> str | None:
@@ -156,6 +158,19 @@ class PixiVersionOptions(UpdateOptions):
             ),
         ),
     ] = None
+    exclude_newer_days: Annotated[
+        int,
+        typer.Option(
+            "--exclude-newer-days",
+            min=0,
+            help=(
+                "Only consider pixi releases at least this many days old, so "
+                "freshly published releases are given time to settle. Defaults "
+                "to 0, which always takes the latest release. Ignored when "
+                "`--pixi-version` is given."
+            ),
+        ),
+    ] = Field(default=DEFAULT_EXCLUDE_NEWER_DAYS, ge=0)
     setup_pixi_marker: Annotated[
         str,
         SiteConfigParameter(
@@ -287,8 +302,15 @@ class PixiVersionUpdater(Updater[PixiVersionItem, UpdateOutput, PixiVersionOptio
         # Tasks may run concurrently; resolve the latest release only once.
         with self._latest_pixi_version_lock:
             if self._latest_pixi_version is None:
+                exclude_newer_days = self.options.exclude_newer_days
+                published_before = (
+                    datetime.now(UTC) - timedelta(days=exclude_newer_days)
+                    if exclude_newer_days > 0
+                    else None
+                )
                 self._latest_pixi_version = context.github_client.get_latest_release(
                     "prefix-dev",
                     "pixi",
+                    published_before=published_before,
                 )
             return self._latest_pixi_version
