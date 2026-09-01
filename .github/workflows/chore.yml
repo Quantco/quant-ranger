@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Set up pixi
-        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+        uses: prefix-dev/setup-pixi@f00437f565399d418b0acc85936d12c1fb668347 # v0.10.1
       - name: Check for breaking public API changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -84,6 +84,6 @@ jobs:
       pull-requests: write
     steps:
       - name: Assign labels
-        uses: release-drafter/release-drafter/autolabeler@eada3c96a64734dd381cfbda23511034e328ddb0 # v7.6.0
+        uses: release-drafter/release-drafter/autolabeler@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
           token: ${{ github.token }}
