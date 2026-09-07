@@ -2,21 +2,50 @@ import re
 import traceback
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 from typing import Any, override
 
 from rich.console import Console, RenderableType
 
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.git import RepositoryCheckout
-from quant_ranger._impl.github import GitHubError, PullRequestOptions
+from quant_ranger._impl.github import (
+    GitHubError,
+    PullRequestOptions,
+    PullRequestResult,
+)
 from quant_ranger._impl.helpers import ExecOutput
 from quant_ranger._impl.logger import Logger, LogLevel
-from quant_ranger._impl.models import RepositoryRef
+from quant_ranger._impl.models import RepositoryRef, ScanFailure
 
 type FakeKeychain = Callable[[dict[str, str]], list[str]]
 """Signature of the `fake_keychain` fixture: install an account → secret mapping into
 the keychain fake and get back the list recording requested accounts."""
+
+
+def make_update_results_artifact(
+    scan_failures: Sequence[ScanFailure] = (),
+    *,
+    dry_run: bool = True,
+    generated_at: datetime | None = None,
+    github_api_url: str = "https://api.github.com",
+    updater: str = "copier",
+    updater_options: Mapping[str, Any] | None = None,
+    workflow_url: str | None = None,
+) -> UpdateResultsArtifact:
+    """Build a representative update-results artifact for aggregator tests."""
+    return UpdateResultsArtifact(
+        updater=updater,
+        updater_options=dict(updater_options or {}),
+        generated_at=generated_at or datetime(2026, 7, 16, tzinfo=UTC),
+        dry_run=dry_run,
+        github_api_url=github_api_url,
+        workflow_url=workflow_url,
+        results=[],
+        scan_failures=list(scan_failures),
+    )
 
 
 class FakeKeychainExec:
@@ -142,6 +171,7 @@ class FakeGitHubClient:
     repository_url: str | None = None
     pr_opened: bool = True
     publish_changes: bool = False
+    pull_request_number: int | None = None
     checkout: RepositoryCheckout | None = None
     active_by_owner: dict[str, list[RepositoryRef]] = field(default_factory=dict)
     installed: list[RepositoryRef] = field(default_factory=list)
@@ -229,7 +259,7 @@ class FakeGitHubClient:
         checkout: RepositoryCheckout,
         options: PullRequestOptions,
         logger: Logger,
-    ) -> bool:
+    ) -> PullRequestResult:
         self.pull_request_calls.append(
             {
                 "checkout": checkout,
@@ -238,7 +268,10 @@ class FakeGitHubClient:
                 "publish_changes": self.publish_changes,
             }
         )
-        return self.pr_opened
+        return PullRequestResult(
+            updated=self.pr_opened,
+            number=self.pull_request_number,
+        )
 
 
 class RecordingCheckout(RepositoryCheckout):

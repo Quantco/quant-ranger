@@ -39,7 +39,18 @@ dependencies = [
 repository = "https://github.com/quantco/quant-ranger"
 
 [tool.hatch.build.targets.wheel]
+artifacts = ["/quant_ranger/_frontend/**"]
 packages = ["quant_ranger"]
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["/quant_ranger/_frontend/**"]
+exclude = [
+  "/docs/.docusaurus/**",
+  "/docs/build/**",
+  "/docs/node_modules/**",
+  "/frontend/node_modules/**",
+  "/frontend/public/data/**",
+]
 
 [project.scripts]
 quant-ranger = "quant_ranger.cli:main"

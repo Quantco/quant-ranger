@@ -32,12 +32,12 @@ PLUGIN_MODULE_SOURCE = dedent(
 
     from quant_ranger import (
         Logger,
-        ScanFailure,
         UpdateItem,
         UpdateOptions,
         UpdateOutcome,
         UpdateOutput,
         UpdateResult,
+        UpdateResultsArtifact,
     )
     from quant_ranger.aggregators import Aggregator, AggregatorOptions
     from quant_ranger.updaters import Updater, UpdateTask
@@ -77,10 +77,9 @@ PLUGIN_MODULE_SOURCE = dedent(
             self,
             results: Sequence[UpdateResult[UpdateOutput, UpdateItem]],
             logger: Logger,
-            scan_failures: Sequence[ScanFailure],
-            updater_name: str,
+            artifact: UpdateResultsArtifact,
         ) -> None:
-            del results, logger, scan_failures
+            del results, logger, artifact
 
 
     from quant_ranger.site_config import (

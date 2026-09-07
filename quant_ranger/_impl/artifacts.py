@@ -1,11 +1,15 @@
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from pydantic import BaseModel, ConfigDict, JsonValue, ValidationError
 
 from quant_ranger._impl.helpers import CliError
 from quant_ranger._impl.models import ScanFailure, UpdateResult
-from quant_ranger._impl.updaters import AnyUpdater
+
+if TYPE_CHECKING:
+    from quant_ranger._impl.updaters import AnyUpdater
 
 
 class UpdateResultsArtifact(BaseModel):
@@ -14,6 +18,11 @@ class UpdateResultsArtifact(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     updater: str
+    updater_options: dict[str, JsonValue]
+    generated_at: datetime
+    dry_run: bool
+    github_api_url: str
+    workflow_url: str | None = None
     results: list[dict[str, JsonValue]]
     scan_failures: list[ScanFailure]
 
@@ -24,6 +33,9 @@ def write_results_file(
     updater: AnyUpdater,
     results: Sequence[UpdateResult],
     scan_failures: Sequence[ScanFailure],
+    dry_run: bool,
+    github_api_url: str,
+    workflow_url: str | None = None,
 ) -> None:
     # Store updater-specific result models as opaque JSON objects in the artifact.
     # Aggregators can parse them with the resolved updater type later, which keeps
@@ -31,6 +43,13 @@ def write_results_file(
     serialized_results = [result.model_dump(mode="json") for result in results]
     artifact = UpdateResultsArtifact(
         updater=updater.name,
+        updater_options=cast(
+            dict[str, JsonValue], updater.options.model_dump(mode="json")
+        ),
+        generated_at=datetime.now(UTC),
+        dry_run=dry_run,
+        github_api_url=github_api_url.rstrip("/"),
+        workflow_url=workflow_url,
         results=serialized_results,
         scan_failures=scan_failures,
     )

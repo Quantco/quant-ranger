@@ -1,0 +1,57 @@
+name: Run updater and publish report
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quant-ranger-pages
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out existing dashboard data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: _site
+          persist-credentials: false
+          ref: gh-pages
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
+
+      - name: Run updater
+        env:
+          GH_TOKEN: ${{ secrets.QUANT_RANGER_TOKEN }}
+        run: >-
+          pixi run quant-ranger update
+          --gh
+          --owner "${{ github.repository_owner }}"
+          --publish-changes
+          --results-file updater-results.json
+          pixi-version
+
+      - name: Aggregate report
+        run: >-
+          pixi run quant-ranger aggregate updater-report
+          updater-results.json
+          --output-directory _site/data/updaters
+
+      - name: Deploy updater data
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          destination_dir: data/updaters
+          github_token: ${{ github.token }}
+          keep_files: true
+          publish_dir: ./_site/data/updaters

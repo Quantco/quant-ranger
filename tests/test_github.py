@@ -25,7 +25,9 @@ from quant_ranger._impl.github import (
     GitHubClient,
     GitHubError,
     PullRequestOptions,
+    PullRequestResult,
     app_installation_clients,
+    github_web_url,
     resolve_github_app_credentials,
     resolve_github_token,
 )
@@ -34,6 +36,18 @@ from quant_ranger._impl.logger import LogLevel
 from quant_ranger._impl.models import RepositoryRef
 from quant_ranger._impl.testing import RecordingCheckout, RecordingLogger
 from quant_ranger.site_config import CommitAuthor, SiteConfig
+
+
+@pytest.mark.parametrize(
+    ("api_url", "expected"),
+    [
+        ("https://api.github.com", "https://github.com"),
+        ("https://api.acme.ghe.com", "https://acme.ghe.com"),
+        ("https://github.example/api/v3", "https://github.example"),
+    ],
+)
+def test_github_web_url(api_url: str, expected: str) -> None:
+    assert github_web_url(api_url) == expected
 
 
 def test_resolve_github_token_uses_environment_order(
@@ -852,7 +866,7 @@ def test_create_pull_request_without_publishing_shows_and_trims_details(
     diff_lines = [f"diff {index}" for index in range(30)]
     checkout.diff = "\n".join(diff_lines)
 
-    client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -863,6 +877,11 @@ def test_create_pull_request_without_publishing_shows_and_trims_details(
         logger,
     )
 
+    assert result == PullRequestResult(updated=True, number=None)
+    assert checkout.checked_out_branches == ["update-branch"]
+    assert len(checkout.commits) == 1
+    assert checkout.pushed_branches == []
+    assert repository.created_pulls == []
     title, content = logger.panels[0]
     assert title == "Pull request details"
     assert isinstance(content, Group)
@@ -882,6 +901,34 @@ def test_create_pull_request_without_publishing_shows_and_trims_details(
     assert not logger.logged(LogLevel.DEBUG, "Pull request 'Updated title'")
 
 
+def test_create_pull_request_dry_run_returns_existing_pull_request_number(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=42, base_ref="main")
+    repository = FakeRepository(name="example", pulls=[pull_request])
+    client = make_client(FakeGithub(repository=repository), publish_changes=False)
+    checkout = RecordingCheckout(
+        tmp_path,
+        RepositoryRef(owner="quantco", name="example"),
+    )
+
+    result = client.create_pull_request(
+        checkout,
+        PullRequestOptions(
+            title="Updated title",
+            body="Updated body",
+            source_branch="update-branch",
+            target_branch="main",
+            quant_ranger_id="zizmor",
+        ),
+        RecordingLogger(),
+    )
+
+    assert result == PullRequestResult(updated=True, number=42)
+    assert checkout.pushed_branches == []
+    assert pull_request.edits == []
+
+
 def test_create_pull_request_creates_new_pull_request_with_labels(
     tmp_path: Path,
 ) -> None:
@@ -893,7 +940,7 @@ def test_create_pull_request_creates_new_pull_request_with_labels(
     )
     checkout.diff = "diff --git a/file b/file\n+Updated body"
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -906,7 +953,7 @@ def test_create_pull_request_creates_new_pull_request_with_labels(
         logger,
     )
 
-    assert created_or_updated
+    assert result == PullRequestResult(updated=True, number=100)
     assert checkout.checked_out_branches == ["update-branch"]
     assert checkout.commits == [
         {
@@ -950,7 +997,7 @@ def test_create_pull_request_updates_only_matching_target_branch(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -962,7 +1009,7 @@ def test_create_pull_request_updates_only_matching_target_branch(
         RecordingLogger(),
     )
 
-    assert created_or_updated
+    assert result == PullRequestResult(updated=True, number=2)
     assert other_target_pr.edits == []
     assert matching_pr.edits == [{"title": "Updated title", "body": "Updated body"}]
     assert repository.created_pulls == []
@@ -991,7 +1038,7 @@ def test_create_pull_request_updates_human_quant_ranger_commit(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -1003,7 +1050,7 @@ def test_create_pull_request_updates_human_quant_ranger_commit(
         RecordingLogger(),
     )
 
-    assert created_or_updated
+    assert result == PullRequestResult(updated=True, number=1)
     assert pull_request.edits == [{"title": "Updated title", "body": "Updated body"}]
     assert checkout.pushed_branches == ["update-branch"]
 
@@ -1030,7 +1077,7 @@ def test_create_pull_request_updates_commit_without_author_but_with_trailer(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -1042,7 +1089,7 @@ def test_create_pull_request_updates_commit_without_author_but_with_trailer(
         RecordingLogger(),
     )
 
-    assert created_or_updated
+    assert result == PullRequestResult(updated=True, number=1)
     assert pull_request.edits == [{"title": "Updated title", "body": "Updated body"}]
     assert checkout.pushed_branches == ["update-branch"]
 
@@ -1061,7 +1108,7 @@ def test_create_pull_request_refuses_human_commit_without_trailer(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -1073,7 +1120,7 @@ def test_create_pull_request_refuses_human_commit_without_trailer(
         RecordingLogger(),
     )
 
-    assert not created_or_updated
+    assert result == PullRequestResult(updated=False, number=1)
     assert pull_request.edits == []
     assert checkout.pushed_branches == []
 
@@ -1093,7 +1140,7 @@ def test_create_pull_request_without_publishing_refuses_unowned_commit(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -1105,7 +1152,7 @@ def test_create_pull_request_without_publishing_refuses_unowned_commit(
         logger,
     )
 
-    assert not created_or_updated
+    assert result == PullRequestResult(updated=False, number=1)
     assert pull_request.edits == []
     assert checkout.pushed_branches == []
     assert logger.warnings == []
@@ -1127,7 +1174,7 @@ def test_create_pull_request_overwrites_manual_changes_with_force_push(
         tmp_path, RepositoryRef(owner="quantco", name="example")
     )
 
-    created_or_updated = client.create_pull_request(
+    result = client.create_pull_request(
         checkout,
         PullRequestOptions(
             title="Updated title",
@@ -1139,7 +1186,7 @@ def test_create_pull_request_overwrites_manual_changes_with_force_push(
         logger,
     )
 
-    assert created_or_updated
+    assert result == PullRequestResult(updated=True, number=1)
     assert pull_request.edits == [{"title": "Updated title", "body": "Updated body"}]
     assert checkout.pushed_branches == ["update-branch"]
     assert any("--force-push" in warning for warning in logger.warnings)

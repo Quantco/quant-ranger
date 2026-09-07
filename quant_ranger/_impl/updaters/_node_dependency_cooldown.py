@@ -600,7 +600,7 @@ class NodeDependencyCooldownTask(
         pull_request_template = (
             self.context.site_config.pull_request_templates.node_dependency_cooldown
         )
-        pr_opened = self.context.github_client.create_pull_request(
+        pull_request = self.context.github_client.create_pull_request(
             self.checkout,
             PullRequestOptions(
                 title=pull_request_template.title,
@@ -612,10 +612,10 @@ class NodeDependencyCooldownTask(
             self.context.logger,
         )
 
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
+        return UpdateOutcome(
+            result=Status.UPDATED if pull_request.updated else Status.SKIPPED,
+            pull_request_number=pull_request.number,
+        )
 
     def _update_config_for_lockfile(
         self,

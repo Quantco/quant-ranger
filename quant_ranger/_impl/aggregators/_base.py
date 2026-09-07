@@ -4,9 +4,9 @@ from typing import Any, ClassVar, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict
 
+from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.logger import Logger
 from quant_ranger._impl.models import (
-    ScanFailure,
     UpdateItem,
     UpdateItemTypeMixin,
     UpdateOutput,
@@ -49,8 +49,7 @@ class Aggregator[
         self,
         results: Sequence[UpdateResult[OutputT, ItemT]],
         logger: Logger,
-        scan_failures: Sequence[ScanFailure],
-        updater_name: str,
+        artifact: UpdateResultsArtifact,
     ) -> None:
         """Consume all updater results after the update run completes."""
 

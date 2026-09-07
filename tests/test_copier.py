@@ -22,6 +22,7 @@ from quant_ranger._impl.testing import (
 from quant_ranger._impl.updaters import CopierUpdater
 from quant_ranger._impl.updaters._copier._common import (
     is_trusted_template,
+    normalize_template_name,
     parse_copier_answers,
     parse_template_repository_for_host,
     run_pixi_lock_if_manifest_changed,
@@ -139,6 +140,20 @@ def test_trusted_templates_cover_configured_hosts(
     )
 
     assert is_trusted_template(src_path, trusted_templates) is trusted
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("gh:quantco/copier-template-python", "python"),
+        ("https://github.com/quantco/copier-template-python.git", "python"),
+        ("https://github.com/quantco/copier-template-python/?ref=v1", "python"),
+        ("git@github.com:quantco/copier-template-python.git", "python"),
+        (None, ""),
+    ],
+)
+def test_normalize_template_name(source: object, expected: str) -> None:
+    assert normalize_template_name(source) == expected
 
 
 TRUSTED_TEMPLATES = frozenset({"github.com/quantco/copier-template-python-open-source"})

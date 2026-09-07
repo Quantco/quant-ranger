@@ -1,5 +1,11 @@
 from ._base import AnyUpdater, Updater, UpdateTask
-from ._copier import CopierMigrationUpdater, CopierUpdater
+from ._copier import (
+    CopierDashboardOutput,
+    CopierDashboardUpdater,
+    CopierDashboardValidationError,
+    CopierMigrationUpdater,
+    CopierUpdater,
+)
 from ._custom import CustomFileUpdater, CustomUpdater
 from ._github_app_token import GitHubAppTokenUpdater
 from ._node_dependency_cooldown import NodeDependencyCooldownUpdater
@@ -9,6 +15,9 @@ from ._zizmor import ZizmorUpdater
 
 __all__ = [
     "AnyUpdater",
+    "CopierDashboardOutput",
+    "CopierDashboardUpdater",
+    "CopierDashboardValidationError",
     "CopierMigrationUpdater",
     "CopierUpdater",
     "CustomFileUpdater",

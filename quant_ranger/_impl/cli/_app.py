@@ -20,6 +20,7 @@ from ._aggregate import (
     AggregateRunOptions,
     make_aggregate_command,
 )
+from ._frontend import make_frontend_app
 from ._update import BUILTIN_UPDATERS, UpdateRunOptions, make_update_command
 
 PROGRAM_NAME = "quant-ranger"
@@ -182,14 +183,15 @@ def make_app(
     )
     aggregate_app = typer.Typer(
         help=(
-            "Process update results. Run an aggregator over a JSON artifact "
-            "written by `quant-ranger update`."
+            "Process update results. Run an aggregator over the JSON artifact "
+            "created by passing `--results-file PATH` to `quant-ranger update`."
         ),
         no_args_is_help=True,
         rich_markup_mode="rich",
     )
     app.add_typer(update_app, name="update")
     app.add_typer(aggregate_app, name="aggregate")
+    app.add_typer(make_frontend_app(startup_logger), name="frontend")
 
     @app.callback(invoke_without_command=True)
     def root(

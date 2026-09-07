@@ -34,6 +34,22 @@ rattler-sandbox = ">=0.2.3"
 [dependencies]
 quant-ranger = { path = "." }
 
+[feature.frontend.dependencies]
+nodejs = ">=26.6,<27"
+pnpm = "=11.22.0"
+[feature.frontend.tasks]
+frontend-install = "pnpm --dir frontend install --frozen-lockfile"
+frontend-preview = "pnpm --dir frontend run dev"
+frontend-build = { cmd = "pnpm --dir frontend run build", depends-on = [
+  "frontend-install",
+] }
+frontend-format = { cmd = "pnpm --dir frontend run format:fix", depends-on = [
+  "frontend-install",
+] }
+frontend-lint = { cmd = "pnpm --dir frontend run lint", depends-on = [
+  "frontend-install",
+] }
+
 [feature.test.dependencies]
 pytest = "*"
 pytest-cov = "*"
@@ -51,8 +67,12 @@ hatchling = "*"
 python-build = "*"
 twine = ">=6"
 [feature.build.tasks]
-build-wheel = "python -m build --no-isolation ."
-check-wheel = "twine check dist/*"
+build-wheel = { cmd = "python -m build --no-isolation .", depends-on = [
+  "frontend-build",
+] }
+check-wheel = { depends-on = ["check-wheel-contents", "check-wheel-metadata"] }
+check-wheel-contents = "pytest tests/test_wheel.py"
+check-wheel-metadata = "twine check dist/*"
 
 [feature.lint.dependencies]
 lefthook = "*"
@@ -102,9 +122,10 @@ docs-check = { depends-on = [
 ] }
 
 [environments]
-default = ["test", "build", "lint"]
-py314 = ["py314", "test"]
+default = ["test", "build", "lint", "frontend"]
 docs = ["docs"]
+frontend = ["frontend"]
+py314 = ["py314", "test"]
 
 [tool.update]
 autoupdate-commit-message = "chore: Update pixi lockfile"

@@ -3,6 +3,7 @@ updates:
   - package-ecosystem: github-actions
     directories:
       - /
+      - /examples/github-pages
       - /examples/plugin
     schedule:
       interval: monthly
@@ -30,6 +31,18 @@ updates:
           - "*"
         update-types:
           - major
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+    groups:
+      frontend:
+        patterns:
+          - "*"
     cooldown:
       default-days: 7
     commit-message:
