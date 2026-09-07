@@ -1332,7 +1332,7 @@ model_config = ConfigDict(frozen=True, extra='forbid')
 ### DEFAULT_COPIER_MIGRATIONS
 
 ```python
-DEFAULT_COPIER_MIGRATIONS: dict[str, CopierMigration] = {'example': CopierMigration(answer_key='example_feature', templates=(frozenset({'github.com/example/copier-template'})), resolve_desired_value=(lambda _current_value: True), pull_request_template=(PullRequestTemplate(title='chore: Enable the example feature', body='This migration enables an example Copier template feature.', branch_prefix='copier-migration')))}
+DEFAULT_COPIER_MIGRATIONS: dict[str, CopierMigration] = {'example': CopierMigration(answer_key='example_feature', templates=frozenset({'github.com/example/copier-template'}), resolve_desired_value=lambda _current_value: True, pull_request_template=PullRequestTemplate(title='chore: Enable the example feature', body='This migration enables an example Copier template feature.', branch_prefix='copier-migration'))}
 ```
 
 ### DEFAULT_PULL_REQUEST_TEMPLATES
