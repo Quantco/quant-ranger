@@ -132,6 +132,7 @@ $ quant-ranger update pixi-version [OPTIONS]
 
 * `--schedule [weekly|monthly|quarterly]`: Filter to update configurations whose schedule matches this value. Omit to include every cadence. Configurations set to `never` are always excluded.
 * `--pixi-version TEXT`: Update to this pixi version (e.g. v0.70.0) instead of resolving the latest release from GitHub.
+* `--exclude-newer-days INTEGER RANGE`: Only consider pixi releases at least this many days old, so freshly published releases are given time to settle. Defaults to 0, which always takes the latest release. Ignored when `--pixi-version` is given.  [default: 0; x&gt;=0]
 * `--setup-pixi-marker TEXT`: Only update workflow files containing this marker, e.g. when using a fork of setup-pixi.  [default: (prefix-dev/setup-pixi)]
 * `--help`: Show this message and exit.
 
