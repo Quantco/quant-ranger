@@ -1,11 +1,11 @@
 import js from '@eslint/js'
-const javascriptConfigs = js.configs
 import { configs as typescriptConfigs } from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import reactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
 import pluginTailwind from 'eslint-plugin-better-tailwindcss'
 
+const javascriptConfigs = js.configs
 const typescriptFiles = ['**/*.{ts,tsx}']
 
 export default defineConfig(

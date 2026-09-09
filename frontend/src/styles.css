@@ -57,8 +57,7 @@
   }
 
   a {
-    color: var(--color-primary);
-    text-decoration: underline;
+    @apply text-primary underline;
   }
 
   code {
@@ -70,8 +69,6 @@
   }
 
   summary {
-    @apply font-semibold;
-    color: var(--color-primary);
-    cursor: pointer;
+    @apply font-semibold text-primary cursor-pointer;
   }
 }

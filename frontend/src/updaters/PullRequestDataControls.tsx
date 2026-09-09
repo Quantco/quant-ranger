@@ -31,14 +31,11 @@ function PullRequestCacheSummary({ cachedAt, loadedCount }: { cachedAt: string |
 
 export function PullRequestDataControls({
   githubApiUrl,
-  model
+  model: { cachedAt, clearToken, createTokenUrl, load, loadError, loadedCount, loading, setTokenInput, tokenInput }
 }: {
   githubApiUrl: string
   model: PullRequestDataControlsModel
 }) {
-  const { cachedAt, clearToken, createTokenUrl, load, loadError, loadedCount, loading, setTokenInput, tokenInput } =
-    model
-
   return (
     <>
       <form

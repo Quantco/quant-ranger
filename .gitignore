@@ -403,7 +403,7 @@ node_modules/
 quant_ranger/_frontend/
 _site/
 
-# Ckaude
+# Claude
 .claude/*.local.*
 .claude/worktrees/
 .claude/settings.local.json
