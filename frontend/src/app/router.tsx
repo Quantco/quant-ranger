@@ -13,7 +13,7 @@ import {
 import Overview, { loadOverview } from '@/Overview'
 import { parseDashboardSnapshot, type DashboardSnapshot } from '@/copier/dashboard'
 import { fetchJson } from '@/lib/fetch-json'
-import { parseUpdaterReport, type UpdaterReportSnapshot } from '@/updaters/updater-report'
+import { parseUpdaterReport, type UpdaterReportSnapshot } from '@/lib/updater-report'
 import { AppLayout, LoadingPage, type RouteTitleResolver } from './AppLayout'
 
 const COPIER_TITLE = 'Copier Dashboard'

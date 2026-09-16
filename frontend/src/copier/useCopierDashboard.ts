@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react'
 
-import { createDataTableModel } from '@/components/data-table/DataTable'
 import { replaceExplorerFilter, type ExplorerSort } from '@/components/data-table/explorer-state'
 import { useExplorerTable } from '@/components/data-table/useExplorerTable'
 import { useUrlState } from '@/lib/useUrlState'
@@ -15,6 +14,7 @@ import {
 } from './dashboard-state'
 import { createDashboardColumnRegistry } from './dashboard-table'
 
+// TODO: this is too complicated
 export const useCopierDashboardController = (snapshot: DashboardSnapshot) => {
   const columns = useMemo(() => createDashboardColumns(snapshot), [snapshot])
   const columnRegistry = useMemo(() => createDashboardColumnRegistry(columns), [columns])
@@ -28,8 +28,10 @@ export const useCopierDashboardController = (snapshot: DashboardSnapshot) => {
 
   const columnIds = columnRegistry.map(({ column }) => column.id)
   const filterColumns = columnRegistry
-    .filter(({ column }) => isFilterableDashboardColumn(column))
-    .map(({ column }) => column.id)
+    .map(({ column }) => column)
+    .filter(isFilterableDashboardColumn)
+    .map(({ id }) => id)
+
   const tableColumns = columnIds.filter((id) => id !== REPOSITORIES)
 
   const setChartColumns = (selected: string[]) =>
@@ -98,11 +100,7 @@ export const useCopierDashboardController = (snapshot: DashboardSnapshot) => {
       repositories: {
         matchingRepositoryCount: table.getFilteredRowModel().rows.length,
         repositoryNames: table.getFilteredSelectedRowModel().rows.map(({ original }) => original.repository),
-        table: createDataTableModel({
-          emptyMessage: 'No matching repositories.',
-          label: 'Repository Inventory',
-          table
-        })
+        table
       },
       repositoryCount: snapshot.rows.length,
       tableColumns: {

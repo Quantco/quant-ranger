@@ -1,4 +1,4 @@
-import type { UpdaterReportResult } from './updater-report'
+import type { UpdaterReportResult } from '../updater-report'
 
 export type PullRequestState = 'closed' | 'merged' | 'open'
 export type CiStatus = 'failure' | 'none' | 'pending' | 'success'
@@ -9,22 +9,18 @@ export type PullRequestReviewer = {
   url: string
 }
 
-export type LivePullRequest = {
-  ciStatus: CiStatus | null
-  comments: number
-  createdAt: string
-  hasMergeConflicts: boolean | null
-  hasNonQuantRangerCommits: boolean
-  reviewStatus: ReviewStatus | null
-  reviewers: PullRequestReviewer[]
-  state: PullRequestState
+export type PullRequest = {
   title: string
+  createdAt: string
   updatedAt: string
+  state: PullRequestState
+  comments: number
+  hasNonQuantRangerCommits: boolean
+  reviewers: PullRequestReviewer[]
+  hasMergeConflicts: boolean | null
+  reviewStatus: ReviewStatus | null
+  ciStatus: CiStatus | null
 }
-
-/** Successfully loaded pull requests by `pullRequestKey`. Lookups that failed
- * are reported separately, so a missing entry simply means "not loaded". */
-export type PullRequests = Record<string, LivePullRequest>
 
 export type UpdaterResultWithPullRequest = UpdaterReportResult & { pull_request: number }
 
@@ -36,5 +32,5 @@ export const parseGitHubRepository = (repository: string): { owner: string; repo
   return owner != null && owner !== '' && repo != null && repo !== '' && remainder.length === 0 ? { owner, repo } : null
 }
 
-export const pullRequestKey = (result: Pick<UpdaterResultWithPullRequest, 'pull_request' | 'repository'>): string =>
+export const pullRequestKey = (result: Pick<UpdaterResultWithPullRequest, 'pull_request' | 'repository'>) =>
   `${result.repository}#${result.pull_request}`

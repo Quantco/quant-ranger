@@ -4,9 +4,10 @@ import { cn } from '@/lib/class-merge'
 
 import { ChevronIcon } from '@/components/ui/ChevronIcon'
 import { DashboardSection } from '@/components/dashboard/DashboardSection'
-import { DataTable, type DataTableModel } from '@/components/data-table/DataTable'
+import { DataTable } from '@/components/data-table/DataTable'
+import type { DataTableInstance } from '@/components/data-table/data-table-model'
 import { Button } from '@/components/ui/Button'
-import { formatDateTime } from '@/lib/date'
+import { formatDateTime } from '@/lib/format'
 import { PieChart } from './Charts'
 import { CopyableRepositoryList } from './CopyableRepositoryList'
 import type { DashboardChart } from './dashboard-analytics'
@@ -80,14 +81,14 @@ export const RepositoriesSection = ({
 }: {
   matchingRepositoryCount: number
   repositoryNames: string[]
-  table: DataTableModel<DashboardRow>
+  table: DataTableInstance<DashboardRow>
 }) => (
   <DashboardSection heading="Repositories">
     <RepositoryCopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
     <p className="text-sm text-muted-foreground">
       Use the filters in the sidebar to narrow the table. Select a column heading to sort.
     </p>
-    <DataTable model={table} />
+    <DataTable emptyMessage="No matching repositories." label="Repository Inventory" table={table} />
   </DashboardSection>
 )
 

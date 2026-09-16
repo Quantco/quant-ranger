@@ -3,7 +3,7 @@ import type { Octokit, RestEndpointMethodTypes } from '@octokit/rest'
 import {
   parseGitHubRepository,
   type CiStatus,
-  type LivePullRequest,
+  type PullRequest,
   type PullRequestReviewer,
   type ReviewStatus,
   type UpdaterResultWithPullRequest
@@ -24,7 +24,7 @@ type ListScope = {
 }
 
 /** The fields that only mean anything while a pull request is still open. */
-type OpenPullRequestStatus = Pick<LivePullRequest, 'ciStatus' | 'hasMergeConflicts' | 'reviewStatus'>
+type OpenPullRequestStatus = Pick<PullRequest, 'ciStatus' | 'hasMergeConflicts' | 'reviewStatus'>
 
 const CLOSED_PULL_REQUEST_STATUS: OpenPullRequestStatus = {
   ciStatus: null,
@@ -32,11 +32,11 @@ const CLOSED_PULL_REQUEST_STATUS: OpenPullRequestStatus = {
   reviewStatus: null
 }
 
-export const fetchLivePullRequest = async (
-  result: UpdaterResultWithPullRequest,
+export const fetchPullRequest = async (
+  result: Pick<UpdaterResultWithPullRequest, 'repository' | 'pull_request'>,
   octokit: Octokit,
   signal: AbortSignal
-): Promise<LivePullRequest> => {
+): Promise<PullRequest> => {
   const repository = parseGitHubRepository(result.repository)
   if (!repository) throw new Error(`Invalid GitHub repository name: ${result.repository}`)
 
@@ -47,23 +47,23 @@ export const fetchLivePullRequest = async (
 
   const [commits, status] = await Promise.all([
     octokit.paginate(octokit.rest.pulls.listCommits, { ...listScope, pull_number: pull.number }),
-    pull.state === 'open' ? fetchOpenPullRequestStatus(octokit, pull, listScope) : CLOSED_PULL_REQUEST_STATUS
+    pull.state === 'open' ? fetchStatusOfOpenPullRequest(octokit, pull, listScope) : CLOSED_PULL_REQUEST_STATUS
   ])
 
   return {
-    ...status,
-    comments: pull.comments + pull.review_comments,
+    title: pull.title,
     createdAt: pull.created_at,
+    updatedAt: pull.updated_at,
+    state: pull.merged_at == null ? pull.state : 'merged',
+    comments: pull.comments + pull.review_comments,
     hasNonQuantRangerCommits: commits.some(({ commit }) => !hasQuantRangerCommitTrailer(commit.message)),
     reviewers: requestedReviewers(pull, repository.owner),
-    state: pull.merged_at == null ? pull.state : 'merged',
-    title: pull.title,
-    updatedAt: pull.updated_at
+    ...status
   }
 }
 
 /** Checks, reviews and mergeability are only reported for open pull requests. */
-const fetchOpenPullRequestStatus = async (
+const fetchStatusOfOpenPullRequest = async (
   octokit: Octokit,
   pull: PullRequestDetails,
   listScope: ListScope

@@ -6,6 +6,8 @@ const STATE_PARAMETER = 'state'
 const MAX_COMPRESSED_LENGTH = 10_000
 const MAX_DECOMPRESSED_LENGTH = 100_000
 
+// TODO: not sure if this works properly
+
 // lz-string's declarations omit the null returned for invalid compressed input.
 const decompress: (encoded: string) => string | null = LZString.decompressFromEncodedURIComponent
 

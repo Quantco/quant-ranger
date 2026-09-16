@@ -32,10 +32,10 @@ export const dashboardFilters = (
   filters: Partial<Record<string, DashboardFilterValue>>,
   versions: string[]
 ): DashboardFilter[] =>
-  selectDashboardColumns(table, columns, columnIds).flatMap(({ column, tableColumn }) => {
+  selectDashboardColumns(columns, columnIds).flatMap((column) => {
     if (!isFilterableDashboardColumn(column)) return []
     const filter = filters[column.id]
-    return [{ column, filter, options: facetOptions(tableColumn, column, filter, versions) }]
+    return [{ column, filter, options: facetOptions(requireTableColumn(table, column.id), column, filter, versions) }]
   })
 
 export const dashboardCharts = (
@@ -44,20 +44,15 @@ export const dashboardCharts = (
   columnIds: string[]
 ): DashboardChart[] => {
   const filteredRows = table.getFilteredRowModel().rows
-  return selectDashboardColumns(table, columns, columnIds).map(({ column }) => {
-    const { id } = column
-    return {
-      column,
-      data: columnDistribution(filteredRows, id),
-      domain: columnDistribution(table.getPreFilteredRowModel().rows, id).map(({ value }) => value)
-    }
-  })
+  return selectDashboardColumns(columns, columnIds).map((column) => ({
+    column,
+    data: columnDistribution(filteredRows, column.id),
+    domain: columnDistribution(table.getPreFilteredRowModel().rows, column.id).map(({ value }) => value)
+  }))
 }
 
-const selectDashboardColumns = (table: DashboardTable, columns: DashboardColumnRegistry, columnIds: string[]) =>
-  columns
-    .filter(({ column }) => columnIds.includes(column.id))
-    .map(({ column }) => ({ column, tableColumn: requireTableColumn(table, column.id) }))
+const selectDashboardColumns = (columns: DashboardColumnRegistry, columnIds: string[]) =>
+  columns.filter(({ column }) => columnIds.includes(column.id)).map(({ column }) => column)
 
 const requireTableColumn = (table: DashboardTable, id: string): DashboardTableColumn => {
   const column = table.getColumn(id)

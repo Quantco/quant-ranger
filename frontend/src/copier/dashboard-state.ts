@@ -66,8 +66,8 @@ const dashboardStateSchema = (columns: DashboardColumnModel[]) => {
 export const parseDashboardState = (value: unknown, columns: DashboardColumnModel[]): DashboardState | null => {
   const parsed = z.safeParse(dashboardStateSchema(columns), value)
   if (!parsed.success) return null
-  const state: DashboardState = parsed.data
-  return validDashboardState(state, columns) ? state : null
+  if (!validDashboardState(parsed.data, columns)) return null
+  return parsed.data
 }
 
 const validDashboardState = (state: DashboardState, columns: DashboardColumnModel[]): boolean => {

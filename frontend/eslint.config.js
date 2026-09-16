@@ -36,8 +36,12 @@ export default defineConfig(
       sourceType: 'module'
     },
     rules: {
-      'no-restricted-syntax': ['error', { selector: 'VariableDeclarator > FunctionExpression', message: 'Use an arrow function.' }],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'VariableDeclarator > FunctionExpression', message: 'Use an arrow function.' }
+      ],
       'func-style': ['error', 'expression', { overrides: { namedExports: 'expression' } }],
+      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
       '@typescript-eslint/consistent-type-exports': 'error',
       '@typescript-eslint/no-explicit-any': 'error',

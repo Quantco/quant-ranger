@@ -26,8 +26,9 @@ export const OctokitProvider = ({ children, githubApiUrl }: { children: ReactNod
   // Both tokens are refs so that typing rebuilds neither the client nor the
   // Octokit context: `typedToken` mirrors the field, `committedToken` holds the
   // credentials requests actually use, and only `commitToken` moves one to the
-  // other. Requests already queued behind the limiter therefore keep the token
-  // they were issued under.
+  // other. Without that step a half-typed token would be sent by every request
+  // still queued behind the limiter, since each one authenticates at the moment
+  // the limiter admits it.
   const typedToken = useRef('')
   const committedToken = useRef('')
 
@@ -76,7 +77,10 @@ const createOctokitClient = (githubApiUrl: string, committedToken: () => string)
   const octokit = new Octokit({ baseUrl: githubApiUrl })
 
   // Authenticating per request rather than at construction is what lets one
-  // instance outlive any number of token changes.
+  // instance outlive any number of token changes. Registration order matters:
+  // the last hook registered is the outermost, so the limiter wraps the `before`
+  // hook and a queued request reads the committed token when it is admitted
+  // rather than when it was enqueued.
   octokit.hook.before('request', (options) => {
     const token = committedToken()
     if (token !== '') options.headers.authorization = `token ${token}`

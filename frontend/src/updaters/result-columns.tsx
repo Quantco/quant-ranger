@@ -6,20 +6,19 @@ import type { DataTableColumn } from '@/components/data-table/DataTable'
 import type { dataTableFeatures } from '@/components/data-table/data-table-model'
 import { cn } from '@/lib/class-merge'
 import { displayValue, type DisplayValue } from '@/lib/value'
-import { ageColor, ageInDays, formatAge } from './pull-request-age'
+import { ageColor, ageInDays, formatAge } from '@/lib/format'
 import {
   hasPullRequest,
   pullRequestKey,
   type CiStatus,
-  type LivePullRequest,
-  type PullRequests,
+  type PullRequest,
   type PullRequestState,
   type ReviewStatus
-} from './pull-request'
-import type { UpdaterReportResult, UpdateStatus } from './updater-report'
+} from '@/lib/github/pull-request'
+import type { UpdaterReportResult, UpdateStatus } from '@/lib/updater-report'
 
 export type UpdaterResultRow = {
-  pullRequest: LivePullRequest | undefined
+  pullRequest: PullRequest | undefined
   result: UpdaterReportResult
   searchText: string
 }
@@ -270,24 +269,21 @@ export const updaterResultColumns: DataTableColumn<UpdaterResultRow>[] = updater
 )
 
 export const buildUpdaterFilterDefinitions = (results: UpdaterReportResult[]): UpdaterFilterDefinition[] => {
-  const statuses = [...new Set(results.map(({ status }) => status))].sort()
-  return updaterResultColumnRegistry.flatMap(({ filter, id, label }) =>
-    filter == null
-      ? []
-      : [
-          {
-            column: id,
-            label: filter.label ?? label,
-            options: filter.options(statuses),
-            placeholder: filter.placeholder
-          }
-        ]
-  )
+  const statuses = [...new Set(results.map(({ status }) => status))].toSorted()
+
+  return updaterResultColumnRegistry
+    .filter(({ filter }) => !!filter)
+    .map(({ filter, id, label }) => ({
+      column: id,
+      label: filter!.label ?? label,
+      options: filter!.options(statuses),
+      placeholder: filter!.placeholder
+    }))
 }
 
 export const buildUpdaterResultRows = (
   results: UpdaterReportResult[],
-  pullRequests: PullRequests
+  pullRequests: Record<string, PullRequest>
 ): UpdaterResultRow[] =>
   results.map((result) => {
     const pullRequest = hasPullRequest(result) ? pullRequests[pullRequestKey(result)] : undefined
@@ -297,7 +293,7 @@ export const buildUpdaterResultRows = (
 export const updaterResultColumnLabel = (columnId: string): string =>
   updaterResultColumnRegistry.find(({ id }) => id === columnId)?.label ?? columnId
 
-const buildSearchText = (result: UpdaterReportResult, pullRequest: LivePullRequest | undefined): string =>
+const buildSearchText = (result: UpdaterReportResult, pullRequest: PullRequest | undefined): string =>
   [
     result.repository,
     result.target,

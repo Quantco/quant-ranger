@@ -14,37 +14,19 @@ export type DataTableColumn<Row extends RowData> = DataTableColumnDefinition<Row
   id: string
 }
 
-const DATA_TABLE_INSTANCE = Symbol('data-table-instance')
-
-export type DataTableModel<Row extends RowData> = {
-  readonly [DATA_TABLE_INSTANCE]: DataTableInstance<Row>
-  className?: string
-  emptyMessage: string
-  label: string
-}
-
-type DataTableProps<Row extends RowData> = {
-  model: DataTableModel<Row>
-}
-
 type UseDataTableOptions<Row extends RowData> = {
-  className?: string
   columns: readonly DataTableColumnDefinition<Row>[]
-  emptyMessage: string
   getRowId: (row: Row, index: number) => string
-  label: string
   rows: Row[]
 }
 
+/** A table with no external state: sorting and selection stay inside the instance. */
 export const useDataTable = <Row extends RowData>({
-  className,
   columns,
-  emptyMessage,
   getRowId,
-  label,
   rows
-}: UseDataTableOptions<Row>): DataTableModel<Row> => {
-  const table = useTable({
+}: UseDataTableOptions<Row>): DataTableInstance<Row> =>
+  useTable({
     columns,
     data: rows,
     defaultColumn: { sortUndefined: 'last' },
@@ -53,25 +35,6 @@ export const useDataTable = <Row extends RowData>({
     features: dataTableFeatures,
     getRowId
   })
-  return createDataTableModel({ ...(className == null ? {} : { className }), emptyMessage, label, table })
-}
-
-export const createDataTableModel = <Row extends RowData>({
-  className,
-  emptyMessage,
-  label,
-  table
-}: {
-  className?: string
-  emptyMessage: string
-  label: string
-  table: DataTableInstance<Row>
-}): DataTableModel<Row> => ({
-  [DATA_TABLE_INSTANCE]: table,
-  ...(className == null ? {} : { className }),
-  emptyMessage,
-  label
-})
 
 type OverflowValueProps = {
   children: ReactNode
@@ -176,9 +139,14 @@ const DataCell = <Row extends RowData>({ cell, sticky, table }: DataCellProps<Ro
   )
 }
 
-export const DataTable = <Row extends RowData>({ model }: DataTableProps<Row>) => {
-  const { className = '', emptyMessage, label } = model
-  const table = model[DATA_TABLE_INSTANCE]
+type DataTableProps<Row extends RowData> = {
+  className?: string
+  emptyMessage: string
+  label: string
+  table: DataTableInstance<Row>
+}
+
+export const DataTable = <Row extends RowData>({ className = '', emptyMessage, label, table }: DataTableProps<Row>) => {
   const rows = table.getRowModel().rows
   if (rows.length === 0) return <p>{emptyMessage}</p>
 

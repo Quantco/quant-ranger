@@ -2,15 +2,15 @@ import { cn } from '@/lib/class-merge'
 
 import { DashboardSection } from '@/components/dashboard/DashboardSection'
 import { DataTable } from '@/components/data-table/DataTable'
-import { formatDateTime } from '@/lib/date'
+import { formatDateTime } from '@/lib/format'
+import { OctokitProvider } from '@/lib/github/github-client'
+import { queryClient } from '@/lib/query-client'
 import { FailureSection } from './FailureSection'
-import { OctokitProvider } from './github-client'
-import { PullRequestDataPanel } from './PullRequestDataPanel'
 import { UpdaterSidebar } from './UpdaterSidebar'
-import { queryClient } from './pull-request-query'
+import type { UpdaterReportSnapshot } from '@/lib/updater-report'
 import { useUpdaterDashboardController } from './useDashboardModel'
-import type { UpdaterReportSnapshot } from './updater-report'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { PullRequestData } from './PullRequestData'
 
 const UpdaterDashboardRoute = ({ report }: { report: UpdaterReportSnapshot }) => (
   <QueryClientProvider client={queryClient}>
@@ -70,13 +70,15 @@ const UpdaterDashboardPage = ({ report }: { report: UpdaterReportSnapshot }) => 
             </div>
           </DashboardSection>
 
-          <PullRequestDataPanel githubApiUrl={report.github_api_url} model={resources.pullRequests} />
+          <DashboardSection heading="Live pull request data">
+            <PullRequestData model={resources.pullRequests} report={report} />
+          </DashboardSection>
 
           <DashboardSection heading="Results">
             <p className="text-sm text-muted-foreground">
               {view.resultCount} of {report.results.length} results
             </p>
-            <DataTable model={view.table} />
+            <DataTable emptyMessage="No matching results." label="Updater results" table={view.table} />
           </DashboardSection>
 
           <FailureSection failures={view.updaterFailures} title="Updater failures" />

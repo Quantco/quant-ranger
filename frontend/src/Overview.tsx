@@ -3,7 +3,7 @@ import { Link, useLoaderData, type LoaderFunctionArgs } from 'react-router'
 
 import { fetchJson } from './lib/fetch-json'
 import { UpdaterOverviewTable } from './updaters/UpdaterOverviewTable'
-import { parseUpdaterIndex } from './updaters/updater-report'
+import { parseUpdaterIndex } from './lib/updater-report'
 
 const UPDATER_INDEX_PATH = 'data/updaters/index.json'
 const DATA_MESSAGE_CLASS = 'grid gap-2 rounded-lg border border-border bg-muted p-4'

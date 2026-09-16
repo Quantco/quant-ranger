@@ -6,7 +6,7 @@ import {
   UPDATER_REPOSITORY_COLUMN,
   UPDATER_RESULT_COLUMN_IDS,
   type UpdaterResultColumnId
-} from './result-columns'
+} from '../updaters/result-columns'
 import type { UpdaterReportSnapshot } from './updater-report'
 
 const UPDATER_STATE_VERSION = 1

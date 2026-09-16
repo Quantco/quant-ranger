@@ -1,11 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
-import { createDataTableModel } from '@/components/data-table/DataTable'
 import { replaceExplorerFilter, type ExplorerSort } from '@/components/data-table/explorer-state'
 import { useExplorerTable } from '@/components/data-table/useExplorerTable'
 import { useUrlState } from '@/lib/useUrlState'
-import { DEFAULT_UPDATER_DASHBOARD_STATE, parseUpdaterDashboardState } from './dashboard-url-state'
-import { hasPullRequest, pullRequestKey } from './pull-request'
+import { DEFAULT_UPDATER_DASHBOARD_STATE, parseUpdaterDashboardState } from '@/lib/dashboard-url-state'
+import { hasPullRequest, pullRequestKey } from '@/lib/github/pull-request'
 import {
   buildUpdaterFilterDefinitions,
   buildUpdaterResultRows,
@@ -15,8 +14,8 @@ import {
   UPDATER_RESULT_COLUMN_IDS,
   type UpdaterResultColumnId
 } from './result-columns'
-import type { UpdaterReportSnapshot } from './updater-report'
-import { useLivePullRequests, type LivePullRequestModel } from './useLivePullRequests'
+import type { UpdaterReportSnapshot } from '@/lib/updater-report'
+import { usePullRequests } from '@/lib/github/useLivePullRequests'
 
 type UpdaterSummaryItem = {
   error?: boolean
@@ -24,18 +23,9 @@ type UpdaterSummaryItem = {
   value: number
 }
 
+// TODO: this is too complicated
 export const useUpdaterDashboardController = (report: UpdaterReportSnapshot) => {
-  // Whether the user has asked for live data at all. That is app intent, not
-  // query state, so it is the one thing TanStack cannot answer for us.
-  const [liveDataRequested, setLiveDataRequested] = useState(false)
-  const feed = useLivePullRequests(report, liveDataRequested)
-  const livePullRequests: LivePullRequestModel = {
-    ...feed,
-    load: () => {
-      setLiveDataRequested(true)
-      feed.refetch()
-    }
-  }
+  const livePullRequests = usePullRequests(report)
   const rows = useMemo(
     () => buildUpdaterResultRows(report.results, livePullRequests.pullRequests),
     [livePullRequests.pullRequests, report.results]
@@ -86,6 +76,7 @@ export const useUpdaterDashboardController = (report: UpdaterReportSnapshot) => 
   const updaterFailures = report.results.filter(({ status }) => status === 'failure')
   const failureCount = report.summary.failures + report.summary.scan_failures
   const uniquePullRequests = new Set(report.results.filter(hasPullRequest).map(pullRequestKey)).size
+
   const summaryItems: UpdaterSummaryItem[] = [
     { label: 'Tasks', value: report.summary.total },
     { label: 'Updated', value: report.summary.updated },
@@ -93,7 +84,7 @@ export const useUpdaterDashboardController = (report: UpdaterReportSnapshot) => 
     { label: 'Skipped', value: report.summary.skipped },
     { error: failureCount > 0, label: 'Failures', value: failureCount },
     { label: 'Pull requests', value: uniquePullRequests },
-    ...(livePullRequests.loadedCount > 0 ? [{ label: 'Open PRs', value: livePullRequests.openCount }] : [])
+    ...(livePullRequests.progress.completed > 0 ? [{ label: 'Open PRs', value: livePullRequests.openCount }] : [])
   ]
 
   return {
@@ -109,7 +100,7 @@ export const useUpdaterDashboardController = (report: UpdaterReportSnapshot) => 
       resultCount: table.getFilteredRowModel().rows.length,
       search: state.search,
       summaryItems,
-      table: createDataTableModel({ emptyMessage: 'No matching results.', label: 'Updater results', table }),
+      table,
       tableColumns: {
         fields: optionalColumns,
         selected: selectedColumns
