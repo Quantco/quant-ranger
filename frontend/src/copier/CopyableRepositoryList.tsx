@@ -5,13 +5,13 @@ import { Textarea } from '@/components/ui/Textarea'
 import { useClipboard } from './useClipboard'
 import { cn } from '@/lib/class-merge'
 
-function CopyStateIcon({ copied }: { copied: boolean }) {
+const CopyStateIcon = ({ copied }: { copied: boolean }) => {
   const Icon = copied ? CheckIcon : CopyIcon
 
   return <Icon aria-hidden="true" className="size-full" />
 }
 
-export function CopyableRepositoryList({ label, value }: { label: string; value: string }) {
+export const CopyableRepositoryList = ({ label, value }: { label: string; value: string }) => {
   const { copy, copyState } = useClipboard()
   const copyLabel =
     copyState === 'copied'

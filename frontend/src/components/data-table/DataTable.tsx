@@ -16,18 +16,18 @@ export type DataTableColumn<Row extends RowData> = DataTableColumnDefinition<Row
 
 const DATA_TABLE_INSTANCE = Symbol('data-table-instance')
 
-export interface DataTableModel<Row extends RowData> {
+export type DataTableModel<Row extends RowData> = {
   readonly [DATA_TABLE_INSTANCE]: DataTableInstance<Row>
   className?: string
   emptyMessage: string
   label: string
 }
 
-interface DataTableProps<Row extends RowData> {
+type DataTableProps<Row extends RowData> = {
   model: DataTableModel<Row>
 }
 
-interface UseDataTableOptions<Row extends RowData> {
+type UseDataTableOptions<Row extends RowData> = {
   className?: string
   columns: readonly DataTableColumnDefinition<Row>[]
   emptyMessage: string
@@ -36,14 +36,14 @@ interface UseDataTableOptions<Row extends RowData> {
   rows: Row[]
 }
 
-export function useDataTable<Row extends RowData>({
+export const useDataTable = <Row extends RowData>({
   className,
   columns,
   emptyMessage,
   getRowId,
   label,
   rows
-}: UseDataTableOptions<Row>): DataTableModel<Row> {
+}: UseDataTableOptions<Row>): DataTableModel<Row> => {
   const table = useTable({
     columns,
     data: rows,
@@ -56,7 +56,7 @@ export function useDataTable<Row extends RowData>({
   return createDataTableModel({ ...(className == null ? {} : { className }), emptyMessage, label, table })
 }
 
-export function createDataTableModel<Row extends RowData>({
+export const createDataTableModel = <Row extends RowData>({
   className,
   emptyMessage,
   label,
@@ -66,17 +66,20 @@ export function createDataTableModel<Row extends RowData>({
   emptyMessage: string
   label: string
   table: DataTableInstance<Row>
-}): DataTableModel<Row> {
-  return { [DATA_TABLE_INSTANCE]: table, ...(className == null ? {} : { className }), emptyMessage, label }
-}
+}): DataTableModel<Row> => ({
+  [DATA_TABLE_INSTANCE]: table,
+  ...(className == null ? {} : { className }),
+  emptyMessage,
+  label
+})
 
-interface OverflowValueProps {
+type OverflowValueProps = {
   children: ReactNode
   maxWidth?: CSSProperties['maxWidth']
   text: string
 }
 
-export function DataTableOverflowValue({ children, maxWidth, text }: OverflowValueProps) {
+export const DataTableOverflowValue = ({ children, maxWidth, text }: OverflowValueProps) => {
   const value = useRef<HTMLSpanElement>(null)
   const [open, setOpen] = useState(false)
 
@@ -100,13 +103,13 @@ export function DataTableOverflowValue({ children, maxWidth, text }: OverflowVal
   )
 }
 
-interface ColumnHeaderProps<Row extends RowData> {
+type ColumnHeaderProps<Row extends RowData> = {
   header: Header<typeof dataTableFeatures, Row>
   sticky: boolean
   table: DataTableInstance<Row>
 }
 
-function ColumnHeader<Row extends RowData>({ header, sticky, table }: ColumnHeaderProps<Row>) {
+const ColumnHeader = <Row extends RowData>({ header, sticky, table }: ColumnHeaderProps<Row>) => {
   const { column } = header
   const meta = column.columnDef.meta
   const direction = column.getIsSorted()
@@ -140,13 +143,13 @@ function ColumnHeader<Row extends RowData>({ header, sticky, table }: ColumnHead
   )
 }
 
-interface DataCellProps<Row extends RowData> {
+type DataCellProps<Row extends RowData> = {
   cell: Cell<typeof dataTableFeatures, Row>
   sticky: boolean
   table: DataTableInstance<Row>
 }
 
-function DataCell<Row extends RowData>({ cell, sticky, table }: DataCellProps<Row>) {
+const DataCell = <Row extends RowData>({ cell, sticky, table }: DataCellProps<Row>) => {
   const meta = cell.column.columnDef.meta
   const value = cell.getValue()
   const content = cell.column.columnDef.cell != null ? <table.FlexRender cell={cell} /> : displayValue(value)
@@ -173,7 +176,7 @@ function DataCell<Row extends RowData>({ cell, sticky, table }: DataCellProps<Ro
   )
 }
 
-export function DataTable<Row extends RowData>({ model }: DataTableProps<Row>) {
+export const DataTable = <Row extends RowData>({ model }: DataTableProps<Row>) => {
   const { className = '', emptyMessage, label } = model
   const table = model[DATA_TABLE_INSTANCE]
   const rows = table.getRowModel().rows

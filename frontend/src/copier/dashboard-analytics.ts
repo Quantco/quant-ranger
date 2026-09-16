@@ -13,37 +13,36 @@ import {
 import type { DashboardFilterValue } from './dashboard-state'
 import type { DashboardColumnRegistry, DashboardTable, DashboardTableColumn } from './dashboard-table'
 
-export interface DashboardFilter {
+export type DashboardFilter = {
   column: FilterableDashboardColumn
   filter: DashboardFilterValue | undefined
   options: CountedValue[]
 }
 
-export interface DashboardChart {
+export type DashboardChart = {
   column: DashboardColumn
   data: CountedValue[]
   domain: FilterValue[]
 }
 
-export function dashboardFilters(
+export const dashboardFilters = (
   table: DashboardTable,
   columns: DashboardColumnRegistry,
   columnIds: string[],
   filters: Partial<Record<string, DashboardFilterValue>>,
   versions: string[]
-): DashboardFilter[] {
-  return selectDashboardColumns(table, columns, columnIds).flatMap(({ column, tableColumn }) => {
+): DashboardFilter[] =>
+  selectDashboardColumns(table, columns, columnIds).flatMap(({ column, tableColumn }) => {
     if (!isFilterableDashboardColumn(column)) return []
     const filter = filters[column.id]
     return [{ column, filter, options: facetOptions(tableColumn, column, filter, versions) }]
   })
-}
 
-export function dashboardCharts(
+export const dashboardCharts = (
   table: DashboardTable,
   columns: DashboardColumnRegistry,
   columnIds: string[]
-): DashboardChart[] {
+): DashboardChart[] => {
   const filteredRows = table.getFilteredRowModel().rows
   return selectDashboardColumns(table, columns, columnIds).map(({ column }) => {
     const { id } = column
@@ -55,24 +54,23 @@ export function dashboardCharts(
   })
 }
 
-function selectDashboardColumns(table: DashboardTable, columns: DashboardColumnRegistry, columnIds: string[]) {
-  return columns
+const selectDashboardColumns = (table: DashboardTable, columns: DashboardColumnRegistry, columnIds: string[]) =>
+  columns
     .filter(({ column }) => columnIds.includes(column.id))
     .map(({ column }) => ({ column, tableColumn: requireTableColumn(table, column.id) }))
-}
 
-function requireTableColumn(table: DashboardTable, id: string): DashboardTableColumn {
+const requireTableColumn = (table: DashboardTable, id: string): DashboardTableColumn => {
   const column = table.getColumn(id)
   if (column == null) throw new Error(`Dashboard table column ${id} is missing.`)
   return column
 }
 
-function facetOptions(
+const facetOptions = (
   tableColumn: DashboardTableColumn,
   column: FilterableDashboardColumn,
   filter: DashboardFilterValue | undefined,
   versions: string[]
-): CountedValue[] {
+): CountedValue[] => {
   const counts = new Map<FilterValue, number>()
   for (const value of filter?.values ?? []) counts.set(value, 0)
 
@@ -88,7 +86,10 @@ function facetOptions(
   )
 }
 
-function columnDistribution(rows: ReturnType<DashboardTable['getRowModel']>['rows'], column: string): CountedValue[] {
+const columnDistribution = (
+  rows: ReturnType<DashboardTable['getRowModel']>['rows'],
+  column: string
+): CountedValue[] => {
   const counts = new Map<FilterValue, number>()
   for (const row of rows) {
     const value = row.getUniqueValues<DashboardValue>(column)[0] ?? ''
@@ -97,17 +98,17 @@ function columnDistribution(rows: ReturnType<DashboardTable['getRowModel']>['row
   return [...counts].map(([value, count]) => ({ count, value })).sort((left, right) => right.count - left.count)
 }
 
-function orderFilterOptions(
+const orderFilterOptions = (
   options: CountedValue[],
   order: DashboardFilterOptionOrder,
   versions: string[]
-): CountedValue[] {
+): CountedValue[] => {
   if (order === 'version') return versionDistribution(options, versions)
   if (order === 'answer') return answerDistribution(options)
   return options.toSorted((left, right) => right.count - left.count)
 }
 
-function versionDistribution(data: CountedValue[], versions: string[]): CountedValue[] {
+const versionDistribution = (data: CountedValue[], versions: string[]): CountedValue[] => {
   const rank = ({ value }: CountedValue) => {
     const index = versions.indexOf(String(value))
     return index === -1 ? Infinity : index
@@ -115,7 +116,7 @@ function versionDistribution(data: CountedValue[], versions: string[]): CountedV
   return data.toSorted((left, right) => rank(left) - rank(right))
 }
 
-function answerDistribution(data: CountedValue[]): CountedValue[] {
+const answerDistribution = (data: CountedValue[]): CountedValue[] => {
   const booleanOrder: readonly FilterValue[] = [true, false]
   return data.toSorted((left, right) => {
     if (left.value === '') return right.value === '' ? 0 : 1

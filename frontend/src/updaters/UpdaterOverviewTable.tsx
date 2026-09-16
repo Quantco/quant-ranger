@@ -7,14 +7,11 @@ import { formatDateTime } from '@/lib/date'
 import { displayValue } from '@/lib/value'
 import type { UpdaterFeedSummary } from './updater-report'
 
-function updaterOptions(value: Record<string, unknown>) {
-  return (
-    Object.entries(value)
-      .filter(([, option]) => option != null)
-      .map(([name, option]) => `${name}=${JSON.stringify(option)}`)
-      .join(', ') || 'No options'
-  )
-}
+const updaterOptions = (value: Record<string, unknown>) =>
+  Object.entries(value)
+    .filter(([, option]) => option != null)
+    .map(([name, option]) => `${name}=${JSON.stringify(option)}`)
+    .join(', ') || 'No options'
 
 const updaterColumn = createColumnHelper<typeof dataTableFeatures, UpdaterFeedSummary>()
 const UPDATER_COLUMNS = updaterColumn.columns([
@@ -73,7 +70,7 @@ const UPDATER_COLUMNS = updaterColumn.columns([
   })
 ])
 
-export function UpdaterOverviewTable({ feeds }: { feeds: UpdaterFeedSummary[] }) {
+export const UpdaterOverviewTable = ({ feeds }: { feeds: UpdaterFeedSummary[] }) => {
   const table = useDataTable<UpdaterFeedSummary>({
     className: 'max-h-none rounded-lg bg-white',
     columns: UPDATER_COLUMNS,

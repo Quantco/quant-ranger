@@ -1,7 +1,7 @@
 import { hasPullRequest, parseGitHubRepository } from './pull-request'
 import type { UpdaterReportSnapshot } from './updater-report'
 
-export function createGitHubTokenUrl(report: UpdaterReportSnapshot): string | null {
+export const createGitHubTokenUrl = (report: UpdaterReportSnapshot): string | null => {
   const candidates = report.results.filter(hasPullRequest)
   const repositories = candidates.map(({ repository }) => parseGitHubRepository(repository))
   const firstRepository = repositories[0]

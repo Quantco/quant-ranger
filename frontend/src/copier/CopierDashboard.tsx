@@ -4,7 +4,7 @@ import { DashboardSidebar } from './DashboardSidebar'
 import type { DashboardSnapshot } from './dashboard'
 import { useCopierDashboardController } from './useCopierDashboard'
 
-export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnapshot }) {
+const CopierDashboard = ({ snapshot }: { snapshot: DashboardSnapshot }) => {
   const { actions, view } = useCopierDashboardController(snapshot)
 
   return (
@@ -29,3 +29,5 @@ export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnaps
     </main>
   )
 }
+
+export default CopierDashboard

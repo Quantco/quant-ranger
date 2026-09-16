@@ -12,32 +12,28 @@ import { CopyableRepositoryList } from './CopyableRepositoryList'
 import type { DashboardChart } from './dashboard-analytics'
 import type { DashboardRow } from './dashboard'
 
-function snapshotDate(value: string) {
-  return formatDateTime(value, { timeZone: 'UTC' }) ?? 'Unknown snapshot date'
-}
+const snapshotDate = (value: string) => formatDateTime(value, { timeZone: 'UTC' }) ?? 'Unknown snapshot date'
 
-export function DashboardHeader({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) {
-  return (
-    <header className="mb-4">
-      <h1>Copier Dashboard</h1>
-      <p className="text-muted-foreground">Compare Copier templates, versions, and answers across repositories.</p>
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-        <span>
-          <strong className="text-foreground">{repositoryCount}</strong> repositories
-        </span>
-        <span>Updated {snapshotDate(generatedAt)}</span>
-      </p>
-    </header>
-  )
-}
+export const DashboardHeader = ({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) => (
+  <header className="mb-4">
+    <h1>Copier Dashboard</h1>
+    <p className="text-muted-foreground">Compare Copier templates, versions, and answers across repositories.</p>
+    <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+      <span>
+        <strong className="text-foreground">{repositoryCount}</strong> repositories
+      </span>
+      <span>Updated {snapshotDate(generatedAt)}</span>
+    </p>
+  </header>
+)
 
-function RepositoryCopyPanel({
+const RepositoryCopyPanel = ({
   matchingRepositoryCount,
   repositoryNames
 }: {
   matchingRepositoryCount: number
   repositoryNames: string[]
-}) {
+}) => {
   const [showRepositoryNames, setShowRepositoryNames] = useState(false)
 
   return (
@@ -77,7 +73,7 @@ function RepositoryCopyPanel({
   )
 }
 
-export function RepositoriesSection({
+export const RepositoriesSection = ({
   matchingRepositoryCount,
   repositoryNames,
   table
@@ -85,19 +81,17 @@ export function RepositoriesSection({
   matchingRepositoryCount: number
   repositoryNames: string[]
   table: DataTableModel<DashboardRow>
-}) {
-  return (
-    <DashboardSection heading="Repositories">
-      <RepositoryCopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
-      <p className="text-sm text-muted-foreground">
-        Use the filters in the sidebar to narrow the table. Select a column heading to sort.
-      </p>
-      <DataTable model={table} />
-    </DashboardSection>
-  )
-}
+}) => (
+  <DashboardSection heading="Repositories">
+    <RepositoryCopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
+    <p className="text-sm text-muted-foreground">
+      Use the filters in the sidebar to narrow the table. Select a column heading to sort.
+    </p>
+    <DataTable model={table} />
+  </DashboardSection>
+)
 
-function PieChartCard({
+const PieChartCard = ({
   chart: { column, data, domain },
   expanded,
   onToggle
@@ -105,23 +99,21 @@ function PieChartCard({
   chart: DashboardChart
   expanded: boolean
   onToggle: () => void
-}) {
-  return (
-    <div className={cn('min-w-0 rounded-lg border border-border bg-white p-3', expanded && 'col-span-full')}>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h3 className="m-0 min-w-0 text-sm wrap-anywhere">
-          {column.kind === 'answer' ? <code>{column.id}</code> : column.id}
-        </h3>
-        <Button aria-expanded={expanded} className="flex-none" onClick={onToggle} type="button" variant="link">
-          {expanded ? 'Show smaller' : 'Show larger'}
-        </Button>
-      </div>
-      <PieChart column={column} data={data} domain={domain} expanded={expanded} />
+}) => (
+  <div className={cn('min-w-0 rounded-lg border border-border bg-white p-3', expanded && 'col-span-full')}>
+    <div className="mb-3 flex items-baseline justify-between gap-3">
+      <h3 className="m-0 min-w-0 text-sm wrap-anywhere">
+        {column.kind === 'answer' ? <code>{column.id}</code> : column.id}
+      </h3>
+      <Button aria-expanded={expanded} className="flex-none" onClick={onToggle} type="button" variant="link">
+        {expanded ? 'Show smaller' : 'Show larger'}
+      </Button>
     </div>
-  )
-}
+    <PieChart column={column} data={data} domain={domain} expanded={expanded} />
+  </div>
+)
 
-export function PieChartsSection({ charts }: { charts: DashboardChart[] }) {
+export const PieChartsSection = ({ charts }: { charts: DashboardChart[] }) => {
   const [expandedChart, setExpandedChart] = useState<string | null>(null)
   if (charts.length === 0) return null
 

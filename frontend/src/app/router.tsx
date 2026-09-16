@@ -19,17 +19,15 @@ import { AppLayout, LoadingPage, type RouteTitleResolver } from './AppLayout'
 const COPIER_TITLE = 'Copier Dashboard'
 const COPIER_DATA_PATH = 'data/copier/latest.json'
 
-interface ReportErrorConfig {
+type ReportErrorConfig = {
   dataPath: (feedId: string) => string
   returnLabel: string
   title: string
 }
 
-function updaterDataPath(feedId: string) {
-  return `data/updaters/${encodeURIComponent(feedId)}/latest.json`
-}
+const updaterDataPath = (feedId: string) => `data/updaters/${encodeURIComponent(feedId)}/latest.json`
 
-function updaterTitle(match: UIMatch<UpdaterReportSnapshot>): string {
+const updaterTitle = (match: UIMatch<UpdaterReportSnapshot>): string => {
   const report = match.loaderData
   return report?.title ?? report?.feed_id ?? match.params['feedId'] ?? ''
 }
@@ -47,13 +45,13 @@ const REPORT_ERRORS = {
   }
 } satisfies Record<string, ReportErrorConfig>
 
-async function loadCopier({ request }: LoaderFunctionArgs): Promise<DashboardSnapshot> {
+const loadCopier = async ({ request }: LoaderFunctionArgs): Promise<DashboardSnapshot> => {
   const snapshot = await fetchJson(`./${COPIER_DATA_PATH}`, request.signal)
   if (snapshot == null) throw new Error('No Copier report data was found.')
   return parseDashboardSnapshot(snapshot)
 }
 
-async function loadUpdater({ params, request }: LoaderFunctionArgs): Promise<UpdaterReportSnapshot> {
+const loadUpdater = async ({ params, request }: LoaderFunctionArgs): Promise<UpdaterReportSnapshot> => {
   const feedId = params['feedId']
   if (feedId == null) throw new Error('No updater feed was selected.')
   const report = await fetchJson(`./${updaterDataPath(feedId)}`, request.signal)
@@ -61,13 +59,10 @@ async function loadUpdater({ params, request }: LoaderFunctionArgs): Promise<Upd
   return parseUpdaterReport(report)
 }
 
-function keepReportData({ currentUrl, defaultShouldRevalidate, nextUrl }: ShouldRevalidateFunctionArgs) {
-  return currentUrl.pathname === nextUrl.pathname && currentUrl.search !== nextUrl.search
-    ? false
-    : defaultShouldRevalidate
-}
+const keepReportData = ({ currentUrl, defaultShouldRevalidate, nextUrl }: ShouldRevalidateFunctionArgs) =>
+  currentUrl.pathname === nextUrl.pathname && currentUrl.search !== nextUrl.search ? false : defaultShouldRevalidate
 
-function routeErrorMessage(error: unknown): string {
+const routeErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message
   if (isRouteErrorResponse(error)) return typeof error.data === 'string' ? error.data : error.statusText
   return String(error)
@@ -75,21 +70,21 @@ function routeErrorMessage(error: unknown): string {
 
 // Keep dashboard-specific dependencies out of the initial bundle. Static
 // loaders let data fetching run in parallel with loading each route chunk.
-async function lazyCopierRoute() {
+const lazyCopierRoute = async () => {
   const { default: CopierDashboard } = await import('@/copier/CopierDashboard')
   return {
     Component: () => <CopierDashboard snapshot={useLoaderData<typeof loadCopier>()} />
   }
 }
 
-async function lazyUpdaterRoute() {
+const lazyUpdaterRoute = async () => {
   const { default: UpdaterDashboard } = await import('@/updaters/UpdaterDashboard')
   return {
     Component: () => <UpdaterDashboard report={useLoaderData<typeof loadUpdater>()} />
   }
 }
 
-function ReportError({ config }: { config: ReportErrorConfig }) {
+const ReportError = ({ config }: { config: ReportErrorConfig }) => {
   const error = useRouteError()
   const { feedId = '' } = useParams()
   return (
@@ -106,16 +101,14 @@ function ReportError({ config }: { config: ReportErrorConfig }) {
   )
 }
 
-function NotFound() {
-  return (
-    <main>
-      <h1>Page not found</h1>
-      <p>
-        Return to <Link to="/">Overview</Link>.
-      </p>
-    </main>
-  )
-}
+const NotFound = () => (
+  <main>
+    <h1>Page not found</h1>
+    <p>
+      Return to <Link to="/">Overview</Link>.
+    </p>
+  </main>
+)
 
 // Hash routing avoids server-side rewrite requirements on static hosts such as GitHub Pages.
 export const router = createHashRouter([

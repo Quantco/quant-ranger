@@ -2,14 +2,14 @@ import { TextFilterInput, ValueFilterInput } from './ColumnFilterInputs'
 import type { DashboardFilter } from './dashboard-analytics'
 import { dashboardFilterValue, hasDashboardFilterValue, type DashboardFilterValue } from './dashboard-state'
 
-export function DashboardFilters({
+export const DashboardFilters = ({
   filters,
   onChange
 }: {
   filters: DashboardFilter[]
   onChange: (column: string, filter: DashboardFilterValue | null) => void
-}) {
-  return filters.map(({ column, filter, options }) => {
+}) =>
+  filters.map(({ column, filter, options }) => {
     const setFilter = (next: DashboardFilterValue) =>
       onChange(column.id, hasDashboardFilterValue(column.filter.kind, next) ? next : null)
     const onInvert = (inverted: boolean) => {
@@ -36,4 +36,3 @@ export function DashboardFilters({
       />
     )
   })
-}

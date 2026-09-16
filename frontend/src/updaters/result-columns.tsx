@@ -8,7 +8,6 @@ import { cn } from '@/lib/class-merge'
 import { displayValue, type DisplayValue } from '@/lib/value'
 import { ageColor, ageInDays, formatAge } from './pull-request-age'
 import {
-  getLoadedPullRequest,
   hasPullRequest,
   pullRequestKey,
   type CiStatus,
@@ -19,24 +18,24 @@ import {
 } from './pull-request'
 import type { UpdaterReportResult, UpdateStatus } from './updater-report'
 
-export interface UpdaterResultRow {
+export type UpdaterResultRow = {
   pullRequest: LivePullRequest | undefined
   result: UpdaterReportResult
   searchText: string
 }
 
-interface FilterOption {
+type FilterOption = {
   label: string
   value: string
 }
 type UpdaterFilterFunction = FilterFn<typeof dataTableFeatures, UpdaterResultRow>
-interface UpdaterFilterConfig {
+type UpdaterFilterConfig = {
   filterFunction: UpdaterFilterFunction
   label?: string
   options: (statuses: UpdateStatus[]) => FilterOption[]
   placeholder: string
 }
-interface UpdaterColumnDescriptor<Id extends string = string> {
+type UpdaterColumnDescriptor<Id extends string = string> = {
   filter?: UpdaterFilterConfig
   id: Id
   label: string
@@ -244,7 +243,7 @@ const updaterResultColumnRegistry: readonly UpdaterColumnDescriptor<UpdaterResul
 export const UPDATER_REPOSITORY_COLUMN: UpdaterResultColumnId = 'repository'
 export const UPDATER_RESULT_COLUMN_IDS: UpdaterResultColumnId[] = updaterResultColumnDefinitions.map(({ id }) => id)
 
-export interface UpdaterFilterDefinition {
+export type UpdaterFilterDefinition = {
   column: UpdaterResultColumnId
   label: string
   options: FilterOption[]
@@ -270,7 +269,8 @@ export const updaterResultColumns: DataTableColumn<UpdaterResultRow>[] = updater
   })
 )
 
-export function buildUpdaterFilterDefinitions(statuses: UpdateStatus[]): UpdaterFilterDefinition[] {
+export const buildUpdaterFilterDefinitions = (results: UpdaterReportResult[]): UpdaterFilterDefinition[] => {
+  const statuses = [...new Set(results.map(({ status }) => status))].sort()
   return updaterResultColumnRegistry.flatMap(({ filter, id, label }) =>
     filter == null
       ? []
@@ -285,19 +285,20 @@ export function buildUpdaterFilterDefinitions(statuses: UpdateStatus[]): Updater
   )
 }
 
-export function buildUpdaterResultRows(results: UpdaterReportResult[], pullRequests: PullRequests): UpdaterResultRow[] {
-  return results.map((result) => {
-    const pullRequest = hasPullRequest(result) ? getLoadedPullRequest(pullRequests[pullRequestKey(result)]) : undefined
+export const buildUpdaterResultRows = (
+  results: UpdaterReportResult[],
+  pullRequests: PullRequests
+): UpdaterResultRow[] =>
+  results.map((result) => {
+    const pullRequest = hasPullRequest(result) ? pullRequests[pullRequestKey(result)] : undefined
     return { pullRequest, result, searchText: buildSearchText(result, pullRequest) }
   })
-}
 
-export function updaterResultColumnLabel(columnId: string): string {
-  return updaterResultColumnRegistry.find(({ id }) => id === columnId)?.label ?? columnId
-}
+export const updaterResultColumnLabel = (columnId: string): string =>
+  updaterResultColumnRegistry.find(({ id }) => id === columnId)?.label ?? columnId
 
-function buildSearchText(result: UpdaterReportResult, pullRequest: LivePullRequest | undefined): string {
-  return [
+const buildSearchText = (result: UpdaterReportResult, pullRequest: LivePullRequest | undefined): string =>
+  [
     result.repository,
     result.target,
     result.message,
@@ -308,23 +309,20 @@ function buildSearchText(result: UpdaterReportResult, pullRequest: LivePullReque
     .filter((value) => value != null)
     .join('\n')
     .toLocaleLowerCase()
-}
 
-function normalizeValue(value: DisplayValue): DisplayValue {
-  return value == null || value === '' || (value instanceof Date && Number.isNaN(value.valueOf())) ? undefined : value
-}
+const normalizeValue = (value: DisplayValue): DisplayValue =>
+  value == null || value === '' || (value instanceof Date && Number.isNaN(value.valueOf())) ? undefined : value
 
-function yesNoOptions(unknownLabel: string): FilterOption[] {
-  return [option('yes', 'Yes'), option('no', 'No'), option('unknown', unknownLabel)]
-}
+const yesNoOptions = (unknownLabel: string): FilterOption[] => [
+  option('yes', 'Yes'),
+  option('no', 'No'),
+  option('unknown', unknownLabel)
+]
 
-function option(value: string, label: string): FilterOption {
-  return { label, value }
-}
+const option = (value: string, label: string): FilterOption => ({ label, value })
 
-function pullRequestState(value: unknown): PullRequestState | 'unknown' | null {
-  return value === 'closed' || value === 'merged' || value === 'open' || value === 'unknown' ? value : null
-}
+const pullRequestState = (value: unknown): PullRequestState | 'unknown' | null =>
+  value === 'closed' || value === 'merged' || value === 'open' || value === 'unknown' ? value : null
 
 type ReportState = CiStatus | ReviewStatus
 const PULL_REQUEST_ICONS = {
@@ -348,7 +346,7 @@ const REPORT_STATE_CLASSES = {
 } satisfies Record<ReportState, string | undefined>
 const REPORT_VALUE_CLASS = 'inline-block min-w-10 rounded-sm px-1.5 py-0.5 text-center'
 
-function PullRequestStatus({
+const PullRequestStatus = ({
   number,
   state,
   url
@@ -356,7 +354,7 @@ function PullRequestStatus({
   number: number | null | undefined
   state: PullRequestState | 'unknown' | null
   url: string | undefined
-}) {
+}) => {
   if (number == null) return displayValue(number)
   const displayState = state ?? 'unknown'
   const label =
@@ -391,7 +389,7 @@ function PullRequestStatus({
   )
 }
 
-function DateBadge({ value, variant }: { value: unknown; variant: 'age' | 'timestamp' }) {
+const DateBadge = ({ value, variant }: { value: unknown; variant: 'age' | 'timestamp' }) => {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) return displayValue(value)
   return (
     <span className={REPORT_VALUE_CLASS} style={{ background: ageColor(value) }} title={value.toISOString()}>
@@ -400,7 +398,7 @@ function DateBadge({ value, variant }: { value: unknown; variant: 'age' | 'times
   )
 }
 
-function ProblemFlagBadge({ value }: { value: unknown }) {
+const ProblemFlagBadge = ({ value }: { value: unknown }) => {
   if (typeof value !== 'boolean') return displayValue(value)
   return (
     <span className={cn(REPORT_VALUE_CLASS, value ? 'bg-error-subtle text-error' : 'bg-success-subtle text-success')}>
@@ -409,7 +407,7 @@ function ProblemFlagBadge({ value }: { value: unknown }) {
   )
 }
 
-function StatusBadge({ value }: { value: unknown }) {
+const StatusBadge = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string') return displayValue(value)
   return (
     <span
@@ -424,6 +422,4 @@ function StatusBadge({ value }: { value: unknown }) {
   )
 }
 
-function isReportState(value: string): value is ReportState {
-  return Object.hasOwn(REPORT_STATE_CLASSES, value)
-}
+const isReportState = (value: string): value is ReportState => Object.hasOwn(REPORT_STATE_CLASSES, value)

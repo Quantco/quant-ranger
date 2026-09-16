@@ -7,13 +7,13 @@ export type ChartConfig = Record<string, { label: ReactNode }>
 
 const ChartContext = createContext<ChartConfig | null>(null)
 
-function useChart() {
+const useChart = () => {
   const config = useContext(ChartContext)
   if (config == null) throw new Error('Chart components must be used inside ChartContainer.')
   return config
 }
 
-export function ChartContainer({
+export const ChartContainer = ({
   children,
   className,
   config,
@@ -21,41 +21,36 @@ export function ChartContainer({
 }: ComponentProps<'div'> & {
   children: ComponentProps<typeof ResponsiveContainer>['children']
   config: ChartConfig
-}) {
-  return (
-    <ChartContext value={config}>
-      <div className={cn('min-h-0 min-w-0 text-xs', className)} data-slot="chart" {...props}>
-        <ResponsiveContainer initialDimension={{ height: 160, width: 320 }}>{children}</ResponsiveContainer>
-      </div>
-    </ChartContext>
-  )
-}
+}) => (
+  <ChartContext value={config}>
+    <div className={cn('min-h-0 min-w-0 text-xs', className)} data-slot="chart" {...props}>
+      <ResponsiveContainer initialDimension={{ height: 160, width: 320 }}>{children}</ResponsiveContainer>
+    </div>
+  </ChartContext>
+)
 
 export const ChartLegend = Legend
 export const ChartTooltip = Tooltip
 
-function payloadValue(payload: unknown, key: string | undefined): unknown {
-  return key != null && isRecord(payload) ? payload[key] : undefined
-}
+const payloadValue = (payload: unknown, key: string | undefined): unknown =>
+  key != null && isRecord(payload) ? payload[key] : undefined
 
-function isRecord(value: unknown): value is Record<PropertyKey, unknown> {
-  return typeof value === 'object' && value !== null
-}
+const isRecord = (value: unknown): value is Record<PropertyKey, unknown> => typeof value === 'object' && value !== null
 
-function stringValue(value: unknown): string | undefined {
+const stringValue = (value: unknown): string | undefined => {
   if (typeof value === 'string') return value
   if (typeof value === 'number') return String(value)
   return undefined
 }
 
-interface ChartLegendContentProps {
+type ChartLegendContentProps = {
   className?: string
   nameKey?: string
   payload?: readonly LegendPayload[]
   valueKey?: string
 }
 
-export function ChartLegendContent({ className, nameKey, payload, valueKey }: ChartLegendContentProps) {
+export const ChartLegendContent = ({ className, nameKey, payload, valueKey }: ChartLegendContentProps) => {
   const config = useChart()
   if (payload == null || payload.length === 0) return null
 

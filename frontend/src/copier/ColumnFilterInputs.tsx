@@ -20,21 +20,17 @@ import type { FilterableDashboardColumn } from './dashboard-columns'
 import type { DashboardFilterValue } from './dashboard-state'
 
 const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`
-interface TextSuggestion {
+type TextSuggestion = {
   count: number
   label: string
   value: DashboardValue
 }
 
-function controlId(column: string) {
-  return encodeURIComponent(column)
-}
+const controlId = (column: string) => encodeURIComponent(column)
 
-function repositoryCount(count: number) {
-  return `${count} ${count === 1 ? 'repository' : 'repositories'}`
-}
+const repositoryCount = (count: number) => `${count} ${count === 1 ? 'repository' : 'repositories'}`
 
-function InvertToggle({
+const InvertToggle = ({
   disabled,
   inverted,
   label,
@@ -44,24 +40,22 @@ function InvertToggle({
   inverted: boolean
   label: string
   onChange: (inverted: boolean) => void
-}) {
-  return (
-    <Button
-      aria-label={`${inverted ? 'Disable' : 'Enable'} inverted ${label} filter`}
-      aria-pressed={inverted}
-      className="flex-none rounded-full px-1.5 py-0.5 text-xs/tight text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
-      disabled={disabled}
-      onClick={() => onChange(!inverted)}
-      title={disabled ? 'Add a filter value before inverting' : 'Invert this filter'}
-      type="button"
-      variant="outline"
-    >
-      Invert
-    </Button>
-  )
-}
+}) => (
+  <Button
+    aria-label={`${inverted ? 'Disable' : 'Enable'} inverted ${label} filter`}
+    aria-pressed={inverted}
+    className="flex-none rounded-full px-1.5 py-0.5 text-xs/tight text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
+    disabled={disabled}
+    onClick={() => onChange(!inverted)}
+    title={disabled ? 'Add a filter value before inverting' : 'Invert this filter'}
+    type="button"
+    variant="outline"
+  >
+    Invert
+  </Button>
+)
 
-export function ValueFilterInput({
+export const ValueFilterInput = ({
   column,
   filter,
   onChange,
@@ -73,7 +67,7 @@ export function ValueFilterInput({
   onChange: (values: FilterValue[]) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
-}) {
+}) => {
   const optionByToken = new Map(options.map(({ value }) => [valueToken(value), value]))
   const selectedValues = filter?.values ?? []
   const repository = column.kind === 'repository'
@@ -110,7 +104,7 @@ export function ValueFilterInput({
   )
 }
 
-export function TextFilterInput({
+export const TextFilterInput = ({
   column,
   filter,
   onChange,
@@ -122,7 +116,7 @@ export function TextFilterInput({
   onChange: (query: string) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
-}) {
+}) => {
   const query = String(filter?.values[0] ?? '')
   const id = `text-filter-${controlId(column.id)}`
   const [open, setOpen] = useState(false)

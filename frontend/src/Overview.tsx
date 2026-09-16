@@ -8,7 +8,7 @@ import { parseUpdaterIndex } from './updaters/updater-report'
 const UPDATER_INDEX_PATH = 'data/updaters/index.json'
 const DATA_MESSAGE_CLASS = 'grid gap-2 rounded-lg border border-border bg-muted p-4'
 
-export async function loadOverview({ request }: LoaderFunctionArgs) {
+export const loadOverview = async ({ request }: LoaderFunctionArgs) => {
   try {
     const index = await fetchJson(`./${UPDATER_INDEX_PATH}`, request.signal)
     return { error: null, feeds: index == null ? [] : parseUpdaterIndex(index).feeds }
@@ -18,7 +18,7 @@ export async function loadOverview({ request }: LoaderFunctionArgs) {
   }
 }
 
-export default function Overview() {
+const Overview = () => {
   const { error, feeds } = useLoaderData<typeof loadOverview>()
 
   return (
@@ -81,3 +81,5 @@ export default function Overview() {
     </main>
   )
 }
+
+export default Overview

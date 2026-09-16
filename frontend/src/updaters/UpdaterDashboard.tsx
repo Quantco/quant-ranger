@@ -4,21 +4,23 @@ import { DashboardSection } from '@/components/dashboard/DashboardSection'
 import { DataTable } from '@/components/data-table/DataTable'
 import { formatDateTime } from '@/lib/date'
 import { FailureSection } from './FailureSection'
+import { OctokitProvider } from './github-client'
 import { PullRequestDataPanel } from './PullRequestDataPanel'
 import { UpdaterSidebar } from './UpdaterSidebar'
-import { PullRequestQueryProvider } from './pull-request-query'
+import { queryClient } from './pull-request-query'
 import { useUpdaterDashboardController } from './useDashboardModel'
 import type { UpdaterReportSnapshot } from './updater-report'
+import { QueryClientProvider } from '@tanstack/react-query'
 
-export default function UpdaterDashboardRoute({ report }: { report: UpdaterReportSnapshot }) {
-  return (
-    <PullRequestQueryProvider>
+const UpdaterDashboardRoute = ({ report }: { report: UpdaterReportSnapshot }) => (
+  <QueryClientProvider client={queryClient}>
+    <OctokitProvider githubApiUrl={report.github_api_url}>
       <UpdaterDashboardPage key={`${report.feed_id}:${report.github_api_url}`} report={report} />
-    </PullRequestQueryProvider>
-  )
-}
+    </OctokitProvider>
+  </QueryClientProvider>
+)
 
-function UpdaterDashboardPage({ report }: { report: UpdaterReportSnapshot }) {
+const UpdaterDashboardPage = ({ report }: { report: UpdaterReportSnapshot }) => {
   const { actions, resources, view } = useUpdaterDashboardController(report)
 
   return (
@@ -84,3 +86,5 @@ function UpdaterDashboardPage({ report }: { report: UpdaterReportSnapshot }) {
     </main>
   )
 }
+
+export default UpdaterDashboardRoute

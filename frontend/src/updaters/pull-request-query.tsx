@@ -1,13 +1,12 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
+import { QueryClient } from '@tanstack/react-query'
+
+export const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } })
 
 const PULL_REQUEST_QUERY_SCOPE = 'pull-requests'
-const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } })
 
-export function PullRequestQueryProvider({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-}
+/** Prefix shared by every pull request in one feed, so the whole feed can be refetched at once. */
+export const pullRequestQueryKey = (githubApiUrl: string, feedId: string) =>
+  [PULL_REQUEST_QUERY_SCOPE, githubApiUrl, feedId] as const
 
-export function pullRequestQueryKey(githubApiUrl: string, feedId: string) {
-  return [PULL_REQUEST_QUERY_SCOPE, githubApiUrl, feedId] as const
-}
+export const livePullRequestQueryKey = (githubApiUrl: string, feedId: string, pullRequest: string) =>
+  [...pullRequestQueryKey(githubApiUrl, feedId), pullRequest] as const

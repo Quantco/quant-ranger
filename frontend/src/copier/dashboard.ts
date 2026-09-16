@@ -30,12 +30,12 @@ export type DashboardValue = z.infer<typeof dashboardValueSchema> | undefined
 export type FilterValue = Exclude<DashboardValue, undefined>
 export type DashboardColumn = DashboardSnapshot['columns'][number]
 
-export interface CountedValue {
+export type CountedValue = {
   count: number
   value: FilterValue
 }
 
-export function parseDashboardSnapshot(value: unknown): DashboardSnapshot {
+export const parseDashboardSnapshot = (value: unknown): DashboardSnapshot => {
   const result = z.safeParse(dashboardSnapshotSchema, value)
   if (!result.success) {
     throw new Error('The Copier report has an invalid data format.', { cause: result.error })
@@ -43,14 +43,10 @@ export function parseDashboardSnapshot(value: unknown): DashboardSnapshot {
   return result.data
 }
 
-export function repositoryName(value: string): string {
-  return value.slice(value.lastIndexOf('/') + 1)
-}
+export const repositoryName = (value: string): string => value.slice(value.lastIndexOf('/') + 1)
 
-export function isDashboardColumn(value: unknown): value is DashboardColumn {
-  return z.safeParse(dashboardColumnSchema, value).success
-}
+export const isDashboardColumn = (value: unknown): value is DashboardColumn =>
+  z.safeParse(dashboardColumnSchema, value).success
 
-export function isFilterValue(value: unknown): value is FilterValue {
-  return value === null || ['boolean', 'number', 'string'].includes(typeof value)
-}
+export const isFilterValue = (value: unknown): value is FilterValue =>
+  value === null || ['boolean', 'number', 'string'].includes(typeof value)

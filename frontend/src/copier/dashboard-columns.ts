@@ -11,7 +11,7 @@ import {
 
 export type DashboardFilterKind = 'text' | 'values'
 export type DashboardFilterOptionOrder = 'answer' | 'frequency' | 'version'
-export interface DashboardFilterDefinition {
+export type DashboardFilterDefinition = {
   kind: DashboardFilterKind
   optionOrder: DashboardFilterOptionOrder
 }
@@ -20,7 +20,7 @@ export type FilterableDashboardColumn = DashboardColumnModel & { filter: Dashboa
 
 const VALUE_FILTER_COLUMNS = new Set([REPOSITORIES, TEMPLATE, VERSION, VALIDATION])
 
-export function createDashboardColumns({ columns, rows }: DashboardSnapshot): DashboardColumnModel[] {
+export const createDashboardColumns = ({ columns, rows }: DashboardSnapshot): DashboardColumnModel[] => {
   const categoricalAnswerColumns = findCategoricalAnswerColumns(columns, rows)
   return columns.map((column) => ({
     ...column,
@@ -28,14 +28,13 @@ export function createDashboardColumns({ columns, rows }: DashboardSnapshot): Da
   }))
 }
 
-export function isFilterableDashboardColumn(column: DashboardColumnModel): column is FilterableDashboardColumn {
-  return column.filter != null
-}
+export const isFilterableDashboardColumn = (column: DashboardColumnModel): column is FilterableDashboardColumn =>
+  column.filter != null
 
-function filterDefinition(
+const filterDefinition = (
   column: DashboardColumn,
   categoricalAnswerColumns: ReadonlySet<string>
-): DashboardFilterDefinition | null {
+): DashboardFilterDefinition | null => {
   if (column.id === COPIER_ANSWERS) return null
   const categoricalAnswer = categoricalAnswerColumns.has(column.id)
   return {
@@ -44,7 +43,7 @@ function filterDefinition(
   }
 }
 
-function findCategoricalAnswerColumns(columns: DashboardColumn[], rows: DashboardRow[]): Set<string> {
+const findCategoricalAnswerColumns = (columns: DashboardColumn[], rows: DashboardRow[]): Set<string> => {
   const templates = [
     ...new Set(
       rows.flatMap((row) => {
@@ -62,7 +61,7 @@ function findCategoricalAnswerColumns(columns: DashboardColumn[], rows: Dashboar
   )
 }
 
-function isBooleanAnswerColumn(rows: DashboardRow[], columnId: string): boolean {
+const isBooleanAnswerColumn = (rows: DashboardRow[], columnId: string): boolean => {
   const values = rows.map((row) => row.values[columnId]).filter((value) => value != null && value !== '')
   return values.length > 0 && values.every((value) => typeof value === 'boolean')
 }
