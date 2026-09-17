@@ -1,6 +1,6 @@
 import * as z from 'zod/mini'
 
-import { isUnique, type ExplorerState } from '@/components/data-table/explorer-state'
+import { isUnique, type TableState } from '@/components/data-table/table-state'
 import {
   buildUpdaterFilterDefinitions,
   UPDATER_REPOSITORY_COLUMN,
@@ -12,13 +12,15 @@ import type { UpdaterReportSnapshot } from './updater-report'
 const UPDATER_STATE_VERSION = 1
 
 export type UpdaterDashboardState = {
+  search: string
   version: typeof UPDATER_STATE_VERSION
-} & ExplorerState<UpdaterResultColumnId, string[]>
+} & TableState<UpdaterResultColumnId, string[]>
 
 const updaterDashboardStateSchema = z.object({
   filters: z.record(z.string(), z.array(z.string()).check(z.minLength(1))),
   search: z.string(),
-  sort: z.nullable(z.object({ column: z.enum(UPDATER_RESULT_COLUMN_IDS), direction: z.enum(['asc', 'desc']) })),
+  // One column at a time: the table is built with `enableMultiSort: false`.
+  sorting: z.array(z.object({ desc: z.boolean(), id: z.enum(UPDATER_RESULT_COLUMN_IDS) })).check(z.maxLength(1)),
   version: z.literal(UPDATER_STATE_VERSION),
   visibleColumns: z.array(z.enum(UPDATER_RESULT_COLUMN_IDS))
 })
@@ -26,7 +28,7 @@ const updaterDashboardStateSchema = z.object({
 export const DEFAULT_UPDATER_DASHBOARD_STATE: UpdaterDashboardState = {
   filters: {},
   search: '',
-  sort: null,
+  sorting: [],
   version: UPDATER_STATE_VERSION,
   visibleColumns: [...UPDATER_RESULT_COLUMN_IDS]
 }

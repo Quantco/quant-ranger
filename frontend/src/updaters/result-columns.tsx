@@ -43,15 +43,15 @@ type UpdaterColumnDescriptor<Id extends string = string> = {
   value: (row: UpdaterResultRow) => DisplayValue
 }
 
+// None of these declare `autoRemove`: TanStack only consults it inside its own
+// filter setters, and nothing calls those. `setFilter` drops empty selections.
 const selectionFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) =>
   selected.includes(String(row.getValue(columnId)))
-selectionFilter.autoRemove = (selected: string[]) => selected.length === 0
 
 const pullRequestStateFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   if (!hasPullRequest(row.original.result)) return selected.includes('none')
   return selected.includes(String(row.getValue(columnId) ?? 'unknown'))
 }
-pullRequestStateFilter.autoRemove = selectionFilter.autoRemove
 
 const liveSelectionFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   if (!hasPullRequest(row.original.result)) return false
@@ -60,7 +60,6 @@ const liveSelectionFilter: UpdaterFilterFunction = (row, columnId, selected: str
     value == null ? 'unknown' : typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value)
   )
 }
-liveSelectionFilter.autoRemove = selectionFilter.autoRemove
 
 const ageFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   const value = row.getValue<DisplayValue>(columnId)
@@ -70,7 +69,6 @@ const ageFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => 
   const age = days < 7 ? 'week' : days < 30 ? 'month' : days < 90 ? 'quarter' : 'older'
   return selected.includes(age)
 }
-ageFilter.autoRemove = selectionFilter.autoRemove
 
 const updaterResultColumnDefinitions = [
   {
@@ -251,7 +249,6 @@ export type UpdaterFilterDefinition = {
 
 export const updaterSearchFilter: UpdaterFilterFunction = (row, _columnId, query: string) =>
   row.original.searchText.includes(query.trim().toLocaleLowerCase())
-updaterSearchFilter.autoRemove = (query: string) => query.trim() === ''
 
 export const updaterResultColumns: DataTableColumn<UpdaterResultRow>[] = updaterResultColumnRegistry.map(
   ({ filter, id, label, render, truncate, value }) => ({

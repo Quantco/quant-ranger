@@ -2,63 +2,58 @@ import { DashboardSidebarShell } from '@/components/dashboard/DashboardSidebar'
 import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
 import { Input } from '@/components/ui/Input'
-import { updaterResultColumnLabel, type UpdaterFilterDefinition, type UpdaterResultColumnId } from './result-columns'
+import { updaterResultColumnLabel } from './result-columns'
+import type { StateFiltering, StateSearch, StateColumnVisibility } from './hooks'
 
 type UpdaterSidebarProps = {
-  filters: (UpdaterFilterDefinition & { selected: string[] })[]
-  onFilterChange: (column: UpdaterResultColumnId, selected: string[]) => void
-  onReset: () => void
-  onSearchChange: (value: string) => void
-  onTableColumnsChange: (columns: string[]) => void
-  search: string
-  tableColumns: { fields: string[]; selected: string[] }
+  filtering: StateFiltering
+  searching: StateSearch
+  visibility: StateColumnVisibility
+  onClearAll: () => void
 }
 
 export const UpdaterSidebar = ({
-  filters,
-  onFilterChange,
-  onReset,
-  onSearchChange,
-  onTableColumnsChange,
-  search,
-  tableColumns
+  filtering,
+  searching,
+  visibility,
+  onClearAll,
 }: UpdaterSidebarProps) => (
   <DashboardSidebarShell
     className="w-full lg:w-80 lg:flex-none"
     headingId="updater-sidebar-heading"
-    onReset={onReset}
+    onReset={onClearAll}
     title="Explore results"
   >
     <section aria-label="Result filters" className="m-0 grid gap-3 border-t border-border pt-3">
       <label className="grid gap-1 text-sm/tight font-semibold">
         Search
         <Input
-          onChange={(event) => onSearchChange(event.target.value)}
+          onChange={(event) => searching.setQuery(event.target.value)}
           placeholder="Repository, target, pull request…"
           type="search"
-          value={search}
+          value={searching.query}
         />
       </label>
-      {filters.map(({ column, label, options, placeholder, selected }) => (
+      {filtering.options.map(({ column, label, options, placeholder }) => (
         <MultiSelect
           id={`updater-filter-${column}`}
           key={column}
           label={label}
-          onChange={(next) => onFilterChange(column, next)}
+          onChange={(next) => filtering.setFilter(column, next)}
           options={options}
           placeholder={placeholder}
-          selected={selected}
+          selected={filtering.filters[column] ?? []}
         />
       ))}
     </section>
 
     <FieldSelector
       codeLabels={false}
-      fields={tableColumns.fields}
+      fields={visibility.options}
       getFieldLabel={updaterResultColumnLabel}
       label="Table columns"
-      onChange={onTableColumnsChange}
-      selected={tableColumns.selected}
+      onChange={visibility.setVisibleColumns}
+      selected={visibility.selected}
     />
   </DashboardSidebarShell>
 )

@@ -2,7 +2,7 @@ import { CheckIcon, CopyIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
-import { useClipboard } from './useClipboard'
+import { useClipboard } from '../lib/useClipboard'
 import { cn } from '@/lib/class-merge'
 
 export const CopyableRepositoryList = ({ label, value }: { label: string; value: string }) => {

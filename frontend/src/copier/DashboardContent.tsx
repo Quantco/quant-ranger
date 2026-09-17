@@ -9,7 +9,7 @@ import type { DataTableInstance } from '@/components/data-table/data-table-model
 import { Button } from '@/components/ui/Button'
 import { formatDateTime } from '@/lib/format'
 import { PieChart } from './Charts'
-import { CopyableRepositoryList } from './CopyableRepositoryList'
+import { CopyableRepositoryList } from '../components/CopyableRepositoryList'
 import type { DashboardChart } from './dashboard-analytics'
 import type { DashboardRow } from './dashboard'
 

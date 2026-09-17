@@ -6,7 +6,7 @@ import { cn } from '@/lib/class-merge'
 import { displayValue, type DisplayValue } from '@/lib/value'
 import { REPOSITORIES, repositoryName, VALIDATION, type DashboardRow, type DashboardValue } from './dashboard'
 import type { DashboardColumnModel, DashboardFilterKind } from './dashboard-columns'
-import { hasDashboardFilterValue, type DashboardFilterValue } from './dashboard-state'
+import type { DashboardFilterValue } from './dashboard-state'
 
 export type DashboardTable = DataTableInstance<DashboardRow>
 export type DashboardTableColumn = ReturnType<DashboardTable['getAllLeafColumns']>[number]
@@ -30,7 +30,8 @@ const dashboardFilterFunction = (kind: DashboardFilterKind): DashboardFilterFunc
         : filterValue.values.some((value) => dataValue === value)
     return filterValue.inverted ? !matches : matches
   }
-  filter.autoRemove = (filterValue: DashboardFilterValue) => !hasDashboardFilterValue(kind, filterValue)
+  // No `autoRemove`: TanStack only consults it inside its own filter setters,
+  // and nothing calls those. `DashboardFilters` drops empty filters instead.
   filter.resolveFilterValue = (filterValue: DashboardFilterValue) => {
     if (kind === 'values') return filterValue
     return {

@@ -1,6 +1,6 @@
 import * as z from 'zod/mini'
 
-import { isUnique, type ExplorerState } from '@/components/data-table/explorer-state'
+import { isUnique, type TableState } from '@/components/data-table/table-state'
 import { dashboardValueSchema, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type FilterValue } from './dashboard'
 import { isFilterableDashboardColumn, type DashboardColumnModel, type DashboardFilterKind } from './dashboard-columns'
 
@@ -18,7 +18,7 @@ export type DashboardState = {
   chartColumns: string[]
   filterColumns: string[]
   version: typeof DASHBOARD_STATE_VERSION
-} & ExplorerState<string, DashboardFilterValue>
+} & TableState<string, DashboardFilterValue>
 
 export const dashboardFilterValue = (values: FilterValue[], inverted = false): DashboardFilterValue => ({
   inverted,
@@ -28,19 +28,13 @@ export const dashboardFilterValue = (values: FilterValue[], inverted = false): D
 export const hasDashboardFilterValue = (kind: DashboardFilterKind, filter: DashboardFilterValue): boolean =>
   filter.values.length > 0 && (kind === 'values' || String(filter.values[0]).trim() !== '')
 
-export const parseDashboardFilterValue = (value: unknown): DashboardFilterValue | undefined => {
-  const result = z.safeParse(dashboardFilterValueSchema, value)
-  return result.success ? result.data : undefined
-}
-
 export const defaultDashboardState = (columns: DashboardColumnModel[]): DashboardState => ({
   chartColumns: [],
   filterColumns: DEFAULT_FILTER_COLUMNS.filter((id) =>
     columns.some((column) => column.id === id && isFilterableDashboardColumn(column))
   ),
   filters: {},
-  search: '',
-  sort: null,
+  sorting: [],
   version: DASHBOARD_STATE_VERSION,
   visibleColumns: columns
     .filter(({ id }) => id === REPOSITORIES || DEFAULT_TABLE_COLUMNS.includes(id))
@@ -55,8 +49,8 @@ const dashboardStateSchema = (columns: DashboardColumnModel[]) => {
     chartColumns: z.array(columnId),
     filterColumns: z.array(filterColumnId),
     filters: z.record(z.string(), dashboardFilterValueSchema),
-    search: z.string(),
-    sort: z.nullable(z.object({ column: columnId, direction: z.enum(['asc', 'desc']) })),
+    // One column at a time: the table is built with `enableMultiSort: false`.
+    sorting: z.array(z.object({ desc: z.boolean(), id: columnId })).check(z.maxLength(1)),
     version: z.literal(DASHBOARD_STATE_VERSION),
     visibleColumns: z.array(columnId)
   })

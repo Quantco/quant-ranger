@@ -5,8 +5,8 @@ import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
 
 type FieldSelection = {
-  fields: string[]
-  onChange: (fields: string[]) => void
+  options: string[]
+  onChange: (options: string[]) => void
   selected: string[]
 }
 
@@ -34,7 +34,7 @@ export const DashboardSidebar = ({
         id="filter-fields"
         label="Filter fields"
         onChange={filterFields.onChange}
-        options={filterFields.fields.map((column) => ({ label: column, value: column }))}
+        options={filterFields.options.map((column) => ({ label: column, value: column }))}
         placeholder="Type to add fields…"
         selected={filterFields.selected}
       />
@@ -42,13 +42,13 @@ export const DashboardSidebar = ({
     </section>
 
     <FieldSelector
-      fields={tableColumns.fields}
+      fields={tableColumns.options}
       label="Table columns"
       onChange={tableColumns.onChange}
       selected={tableColumns.selected}
     />
     <FieldSelector
-      fields={pieCharts.fields}
+      fields={pieCharts.options}
       label="Pie charts"
       onChange={pieCharts.onChange}
       selected={pieCharts.selected}
