@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import replace
 from typing import Any, ClassVar, get_args, get_origin
 
@@ -10,7 +10,7 @@ from quant_ranger._impl.helpers import (
     pluralize,
     truncate_lines,
 )
-from quant_ranger._impl.logger import PrefixLogger, progress
+from quant_ranger._impl.logger import Logger, PrefixLogger, progress
 from quant_ranger._impl.models import (
     Status,
     UpdateItem,
@@ -126,25 +126,49 @@ class Updater[
         results: list[UpdateResult[OutputT, ItemT]] = []
 
         context.logger.info(f"Running {pluralize(len(update_items), 'update item')}...")
+        units = self._update_units(update_items)
         assert concurrency >= 1
         if concurrency == 1:
-            for item in progress(
-                update_items,
+            for unit in progress(
+                units,
                 logger=context.logger,
                 description="Updating repositories",
-                total=len(update_items),
+                total=len(units),
             ):
-                results.append(self._run_item(item, context))
+                results.extend(self._run_unit(unit, context))
         else:
-            results = map_concurrently(
-                lambda item: self._run_item(item, context),
-                update_items,
-                concurrency=concurrency,
-                logger=context.logger,
-                description="Updating repositories",
-            )
+            results = [
+                result
+                for unit_results in map_concurrently(
+                    lambda unit: self._run_unit(unit, context),
+                    units,
+                    concurrency=concurrency,
+                    logger=context.logger,
+                    description="Updating repositories",
+                )
+                for result in unit_results
+            ]
 
         return results
+
+    def _update_units(
+        self,
+        update_items: Sequence[ItemT],
+    ) -> list[tuple[ItemT, ...]]:
+        """Split items into units, where a unit is run through one `_run_unit` call.
+
+        The default creates one unit per item. Updaters that run or publish several
+        items together override this and `_run_unit`.
+        """
+        return [(item,) for item in update_items]
+
+    def _run_unit(
+        self,
+        unit: tuple[ItemT, ...],
+        context: RunContext,
+    ) -> list[UpdateResult[OutputT, ItemT]]:
+        """Run one unit and return one result per item."""
+        return [self._run_item(item, context) for item in unit]
 
     def _run_item(
         self,
@@ -152,36 +176,69 @@ class Updater[
         context: RunContext,
     ) -> UpdateResult[OutputT, ItemT]:
         """Run one update item and convert unexpected errors to failure results."""
-        item_context = replace(
+        item_context = self._item_context(item, context)
+        try:
+            outcome = self._update(item, item_context)
+        except Exception as error:
+            return self._failure_result(item, error, context)
+
+        return self._record_outcome(
+            item,
+            outcome,
+            unexpected_error=None,
+            logger=item_context.logger,
+        )
+
+    def _failure_result(
+        self,
+        item: ItemT,
+        error: Exception,
+        context: RunContext,
+    ) -> UpdateResult[OutputT, ItemT]:
+        """Report an unexpected error for one item as a failure result."""
+        item_context = self._item_context(item, context)
+        outcome = UpdateOutcome[OutputT].from_exception(
+            error,
+            result=Status.FAILURE,
+        )
+        return self._record_outcome(
+            item,
+            outcome,
+            unexpected_error=error,
+            logger=item_context.logger,
+        )
+
+    def _item_context(self, item: ItemT, context: RunContext) -> RunContext:
+        """Scope a context's logger to one update item."""
+        return replace(
             context,
             logger=PrefixLogger(f"{item.log_prefix()} ", context.logger),
         )
 
-        unexpected_error: Exception | None = None
-        try:
-            outcome = self._update(item, item_context)
-        except Exception as error:
-            unexpected_error = error
-            outcome = UpdateOutcome[OutputT].from_exception(
-                error,
-                result=Status.FAILURE,
-            )
-
+    def _record_outcome(
+        self,
+        item: ItemT,
+        outcome: UpdateOutcome[OutputT],
+        *,
+        unexpected_error: Exception | None,
+        logger: Logger,
+    ) -> UpdateResult[OutputT, ItemT]:
+        """Log an outcome and turn it into a structured result."""
         outcome_summary = outcome.result.value
         if outcome.message:
             outcome_summary = f"{outcome_summary}: {outcome.message}"
         if outcome.result == Status.FAILURE:
             if unexpected_error is not None:
-                item_context.logger.exception(outcome_summary, unexpected_error)
+                logger.exception(outcome_summary, unexpected_error)
             else:
                 if outcome.details:
                     # Handled failure details (e.g. command output) are capped to
                     # keep the log readable.
                     details = truncate_lines(outcome.details, max_lines=10)
                     outcome_summary = f"{outcome_summary}\n{details}"
-                item_context.logger.error(outcome_summary)
+                logger.error(outcome_summary)
         else:
-            item_context.logger.info(outcome_summary)
+            logger.info(outcome_summary)
         return UpdateResult.from_outcome(
             outcome,
             item=item,
