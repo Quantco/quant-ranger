@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 
 import { DashboardSection } from '@/components/dashboard/DashboardSection'
-import { DataTable, useDataTable } from '@/components/data-table/DataTable'
+import { DataTable } from '@/components/data-table/DataTable'
+import { useDataTable } from '@/components/data-table/useDataTable'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/Dialog'
 import { displayValue } from '@/lib/value'
 import type { UpdaterReportFailure, UpdaterReportResult } from '@/lib/updater-report'
 import { createColumnHelper } from '@tanstack/react-table'
-import type { DataTableColumnDefinition, dataTableFeatures } from '@/components/data-table/data-table-model'
+import type { DataTableColumnDefinition, dataTableFeatures } from '@/components/data-table/model'
 
 type ReportFailure = UpdaterReportFailure | UpdaterReportResult
 

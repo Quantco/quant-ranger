@@ -3,7 +3,7 @@ import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
 import { Input } from '@/components/ui/Input'
 import { updaterResultColumnLabel } from './result-columns'
-import type { StateColumnVisibility } from '@/components/data-table/table-state'
+import type { StateColumnVisibility } from '@/components/data-table/hooks'
 import type { StateFiltering, StateSearch } from './hooks'
 
 type UpdaterSidebarProps = {

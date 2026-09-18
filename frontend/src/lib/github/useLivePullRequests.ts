@@ -78,7 +78,6 @@ export const usePullRequests = ({
 
 /** Folds the per-pull-request queries into the one shape the dashboard renders. */
 const combinePullRequests = (queries: (UseQueryResult<PullRequest> & { key: string })[]): PullRequestFeedState => {
-
   const loading = queries.filter((query) => query.isFetching)
   // A refetch that fails keeps the data it had, so these overlap by design and
   // are counted over the queries rather than summed from the lists above.
@@ -88,7 +87,9 @@ const combinePullRequests = (queries: (UseQueryResult<PullRequest> & { key: stri
   // has never run reports `isFetching: false` with no data and no error, so any
   // grouping keyed on activity files it alongside the ones that succeeded.
   const success = queries.flatMap((query) => (query.data == null ? [] : [{ data: query.data, key: query.key }]))
-  const failures = queries.flatMap((query) => query.error == null ? [] : [{ key: query.key, message: query.error.message }])
+  const failures = queries.flatMap((query) =>
+    query.error == null ? [] : [{ key: query.key, message: query.error.message }]
+  )
   const lastUpdatedAt = Math.max(0, ...queries.map((query) => query.dataUpdatedAt))
   const cachedAt = lastUpdatedAt === 0 ? null : new Date(lastUpdatedAt).toISOString()
   const openCount = success.filter(({ data }) => data.state === 'open').length

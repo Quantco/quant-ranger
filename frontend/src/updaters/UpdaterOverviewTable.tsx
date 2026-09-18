@@ -1,8 +1,9 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { Link } from 'react-router'
 
-import { DataTable, useDataTable } from '@/components/data-table/DataTable'
-import type { dataTableFeatures } from '@/components/data-table/data-table-model'
+import { DataTable } from '@/components/data-table/DataTable'
+import { useDataTable } from '@/components/data-table/useDataTable'
+import type { dataTableFeatures } from '@/components/data-table/model'
 import { formatDateTime } from '@/lib/format'
 import { displayValue } from '@/lib/value'
 import type { UpdaterFeedSummary } from '@/lib/updater-report'

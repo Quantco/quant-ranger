@@ -11,7 +11,7 @@ import {
 } from 'react-router'
 
 import Overview, { loadOverview } from '@/Overview'
-import { parseDashboardSnapshot, type DashboardSnapshot } from '@/copier/dashboard'
+import { parseSnapshot, type Snapshot as CopierSnapshot } from '@/copier/report'
 import { fetchJson } from '@/lib/fetch-json'
 import { parseUpdaterReport, type UpdaterReportSnapshot } from '@/lib/updater-report'
 import { AppLayout, LoadingPage, type RouteTitleResolver } from './AppLayout'
@@ -45,10 +45,10 @@ const REPORT_ERRORS = {
   }
 } satisfies Record<string, ReportErrorConfig>
 
-const loadCopier = async ({ request }: LoaderFunctionArgs): Promise<DashboardSnapshot> => {
+const loadCopier = async ({ request }: LoaderFunctionArgs): Promise<CopierSnapshot> => {
   const snapshot = await fetchJson(`./${COPIER_DATA_PATH}`, request.signal)
   if (snapshot == null) throw new Error('No Copier report data was found.')
-  return parseDashboardSnapshot(snapshot)
+  return parseSnapshot(snapshot)
 }
 
 const loadUpdater = async ({ params, request }: LoaderFunctionArgs): Promise<UpdaterReportSnapshot> => {

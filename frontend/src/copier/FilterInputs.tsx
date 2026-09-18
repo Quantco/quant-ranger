@@ -14,16 +14,16 @@ import {
 } from '@/components/ui/Combobox'
 import { filterOptions } from '@/lib/filter-options'
 import { displayValue } from '@/lib/value'
-import { repositoryName } from './dashboard'
-import type { CountedValue, DashboardValue, FilterValue } from './dashboard'
-import type { FilterableDashboardColumn } from './dashboard-columns'
-import type { DashboardFilterValue } from './dashboard-state'
+import { repositoryName } from './report'
+import type { CountedValue, CellValue, Value } from './report'
+import type { FilterableColumn } from './columns'
+import type { Filter } from './state'
 
-const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`
+const valueToken = (value: CellValue) => `${typeof value}:${String(value)}`
 type TextSuggestion = {
   count: number
   label: string
-  value: DashboardValue
+  value: CellValue
 }
 
 const controlId = (column: string) => encodeURIComponent(column)
@@ -55,16 +55,16 @@ const InvertToggle = ({
   </Button>
 )
 
-export const ValueFilterInput = ({
+export const ValueFilter = ({
   column,
   filter,
   onChange,
   onInvert,
   options
 }: {
-  column: FilterableDashboardColumn
-  filter: DashboardFilterValue | undefined
-  onChange: (values: FilterValue[]) => void
+  column: FilterableColumn
+  filter: Filter | undefined
+  onChange: (values: Value[]) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
 }) => {
@@ -104,15 +104,15 @@ export const ValueFilterInput = ({
   )
 }
 
-export const TextFilterInput = ({
+export const TextFilter = ({
   column,
   filter,
   onChange,
   onInvert,
   options
 }: {
-  column: FilterableDashboardColumn
-  filter: DashboardFilterValue | undefined
+  column: FilterableColumn
+  filter: Filter | undefined
   onChange: (query: string) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]

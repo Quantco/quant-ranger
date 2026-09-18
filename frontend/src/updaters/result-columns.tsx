@@ -3,7 +3,7 @@ import { GitMerge, GitPullRequest, GitPullRequestClosed, type LucideIcon } from 
 import type { ReactNode } from 'react'
 
 import type { DataTableColumn } from '@/components/data-table/DataTable'
-import type { dataTableFeatures } from '@/components/data-table/data-table-model'
+import type { dataTableFeatures } from '@/components/data-table/model'
 import { cn } from '@/lib/class-merge'
 import { displayValue, type DisplayValue } from '@/lib/value'
 import { ageColor, ageInDays, formatAge } from '@/lib/format'

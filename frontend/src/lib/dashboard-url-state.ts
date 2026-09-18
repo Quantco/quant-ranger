@@ -1,6 +1,6 @@
 import * as z from 'zod/mini'
 
-import { isUnique, type TableState } from '@/components/data-table/table-state'
+import { isUnique, type TableState } from '@/components/data-table/hooks'
 import {
   buildUpdaterFilterDefinitions,
   UPDATER_REPOSITORY_COLUMN,

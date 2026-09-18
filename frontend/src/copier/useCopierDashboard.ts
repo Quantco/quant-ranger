@@ -1,39 +1,40 @@
 import { useCallback, useMemo } from 'react'
 
-import { useStateColumnVisibility, useStateSorting } from '@/components/data-table/table-state'
+import { useStateColumnVisibility, useStateSorting } from '@/components/data-table/hooks'
 import { useControlledTable } from '@/components/data-table/useControlledTable'
 import { useUrlState } from '@/lib/useUrlState'
-import { dashboardCharts, facetOptions, requireTableColumn } from './dashboard-analytics'
-import { REPOSITORIES, type DashboardSnapshot } from './dashboard'
-import { createDashboardColumns, isFilterableDashboardColumn } from './dashboard-columns'
-import { defaultDashboardState, parseDashboardState } from './dashboard-state'
-import { createDashboardColumnRegistry } from './dashboard-table'
-import { useStateCharts, useStateFiltering } from './hooks'
+import { buildColumns, isFilterable } from './columns'
+import { chartData, facetValues, requireColumn, type Facet } from './facets'
+import { useCharts, useFiltering } from './hooks'
+import { REPOSITORIES, type Snapshot } from './report'
+import { defaultState, parseState } from './state'
+import { buildColumnDefinitions } from './table'
 
-export const useCopierDashboardController = (snapshot: DashboardSnapshot) => {
-  const columns = useMemo(() => createDashboardColumns(snapshot), [snapshot])
-  const columnRegistry = useMemo(() => createDashboardColumnRegistry(columns), [columns])
+export const useCopierDashboard = (snapshot: Snapshot) => {
+  const columns = useMemo(() => buildColumns(snapshot), [snapshot])
+  const columnIds = columns.map(({ id }) => id)
+  const filterable = columns.filter(isFilterable)
+  // Every repository starts selected for copying. Selection lives in the table
+  // rather than the URL, so a shared link never carries a stale list.
   const initialRowSelection = useMemo(
     () => Object.fromEntries(snapshot.rows.map(({ repository }) => [repository, true as const])),
     [snapshot.rows]
   )
 
-  const defaultState = useMemo(() => defaultDashboardState(columns), [columns])
-  const parse = useCallback((value: unknown) => parseDashboardState(value, columns), [columns])
-  const { resetState, setState, state } = useUrlState({ defaultState, parse })
-
-  const filterable = columns.filter(isFilterableDashboardColumn)
-  const charts = useStateCharts(state, setState, columns)
-  const filtering = useStateFiltering(state, setState, filterable)
-  const sorting = useStateSorting(state, setState)
-  const visibility = useStateColumnVisibility(state, setState, {
-    columns: columns.map(({ id }) => id),
-    pinned: REPOSITORIES
+  const parse = useCallback((value: unknown) => parseState(value, columns), [columns])
+  const { resetState, setState, state } = useUrlState({
+    defaultState: useMemo(() => defaultState(columns), [columns]),
+    parse
   })
 
+  const charts = useCharts(state, setState, columns)
+  const filtering = useFiltering(state, setState, filterable)
+  const sorting = useStateSorting(state, setState)
+  const visibility = useStateColumnVisibility(state, setState, { columns: columnIds, pinned: REPOSITORIES })
+
   const table = useControlledTable({
-    columnIds: columns.map(({ id }) => id),
-    columns: columnRegistry.map(({ definition }) => definition),
+    columnIds,
+    columns: useMemo(() => buildColumnDefinitions(columns), [columns]),
     data: snapshot.rows,
     enableRowSelection: true,
     getRowId: (row) => row.repository,
@@ -42,29 +43,23 @@ export const useCopierDashboardController = (snapshot: DashboardSnapshot) => {
     state: { filters: filtering.filters, sorting: sorting.sort, visibleColumns: visibility.visible }
   })
 
-  const clearAllState = () => {
-    table.resetRowSelection()
-    resetState()
-  }
-
-  const augmentedFiltering = filtering.partialOptions.map(({ column, filter }) => ({
+  // Both are faceted over the rows the current filters leave in, so they can
+  // only be read once the table exists.
+  const facets: Facet[] = filtering.active.map(({ column, filter }) => ({
     column,
     filter,
-    options: facetOptions(requireTableColumn(table, column.id), column, filter, snapshot.versions)
+    options: facetValues(requireColumn(table, column.id), column, filter, snapshot.versions)
   }))
 
-  const augmentedCharts = dashboardCharts(filterable, charts.selected, table)
-
   return {
-    clearAllState,
-    uses: {
-      charts,
-      augmentedCharts,
-      filtering,
-      augmentedFiltering,
-      sorting,
-      visibility,
-      table
-    }
+    charts: { ...charts, data: chartData(filterable, charts.selected, table) },
+    clearAll: () => {
+      table.resetRowSelection()
+      resetState()
+    },
+    facets,
+    filtering,
+    table,
+    visibility
   }
 }

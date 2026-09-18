@@ -1,29 +1,22 @@
-import type { StateColumnVisibility } from '@/components/data-table/table-state'
+import type { StateColumnVisibility } from '@/components/data-table/hooks'
 import { DashboardSidebarShell } from '@/components/dashboard/DashboardSidebar'
 import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
-import { DashboardFilter } from './DashboardFilter'
-import type { DashboardFilter as DashboardFilterT } from './dashboard-analytics'
-import type { StateCharts, StateFiltering } from './hooks'
+import type { Facet } from './facets'
+import { FilterControl } from './FilterControl'
+import type { Charts, Filtering } from './hooks'
 
-type DashboardSidebarProps = {
-  charts: StateCharts
+type SidebarProps = {
+  charts: Charts
   className: string
-  /** `options` are faceted counts, so they come from the table rather than the hook. */
-  filtering: StateFiltering
-  augmentedFiltering: DashboardFilterT[]
+  /** Built from the table, since the option counts are faceted over the filtered rows. */
+  facets: Facet[]
+  filtering: Filtering
   onClearAll: () => void
   visibility: StateColumnVisibility
 }
 
-export const DashboardSidebar = ({
-  charts,
-  className,
-  filtering,
-  augmentedFiltering,
-  onClearAll,
-  visibility
-}: DashboardSidebarProps) => (
+export const Sidebar = ({ charts, className, facets, filtering, onClearAll, visibility }: SidebarProps) => (
   <DashboardSidebarShell className={className} headingId="sidebar-heading" onReset={onClearAll} title="Explore data">
     <section className="m-0 grid gap-3 border-t border-border pt-3">
       <MultiSelect
@@ -36,8 +29,8 @@ export const DashboardSidebar = ({
         selected={filtering.fields.selected}
       />
       <div className="grid gap-3">
-        {augmentedFiltering.map((filter) => (
-          <DashboardFilter {...filter} onChange={filtering.setFilter} />
+        {facets.map((facet) => (
+          <FilterControl {...facet} key={facet.column.id} onChange={filtering.setFilter} />
         ))}
       </div>
     </section>

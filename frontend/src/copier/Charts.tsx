@@ -2,29 +2,29 @@ import { Pie, PieChart as RechartsPieChart } from 'recharts'
 
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, type ChartConfig } from '@/components/ui/Chart'
 import { displayValue } from '@/lib/value'
-import { repositoryName } from './dashboard'
-import type { CountedValue, DashboardColumn, DashboardValue, FilterValue } from './dashboard'
+import { repositoryName } from './report'
+import type { CountedValue, ReportColumn, CellValue, Value } from './report'
 
 type PieChartProps = {
-  column: DashboardColumn
+  column: ReportColumn
   data: CountedValue[]
-  domain: FilterValue[]
+  domain: Value[]
   expanded: boolean
 }
 
-const displayValueLabel = (column: DashboardColumn, value: DashboardValue) => {
+const displayValueLabel = (column: ReportColumn, value: CellValue) => {
   const label = displayValue(value)
   return column.kind === 'repository' ? repositoryName(label) : label
 }
 
-const semanticColor = (value: FilterValue) => {
+const semanticColor = (value: Value) => {
   if (value === true) return 'var(--color-success-chart)'
   if (value === false) return 'var(--color-error-chart)'
   if (value == null || value === '') return 'var(--color-chart-neutral)'
   return undefined
 }
 
-const chartColors = (domain: FilterValue[]) => {
+const chartColors = (domain: Value[]) => {
   const categoryCount = domain.filter((value) => semanticColor(value) == null).length
   return new Map(
     domain.map((value, index) => {

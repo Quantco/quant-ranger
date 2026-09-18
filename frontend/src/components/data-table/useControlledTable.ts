@@ -9,8 +9,8 @@ import {
   type SortingState
 } from '@tanstack/react-table'
 
-import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './data-table-model'
-import type { TableState } from './table-state'
+import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './model'
+import type { TableState } from './hooks'
 
 type Search<Row extends RowData, ColumnId extends string> = {
   /** Anchors the predicate to one column so it runs once per row rather than once per cell. */
@@ -20,8 +20,8 @@ type Search<Row extends RowData, ColumnId extends string> = {
 }
 
 type Options<Row extends RowData, ColumnId extends string, Filter> = {
-  columnIds: readonly ColumnId[]
-  columns: readonly DataTableColumnDefinition<Row>[]
+  columnIds: ColumnId[]
+  columns: DataTableColumnDefinition<Row>[]
   data: Row[]
   enableRowSelection?: boolean
   getRowId: (row: Row, index: number) => string

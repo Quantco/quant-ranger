@@ -41,12 +41,12 @@ export type StateSorting = ReturnType<typeof useStateSorting<{ sorting: SortingS
 export const useStateColumnVisibility = <ColumnId extends string, State extends { visibleColumns: ColumnId[] }>(
   state: State,
   setState: Setter<State>,
-  { columns, pinned }: { columns: readonly ColumnId[]; pinned: ColumnId }
+  { columns, pinned }: { columns: ColumnId[]; pinned: ColumnId }
 ) => {
   const selected = state.visibleColumns
   const options = columns.filter((column) => column !== pinned)
 
-  const setVisibleColumns = (selected: readonly string[]) =>
+  const setVisibleColumns = (selected: string[]) =>
     setState((previous) => ({
       ...previous,
       visibleColumns: options.filter((column) => selected.includes(column))
@@ -62,7 +62,7 @@ export const useStateColumnVisibility = <ColumnId extends string, State extends 
 
 export type StateColumnVisibility = ReturnType<typeof useStateColumnVisibility<string, { visibleColumns: string[] }>>
 
-export const isUnique = (values: readonly unknown[]): boolean => new Set(values).size === values.length
+export const isUnique = (values: unknown[]): boolean => new Set(values).size === values.length
 
 export const replaceFilter = <ColumnId extends string, Filter>(
   filters: Partial<Record<ColumnId, Filter>>,
@@ -70,8 +70,7 @@ export const replaceFilter = <ColumnId extends string, Filter>(
   value: Filter | null
 ): Partial<Record<ColumnId, Filter>> => {
   const next = { ...filters }
-  if (value == null)
-    Reflect.deleteProperty(next, column) // TODO: NOOOOO WHAT IS THIS¿??¿?? Reflect??
+  if (value == null) Reflect.deleteProperty(next, column)
   else next[column] = value
   return next
 }

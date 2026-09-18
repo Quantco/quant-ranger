@@ -5,17 +5,17 @@ import { cn } from '@/lib/class-merge'
 import { ChevronIcon } from '@/components/ui/ChevronIcon'
 import { DashboardSection } from '@/components/dashboard/DashboardSection'
 import { DataTable } from '@/components/data-table/DataTable'
-import type { DataTableInstance } from '@/components/data-table/data-table-model'
+import type { DataTableInstance } from '@/components/data-table/model'
 import { Button } from '@/components/ui/Button'
 import { formatDateTime } from '@/lib/format'
 import { PieChart } from './Charts'
 import { CopyableRepositoryList } from '../components/CopyableRepositoryList'
-import type { DashboardChart } from './dashboard-analytics'
-import type { DashboardRow } from './dashboard'
+import type { Chart } from './facets'
+import type { Row } from './report'
 
 const snapshotDate = (value: string) => formatDateTime(value, { timeZone: 'UTC' }) ?? 'Unknown snapshot date'
 
-export const DashboardHeader = ({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) => (
+export const Header = ({ generatedAt, repositoryCount }: { generatedAt: string; repositoryCount: number }) => (
   <header className="mb-4">
     <h1>Copier Dashboard</h1>
     <p className="text-muted-foreground">Compare Copier templates, versions, and answers across repositories.</p>
@@ -28,7 +28,7 @@ export const DashboardHeader = ({ generatedAt, repositoryCount }: { generatedAt:
   </header>
 )
 
-const RepositoryCopyPanel = ({
+const CopyPanel = ({
   matchingRepositoryCount,
   repositoryNames
 }: {
@@ -74,17 +74,17 @@ const RepositoryCopyPanel = ({
   )
 }
 
-export const RepositoriesSection = ({
+export const Repositories = ({
   matchingRepositoryCount,
   repositoryNames,
   table
 }: {
   matchingRepositoryCount: number
   repositoryNames: string[]
-  table: DataTableInstance<DashboardRow>
+  table: DataTableInstance<Row>
 }) => (
   <DashboardSection heading="Repositories">
-    <RepositoryCopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
+    <CopyPanel matchingRepositoryCount={matchingRepositoryCount} repositoryNames={repositoryNames} />
     <p className="text-sm text-muted-foreground">
       Use the filters in the sidebar to narrow the table. Select a column heading to sort.
     </p>
@@ -97,7 +97,7 @@ const PieChartCard = ({
   expanded,
   onToggle
 }: {
-  chart: DashboardChart
+  chart: Chart
   expanded: boolean
   onToggle: () => void
 }) => (
@@ -114,7 +114,7 @@ const PieChartCard = ({
   </div>
 )
 
-export const PieChartsSection = ({ charts }: { charts: DashboardChart[] }) => {
+export const PieCharts = ({ charts }: { charts: Chart[] }) => {
   const [expandedChart, setExpandedChart] = useState<string | null>(null)
   if (charts.length === 0) return null
 

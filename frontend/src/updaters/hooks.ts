@@ -1,4 +1,4 @@
-import { replaceFilter } from '@/components/data-table/table-state'
+import { replaceFilter } from '@/components/data-table/hooks'
 import type { UrlState } from '@/lib/useUrlState'
 import type { UpdaterDashboardState } from '@/lib/dashboard-url-state'
 import {

@@ -46,7 +46,7 @@ const stringValue = (value: unknown): string | undefined => {
 type ChartLegendContentProps = {
   className?: string
   nameKey?: string
-  payload?: readonly LegendPayload[]
+  payload?: LegendPayload[]
   valueKey?: string
 }
 

@@ -1,75 +1,54 @@
-import { replaceFilter } from '@/components/data-table/table-state'
+import { replaceFilter } from '@/components/data-table/hooks'
 import type { UrlState } from '@/lib/useUrlState'
-import type { DashboardColumnModel, FilterableDashboardColumn } from './dashboard-columns'
-import type { DashboardFilterValue, DashboardState } from './dashboard-state'
+import type { Column, FilterableColumn } from './columns'
+import type { Filter, State } from './state'
 
-type Dashboard = UrlState<DashboardState>
+type Dashboard = UrlState<State>
 
-export const useStateFiltering = (
+export const useFiltering = (
   state: Dashboard['state'],
   setState: Dashboard['setState'],
-  filterable: FilterableDashboardColumn[]
+  filterable: FilterableColumn[]
 ) => {
-  const filters = state.filters
   const fields = state.filterColumns
-  const setFilter = (column: string, filter: DashboardFilterValue | null) => {
-    setState((previous) => ({ ...previous, filters: replaceFilter(previous.filters, column, filter) }))
-  }
 
-  const setFilterFields = (selected: string[]) => {
+  const setFilter = (column: string, filter: Filter | null) =>
+    setState((previous) => ({ ...previous, filters: replaceFilter(previous.filters, column, filter) }))
+
+  const setFields = (selected: string[]) =>
     setState((previous) => {
-      const filterColumns = filterable.filter((column) => selected.includes(column.id)).map(({ id }) => id)
-      const filters = Object.fromEntries(Object.entries(previous.filters).filter(([id]) => filterColumns.includes(id)))
+      const filterColumns = filterable.filter(({ id }) => selected.includes(id)).map(({ id }) => id)
       return {
         ...previous,
         filterColumns,
-        filters
+        // A filter left behind by a hidden field would keep narrowing the table
+        // with no visible control to undo it.
+        filters: Object.fromEntries(Object.entries(previous.filters).filter(([id]) => filterColumns.includes(id)))
       }
     })
-  }
-
-  const partialOptions = filterable
-    .filter((column) => fields.includes(column.id))
-    .map((column) => ({ column, filter: filters[column.id] }))
-    .map(({ column, filter }) => ({
-      column,
-      filter,
-      options: null
-    }))
 
   return {
-    filters,
-    setFilter,
-    partialOptions,
-    fields: {
-      options: filterable.map(({ id }) => id),
-      selected: fields,
-      setFields: setFilterFields
-    }
+    /** The shown filters and their current values. Their options come from the table. */
+    active: filterable
+      .filter(({ id }) => fields.includes(id))
+      .map((column) => ({ column, filter: state.filters[column.id] })),
+    fields: { options: filterable.map(({ id }) => id), selected: fields, setFields },
+    filters: state.filters,
+    setFilter
   }
 }
 
-export type StateFiltering = ReturnType<typeof useStateFiltering>
+export type Filtering = ReturnType<typeof useFiltering>
 
-/** Which columns get a pie chart. The charts themselves are derived from the table. */
-export const useStateCharts = (
-  state: Dashboard['state'],
-  setState: Dashboard['setState'],
-  columns: readonly DashboardColumnModel[]
-) => {
-  const selected = state.chartColumns
-  const options = columns.map(({ id }) => id)
-  const setCharts = (selected: readonly string[]) =>
+/** Which columns get a pie chart. The chart data itself is derived from the table. */
+export const useCharts = (state: Dashboard['state'], setState: Dashboard['setState'], columns: Column[]) => ({
+  options: columns.map(({ id }) => id),
+  selected: state.chartColumns,
+  setCharts: (selected: string[]) =>
     setState((previous) => ({
       ...previous,
       chartColumns: columns.flatMap(({ id }) => (selected.includes(id) ? [id] : []))
     }))
+})
 
-  return {
-    options,
-    selected,
-    setCharts
-  }
-}
-
-export type StateCharts = ReturnType<typeof useStateCharts>
+export type Charts = ReturnType<typeof useCharts>

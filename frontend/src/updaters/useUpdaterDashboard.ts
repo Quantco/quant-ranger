@@ -11,7 +11,7 @@ import {
 } from './result-columns'
 import type { UpdaterReportResult, UpdaterReportSnapshot } from '@/lib/updater-report'
 import { usePullRequests } from '@/lib/github/useLivePullRequests'
-import { useStateColumnVisibility, useStateSorting } from '@/components/data-table/table-state'
+import { useStateColumnVisibility, useStateSorting } from '@/components/data-table/hooks'
 import { useStateFiltering, useStateSearch } from './hooks'
 
 const resultId = (result: UpdaterReportResult, index: number) =>
