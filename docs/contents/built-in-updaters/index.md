@@ -44,14 +44,14 @@ See [Configuration](../plugins/site-configuration.md#options) for deployment-wid
 Publication pushes each update item to a deterministic branch and opens one pull request from it.
 `<angle brackets>` mark a suffix derived from the update item; the linked configuration changes the part before it.
 
-| Command                    | Default branch                   | Configure with                                                                             |
-| -------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `zizmor`                   | `zizmor-fixes`                   | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates) |
-| `github-app-token`         | `github-app-token-client-id`     | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates) |
-| `node-dependency-cooldown` | `node-dependency-cooldown-fixes` | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates) |
-| `copier`                   | `copier-autoupdate-<tag>`        | Not configurable                                                                           |
-| `copier-migration`         | `copier-migration-<migration>`   | [Copier migration](../plugins/site-configuration.md#define-copier-migrations)              |
-| `pixi-version`             | `pixi-version-autoupdate`        | [`autoupdate-branch`](pixi.md#pixi-version) in the repository                              |
-| `pixi-update`              | `pixi-update/<manifest path>`    | [`autoupdate-branch-prefix`](pixi.md#pixi-update) in each manifest                         |
+| Command                    | Default branch                   | Configure with                                                                                              |
+| -------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `zizmor`                   | `zizmor-fixes`                   | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates)                  |
+| `github-app-token`         | `github-app-token-client-id`     | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates)                  |
+| `node-dependency-cooldown` | `node-dependency-cooldown-fixes` | [Pull-request template](../plugins/site-configuration.md#customize-pull-request-templates)                  |
+| `copier`                   | `copier-autoupdate-<tag>`        | Not configurable                                                                                            |
+| `copier-migration`         | `copier-migration-<migration>`   | [Copier migration](../plugins/site-configuration.md#define-copier-migrations)                               |
+| `pixi-version`             | `pixi-version-autoupdate`        | [`autoupdate-branch`](pixi.md#pixi-version) in the repository                                               |
+| `pixi-update`              | `pixi-update/<manifest path>`    | [`autoupdate-branch-prefix`](pixi.md#pixi-update) in each manifest; `group` publishes `pixi-update/<group>` |
 
 quant-ranger checks [managed pull requests](../usage/running-updates.md#managed-pull-requests) prior to pushing to prevent overwriting manual changes on those branches.
