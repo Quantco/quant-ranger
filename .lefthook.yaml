@@ -30,7 +30,7 @@ pre-commit:
             glob: "*.{py,pyi}"
             run: pixi {run} pyrefly check {staged_files}
           - name: prettier
-            glob: "*.{css,js,json,jsx,md,mdx,ts,tsx,yml,yaml}"
+            glob: "*.{css,json,md,mdx,yml,yaml}"
             run: pixi {run} prettier --write --no-error-on-unmatched-pattern --list-different --ignore-unknown {staged_files}
             env:
               CI: "1"

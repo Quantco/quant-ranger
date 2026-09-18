@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 type CopyState = 'copied' | 'failed' | 'idle'
 
-export function useClipboard() {
+export const useClipboard = () => {
   const [copyState, setCopyState] = useState<CopyState>('idle')
 
   useEffect(() => {

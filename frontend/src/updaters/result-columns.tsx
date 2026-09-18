@@ -3,40 +3,38 @@ import { GitMerge, GitPullRequest, GitPullRequestClosed, type LucideIcon } from 
 import type { ReactNode } from 'react'
 
 import type { DataTableColumn } from '@/components/data-table/DataTable'
-import type { dataTableFeatures } from '@/components/data-table/data-table-model'
+import type { dataTableFeatures } from '@/components/data-table/model'
 import { cn } from '@/lib/class-merge'
 import { displayValue, type DisplayValue } from '@/lib/value'
-import { ageColor, ageInDays, formatAge } from './pull-request-age'
+import { ageColor, ageInDays, formatAge } from '@/lib/format'
 import {
-  getLoadedPullRequest,
   hasPullRequest,
   pullRequestKey,
   type CiStatus,
-  type LivePullRequest,
-  type PullRequests,
+  type PullRequest,
   type PullRequestState,
   type ReviewStatus
-} from './pull-request'
-import type { UpdaterReportResult, UpdateStatus } from './updater-report'
+} from '@/lib/github/pull-request'
+import type { UpdaterReportResult, UpdateStatus } from '@/lib/updater-report'
 
-export interface UpdaterResultRow {
-  pullRequest: LivePullRequest | undefined
+export type UpdaterResultRow = {
+  pullRequest: PullRequest | undefined
   result: UpdaterReportResult
   searchText: string
 }
 
-interface FilterOption {
+type FilterOption = {
   label: string
   value: string
 }
 type UpdaterFilterFunction = FilterFn<typeof dataTableFeatures, UpdaterResultRow>
-interface UpdaterFilterConfig {
+type UpdaterFilterConfig = {
   filterFunction: UpdaterFilterFunction
   label?: string
   options: (statuses: UpdateStatus[]) => FilterOption[]
   placeholder: string
 }
-interface UpdaterColumnDescriptor<Id extends string = string> {
+type UpdaterColumnDescriptor<Id extends string = string> = {
   filter?: UpdaterFilterConfig
   id: Id
   label: string
@@ -45,15 +43,15 @@ interface UpdaterColumnDescriptor<Id extends string = string> {
   value: (row: UpdaterResultRow) => DisplayValue
 }
 
+// None of these declare `autoRemove`: TanStack only consults it inside its own
+// filter setters, and nothing calls those. `setFilter` drops empty selections.
 const selectionFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) =>
   selected.includes(String(row.getValue(columnId)))
-selectionFilter.autoRemove = (selected: string[]) => selected.length === 0
 
 const pullRequestStateFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   if (!hasPullRequest(row.original.result)) return selected.includes('none')
   return selected.includes(String(row.getValue(columnId) ?? 'unknown'))
 }
-pullRequestStateFilter.autoRemove = selectionFilter.autoRemove
 
 const liveSelectionFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   if (!hasPullRequest(row.original.result)) return false
@@ -62,7 +60,6 @@ const liveSelectionFilter: UpdaterFilterFunction = (row, columnId, selected: str
     value == null ? 'unknown' : typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value)
   )
 }
-liveSelectionFilter.autoRemove = selectionFilter.autoRemove
 
 const ageFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => {
   const value = row.getValue<DisplayValue>(columnId)
@@ -72,7 +69,6 @@ const ageFilter: UpdaterFilterFunction = (row, columnId, selected: string[]) => 
   const age = days < 7 ? 'week' : days < 30 ? 'month' : days < 90 ? 'quarter' : 'older'
   return selected.includes(age)
 }
-ageFilter.autoRemove = selectionFilter.autoRemove
 
 const updaterResultColumnDefinitions = [
   {
@@ -244,7 +240,7 @@ const updaterResultColumnRegistry: readonly UpdaterColumnDescriptor<UpdaterResul
 export const UPDATER_REPOSITORY_COLUMN: UpdaterResultColumnId = 'repository'
 export const UPDATER_RESULT_COLUMN_IDS: UpdaterResultColumnId[] = updaterResultColumnDefinitions.map(({ id }) => id)
 
-export interface UpdaterFilterDefinition {
+export type UpdaterFilterDefinition = {
   column: UpdaterResultColumnId
   label: string
   options: FilterOption[]
@@ -253,7 +249,6 @@ export interface UpdaterFilterDefinition {
 
 export const updaterSearchFilter: UpdaterFilterFunction = (row, _columnId, query: string) =>
   row.original.searchText.includes(query.trim().toLocaleLowerCase())
-updaterSearchFilter.autoRemove = (query: string) => query.trim() === ''
 
 export const updaterResultColumns: DataTableColumn<UpdaterResultRow>[] = updaterResultColumnRegistry.map(
   ({ filter, id, label, render, truncate, value }) => ({
@@ -270,34 +265,33 @@ export const updaterResultColumns: DataTableColumn<UpdaterResultRow>[] = updater
   })
 )
 
-export function buildUpdaterFilterDefinitions(statuses: UpdateStatus[]): UpdaterFilterDefinition[] {
-  return updaterResultColumnRegistry.flatMap(({ filter, id, label }) =>
-    filter == null
-      ? []
-      : [
-          {
-            column: id,
-            label: filter.label ?? label,
-            options: filter.options(statuses),
-            placeholder: filter.placeholder
-          }
-        ]
-  )
+export const buildUpdaterFilterDefinitions = (results: UpdaterReportResult[]): UpdaterFilterDefinition[] => {
+  const statuses = [...new Set(results.map(({ status }) => status))].toSorted()
+
+  return updaterResultColumnRegistry
+    .filter(({ filter }) => !!filter)
+    .map(({ filter, id, label }) => ({
+      column: id,
+      label: filter!.label ?? label,
+      options: filter!.options(statuses),
+      placeholder: filter!.placeholder
+    }))
 }
 
-export function buildUpdaterResultRows(results: UpdaterReportResult[], pullRequests: PullRequests): UpdaterResultRow[] {
-  return results.map((result) => {
-    const pullRequest = hasPullRequest(result) ? getLoadedPullRequest(pullRequests[pullRequestKey(result)]) : undefined
+export const buildUpdaterResultRows = (
+  results: UpdaterReportResult[],
+  pullRequests: Record<string, PullRequest>
+): UpdaterResultRow[] =>
+  results.map((result) => {
+    const pullRequest = hasPullRequest(result) ? pullRequests[pullRequestKey(result)] : undefined
     return { pullRequest, result, searchText: buildSearchText(result, pullRequest) }
   })
-}
 
-export function updaterResultColumnLabel(columnId: string): string {
-  return updaterResultColumnRegistry.find(({ id }) => id === columnId)?.label ?? columnId
-}
+export const updaterResultColumnLabel = (columnId: string): string =>
+  updaterResultColumnRegistry.find(({ id }) => id === columnId)?.label ?? columnId
 
-function buildSearchText(result: UpdaterReportResult, pullRequest: LivePullRequest | undefined): string {
-  return [
+const buildSearchText = (result: UpdaterReportResult, pullRequest: PullRequest | undefined): string =>
+  [
     result.repository,
     result.target,
     result.message,
@@ -308,23 +302,20 @@ function buildSearchText(result: UpdaterReportResult, pullRequest: LivePullReque
     .filter((value) => value != null)
     .join('\n')
     .toLocaleLowerCase()
-}
 
-function normalizeValue(value: DisplayValue): DisplayValue {
-  return value == null || value === '' || (value instanceof Date && Number.isNaN(value.valueOf())) ? undefined : value
-}
+const normalizeValue = (value: DisplayValue): DisplayValue =>
+  value == null || value === '' || (value instanceof Date && Number.isNaN(value.valueOf())) ? undefined : value
 
-function yesNoOptions(unknownLabel: string): FilterOption[] {
-  return [option('yes', 'Yes'), option('no', 'No'), option('unknown', unknownLabel)]
-}
+const yesNoOptions = (unknownLabel: string): FilterOption[] => [
+  option('yes', 'Yes'),
+  option('no', 'No'),
+  option('unknown', unknownLabel)
+]
 
-function option(value: string, label: string): FilterOption {
-  return { label, value }
-}
+const option = (value: string, label: string): FilterOption => ({ label, value })
 
-function pullRequestState(value: unknown): PullRequestState | 'unknown' | null {
-  return value === 'closed' || value === 'merged' || value === 'open' || value === 'unknown' ? value : null
-}
+const pullRequestState = (value: unknown): PullRequestState | 'unknown' | null =>
+  value === 'closed' || value === 'merged' || value === 'open' || value === 'unknown' ? value : null
 
 type ReportState = CiStatus | ReviewStatus
 const PULL_REQUEST_ICONS = {
@@ -348,7 +339,7 @@ const REPORT_STATE_CLASSES = {
 } satisfies Record<ReportState, string | undefined>
 const REPORT_VALUE_CLASS = 'inline-block min-w-10 rounded-sm px-1.5 py-0.5 text-center'
 
-function PullRequestStatus({
+const PullRequestStatus = ({
   number,
   state,
   url
@@ -356,7 +347,7 @@ function PullRequestStatus({
   number: number | null | undefined
   state: PullRequestState | 'unknown' | null
   url: string | undefined
-}) {
+}) => {
   if (number == null) return displayValue(number)
   const displayState = state ?? 'unknown'
   const label =
@@ -391,7 +382,7 @@ function PullRequestStatus({
   )
 }
 
-function DateBadge({ value, variant }: { value: unknown; variant: 'age' | 'timestamp' }) {
+const DateBadge = ({ value, variant }: { value: unknown; variant: 'age' | 'timestamp' }) => {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) return displayValue(value)
   return (
     <span className={REPORT_VALUE_CLASS} style={{ background: ageColor(value) }} title={value.toISOString()}>
@@ -400,7 +391,7 @@ function DateBadge({ value, variant }: { value: unknown; variant: 'age' | 'times
   )
 }
 
-function ProblemFlagBadge({ value }: { value: unknown }) {
+const ProblemFlagBadge = ({ value }: { value: unknown }) => {
   if (typeof value !== 'boolean') return displayValue(value)
   return (
     <span className={cn(REPORT_VALUE_CLASS, value ? 'bg-error-subtle text-error' : 'bg-success-subtle text-success')}>
@@ -409,7 +400,7 @@ function ProblemFlagBadge({ value }: { value: unknown }) {
   )
 }
 
-function StatusBadge({ value }: { value: unknown }) {
+const StatusBadge = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string') return displayValue(value)
   return (
     <span
@@ -424,6 +415,4 @@ function StatusBadge({ value }: { value: unknown }) {
   )
 }
 
-function isReportState(value: string): value is ReportState {
-  return Object.hasOwn(REPORT_STATE_CLASSES, value)
-}
+const isReportState = (value: string): value is ReportState => Object.hasOwn(REPORT_STATE_CLASSES, value)

@@ -61,13 +61,13 @@ export type UpdaterReportFailure = z.infer<typeof updaterReportFailureSchema>
 export type UpdaterFeedSummary = z.infer<typeof updaterFeedSummarySchema>
 export type UpdaterReportSnapshot = z.infer<typeof updaterReportSnapshotSchema>
 
-export function parseUpdaterReport(value: unknown): UpdaterReportSnapshot {
+export const parseUpdaterReport = (value: unknown): UpdaterReportSnapshot => {
   const result = z.safeParse(updaterReportSnapshotSchema, value)
   if (!result.success) throw new Error('The updater report has an invalid data format.', { cause: result.error })
   return result.data
 }
 
-export function parseUpdaterIndex(value: unknown) {
+export const parseUpdaterIndex = (value: unknown) => {
   const result = z.safeParse(updaterIndexSchema, value)
   if (!result.success) throw new Error('The updater report index has an invalid data format.', { cause: result.error })
   return result.data
