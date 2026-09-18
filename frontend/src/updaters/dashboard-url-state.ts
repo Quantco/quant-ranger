@@ -1,8 +1,6 @@
-import { useCallback } from 'react'
 import * as z from 'zod/mini'
 
-import { reduceExplorerState, type ExplorerAction, type ExplorerState } from '@/components/data-table/explorer-state'
-import { useCompressedUrlReducer } from '@/lib/useCompressedUrlState'
+import { isUnique, type ExplorerState } from '@/components/data-table/explorer-state'
 import {
   buildUpdaterFilterDefinitions,
   UPDATER_REPOSITORY_COLUMN,
@@ -13,20 +11,19 @@ import type { UpdaterReportSnapshot } from './updater-report'
 
 const UPDATER_STATE_VERSION = 1
 
-export interface UpdaterDashboardUrlState extends ExplorerState<UpdaterResultColumnId, string[]> {
+export type UpdaterDashboardState = {
   version: typeof UPDATER_STATE_VERSION
-}
+} & ExplorerState<UpdaterResultColumnId, string[]>
 
-export type UpdaterDashboardAction = ExplorerAction<UpdaterResultColumnId, string[]>
-
-const updaterDashboardUrlStateSchema = z.object({
+const updaterDashboardStateSchema = z.object({
   filters: z.record(z.string(), z.array(z.string()).check(z.minLength(1))),
   search: z.string(),
   sort: z.nullable(z.object({ column: z.enum(UPDATER_RESULT_COLUMN_IDS), direction: z.enum(['asc', 'desc']) })),
   version: z.literal(UPDATER_STATE_VERSION),
   visibleColumns: z.array(z.enum(UPDATER_RESULT_COLUMN_IDS))
 })
-const DEFAULT_UPDATER_DASHBOARD_URL_STATE: UpdaterDashboardUrlState = {
+
+export const DEFAULT_UPDATER_DASHBOARD_STATE: UpdaterDashboardState = {
   filters: {},
   search: '',
   sort: null,
@@ -34,59 +31,28 @@ const DEFAULT_UPDATER_DASHBOARD_URL_STATE: UpdaterDashboardUrlState = {
   visibleColumns: [...UPDATER_RESULT_COLUMN_IDS]
 }
 
-export function useUpdaterDashboardUrlState(report: UpdaterReportSnapshot) {
-  const parse = useCallback(
-    (value: unknown) => parseUpdaterDashboardUrlState(value, DEFAULT_UPDATER_DASHBOARD_URL_STATE, report),
-    [report]
-  )
-  return useCompressedUrlReducer({
-    defaultState: DEFAULT_UPDATER_DASHBOARD_URL_STATE,
-    parse,
-    reducer: updaterDashboardReducer
-  })
-}
-
-function updaterDashboardReducer(
-  state: UpdaterDashboardUrlState,
-  action: UpdaterDashboardAction
-): UpdaterDashboardUrlState {
-  if (action.type !== 'visible-columns/set') return reduceExplorerState(state, action)
-  return reduceExplorerState(state, {
-    columns: [
-      UPDATER_REPOSITORY_COLUMN,
-      ...new Set(action.columns.filter((column) => column !== UPDATER_REPOSITORY_COLUMN))
-    ],
-    type: 'visible-columns/set'
-  })
-}
-
-function parseUpdaterDashboardUrlState(
+/** Rejects anything this report cannot render, so a stale or hand-edited URL falls back to the defaults. */
+export const parseUpdaterDashboardState = (
   value: unknown,
-  defaults: UpdaterDashboardUrlState,
   report: UpdaterReportSnapshot
-): UpdaterDashboardUrlState {
-  const parsed = z.safeParse(updaterDashboardUrlStateSchema, value)
-  if (!parsed.success) return defaults
-  const state: UpdaterDashboardUrlState = parsed.data
-  return validUpdaterDashboardState(state, report) ? state : defaults
+): UpdaterDashboardState | null => {
+  const parsed = z.safeParse(updaterDashboardStateSchema, value)
+  if (!parsed.success) return null
+  const state: UpdaterDashboardState = parsed.data
+  return validUpdaterDashboardState(state, report) ? state : null
 }
 
-function validUpdaterDashboardState(state: UpdaterDashboardUrlState, report: UpdaterReportSnapshot): boolean {
-  if (!state.visibleColumns.includes(UPDATER_REPOSITORY_COLUMN) || !unique(state.visibleColumns)) return false
+const validUpdaterDashboardState = (state: UpdaterDashboardState, report: UpdaterReportSnapshot): boolean => {
+  if (!state.visibleColumns.includes(UPDATER_REPOSITORY_COLUMN) || !isUnique(state.visibleColumns)) return false
 
-  const statuses = [...new Set(report.results.map(({ status }) => status))].sort()
   const filters = new Map<string, Set<string>>(
-    buildUpdaterFilterDefinitions(statuses).map(({ column, options }) => [
+    buildUpdaterFilterDefinitions(report.results).map(({ column, options }) => [
       column,
       new Set(options.map(({ value }) => value))
     ])
   )
   return Object.entries(state.filters).every(([id, values]) => {
     const validValues = filters.get(id)
-    return values.length > 0 && unique(values) && values.every((item) => validValues?.has(item) === true)
+    return values.length > 0 && isUnique(values) && values.every((item) => validValues?.has(item) === true)
   })
-}
-
-function unique(values: readonly unknown[]): boolean {
-  return new Set(values).size === values.length
 }

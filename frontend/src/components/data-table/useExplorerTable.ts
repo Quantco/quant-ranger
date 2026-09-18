@@ -10,35 +10,43 @@ import {
 } from '@tanstack/react-table'
 
 import { dataTableFeatures, type DataTableColumnDefinition, type DataTableInstance } from './data-table-model'
-import type { ExplorerAction, ExplorerState } from './explorer-state'
+import type { ExplorerSort, ExplorerState } from './explorer-state'
 
-interface UseExplorerTableOptions<Row extends RowData, ColumnId extends string, Filter> {
+type UseExplorerTableOptions<Row extends RowData, ColumnId extends string, Filter> = {
   columns: readonly DataTableColumnDefinition<Row>[]
   columnIds: readonly ColumnId[]
   data: Row[]
-  dispatch: (action: ExplorerAction<ColumnId, Filter>) => void
   enableRowSelection?: boolean
   getRowId: (row: Row, index: number) => string
   globalFilterColumn?: ColumnId
   globalFilterFunction?: FilterFn<typeof dataTableFeatures, Row>
   initialRowSelection?: RowSelectionState
+  // The same handlers back the sidebar controls, so sorting or hiding a column
+  // from its header goes through exactly one code path.
+  onFiltersChange: (filters: Partial<Record<ColumnId, Filter>>) => void
+  onSearchChange: (search: string) => void
+  onSortChange: (sort: ExplorerSort<ColumnId>) => void
+  onVisibleColumnsChange: (columns: ColumnId[]) => void
   parseFilter: (value: unknown) => Filter | undefined
   state: ExplorerState<ColumnId, Filter>
 }
 
-export function useExplorerTable<Row extends RowData, ColumnId extends string, Filter>({
+export const useExplorerTable = <Row extends RowData, ColumnId extends string, Filter>({
   columns,
   columnIds,
   data,
-  dispatch,
   enableRowSelection = false,
   getRowId,
   globalFilterColumn,
   globalFilterFunction,
   initialRowSelection,
+  onFiltersChange,
+  onSearchChange,
+  onSortChange,
+  onVisibleColumnsChange,
   parseFilter,
   state
-}: UseExplorerTableOptions<Row, ColumnId, Filter>): DataTableInstance<Row> {
+}: UseExplorerTableOptions<Row, ColumnId, Filter>): DataTableInstance<Row> => {
   const columnFilters: ColumnFiltersState = columnIds.flatMap((id) => {
     const value = state.filters[id]
     return value === undefined ? [] : [{ id, value }]
@@ -60,37 +68,27 @@ export function useExplorerTable<Row extends RowData, ColumnId extends string, F
     ...(globalFilterFunction == null ? {} : { globalFilterFn: globalFilterFunction }),
     ...(initialRowSelection == null ? {} : { initialState: { rowSelection: initialRowSelection } }),
     onColumnFiltersChange: (updater) => {
-      const next = functionalUpdate(updater, columnFilters)
       const filters: Partial<Record<ColumnId, Filter>> = {}
-      for (const item of next) {
+      for (const item of functionalUpdate(updater, columnFilters)) {
         const column = columnIds.find((id) => id === item.id)
         const value: unknown = item.value
         const filter = parseFilter(value)
         if (column != null && filter !== undefined) filters[column] = filter
       }
-      dispatch({
-        filters,
-        type: 'filters/replace'
-      })
+      onFiltersChange(filters)
     },
     onColumnVisibilityChange: (updater) => {
       const next = functionalUpdate(updater, columnVisibility)
-      dispatch({
-        columns: columnIds.filter((id) => next[id] !== false),
-        type: 'visible-columns/set'
-      })
+      onVisibleColumnsChange(columnIds.filter((id) => next[id] !== false))
     },
     onGlobalFilterChange: (updater) => {
       const next: unknown = functionalUpdate(updater, state.search)
-      dispatch({ search: typeof next === 'string' ? next : '', type: 'search/set' })
+      onSearchChange(typeof next === 'string' ? next : '')
     },
     onSortingChange: (updater) => {
       const [next] = functionalUpdate(updater, sorting)
       const column = next == null ? undefined : columnIds.find((id) => id === next.id)
-      dispatch({
-        sort: next == null || column == null ? null : { column, direction: next.desc ? 'desc' : 'asc' },
-        type: 'sort/set'
-      })
+      onSortChange(next == null || column == null ? null : { column, direction: next.desc ? 'desc' : 'asc' })
     },
     state: {
       columnFilters,

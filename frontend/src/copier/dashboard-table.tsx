@@ -10,7 +10,7 @@ import { hasDashboardFilterValue, type DashboardFilterValue } from './dashboard-
 
 export type DashboardTable = DataTableInstance<DashboardRow>
 export type DashboardTableColumn = ReturnType<DashboardTable['getAllLeafColumns']>[number]
-export interface DashboardColumnDescriptor {
+export type DashboardColumnDescriptor = {
   column: DashboardColumnModel
   definition: DataTableColumn<DashboardRow>
 }
@@ -18,13 +18,40 @@ export type DashboardColumnRegistry = DashboardColumnDescriptor[]
 
 type DashboardFilterFunction = FilterFn<typeof dataTableFeatures, DashboardRow>
 
+const dashboardFilterFunction = (kind: DashboardFilterKind): DashboardFilterFunction => {
+  const filter: DashboardFilterFunction = (row, columnId, filterValue: DashboardFilterValue) => {
+    const dataValue = row.getUniqueValues<DashboardValue>(columnId)[0]
+    const matches =
+      kind === 'text'
+        ? dataValue != null &&
+          String(dataValue)
+            .toLowerCase()
+            .includes(String(filterValue.values[0] ?? ''))
+        : filterValue.values.some((value) => dataValue === value)
+    return filterValue.inverted ? !matches : matches
+  }
+  filter.autoRemove = (filterValue: DashboardFilterValue) => !hasDashboardFilterValue(kind, filterValue)
+  filter.resolveFilterValue = (filterValue: DashboardFilterValue) => {
+    if (kind === 'values') return filterValue
+    return {
+      ...filterValue,
+      values: [
+        String(filterValue.values[0] ?? '')
+          .trim()
+          .toLowerCase()
+      ]
+    }
+  }
+  return filter
+}
+
 const FILTER_FUNCTIONS: Record<DashboardFilterKind, DashboardFilterFunction> = {
   text: dashboardFilterFunction('text'),
   values: dashboardFilterFunction('values')
 }
 
-export function createDashboardColumnRegistry(columns: DashboardColumnModel[]): DashboardColumnRegistry {
-  return columns.map((column) => ({
+export const createDashboardColumnRegistry = (columns: DashboardColumnModel[]): DashboardColumnRegistry =>
+  columns.map((column) => ({
     column,
     definition: {
       accessorFn: (row) => sortableValue(row.values[column.id]),
@@ -54,9 +81,8 @@ export function createDashboardColumnRegistry(columns: DashboardColumnModel[]): 
       sortUndefined: 'last'
     }
   }))
-}
 
-function renderValue(value: unknown, row: DashboardRow, column: DashboardColumnModel) {
+const renderValue = (value: unknown, row: DashboardRow, column: DashboardColumnModel) => {
   if (column.kind === 'repository' && row.url) {
     return (
       <a href={row.url} rel="noreferrer" target="_blank">
@@ -70,33 +96,4 @@ function renderValue(value: unknown, row: DashboardRow, column: DashboardColumnM
   return displayValue(value)
 }
 
-function dashboardFilterFunction(kind: DashboardFilterKind): DashboardFilterFunction {
-  const filter: DashboardFilterFunction = (row, columnId, filterValue: DashboardFilterValue) => {
-    const dataValue = row.getUniqueValues<DashboardValue>(columnId)[0]
-    const matches =
-      kind === 'text'
-        ? dataValue != null &&
-          String(dataValue)
-            .toLowerCase()
-            .includes(String(filterValue.values[0] ?? ''))
-        : filterValue.values.some((value) => dataValue === value)
-    return filterValue.inverted ? !matches : matches
-  }
-  filter.autoRemove = (filterValue: DashboardFilterValue) => !hasDashboardFilterValue(kind, filterValue)
-  filter.resolveFilterValue = (filterValue: DashboardFilterValue) => {
-    if (kind === 'values') return filterValue
-    return {
-      ...filterValue,
-      values: [
-        String(filterValue.values[0] ?? '')
-          .trim()
-          .toLowerCase()
-      ]
-    }
-  }
-  return filter
-}
-
-function sortableValue(value: DashboardValue): DisplayValue {
-  return value == null || value === '' ? undefined : value
-}
+const sortableValue = (value: DashboardValue): DisplayValue => (value == null || value === '' ? undefined : value)

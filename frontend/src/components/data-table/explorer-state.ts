@@ -3,46 +3,23 @@ export type ExplorerSort<ColumnId extends string> = {
   direction: 'asc' | 'desc'
 } | null
 
-export interface ExplorerState<ColumnId extends string, Filter> {
+export type ExplorerState<ColumnId extends string, Filter> = {
   filters: Partial<Record<ColumnId, Filter>>
   search: string
   sort: ExplorerSort<ColumnId>
   visibleColumns: ColumnId[]
 }
 
-export type ExplorerAction<ColumnId extends string, Filter> =
-  | { filters: Partial<Record<ColumnId, Filter>>; type: 'filters/replace' }
-  | { search: string; type: 'search/set' }
-  | { sort: ExplorerSort<ColumnId>; type: 'sort/set' }
-  | { columns: ColumnId[]; type: 'visible-columns/set' }
+/** Guards column and filter lists read back from a URL, where repeats are meaningless. */
+export const isUnique = (values: readonly unknown[]): boolean => new Set(values).size === values.length
 
-export function reduceExplorerState<ColumnId extends string, Filter, State extends ExplorerState<ColumnId, Filter>>(
-  state: State,
-  action: ExplorerAction<ColumnId, Filter>
-): State {
-  switch (action.type) {
-    case 'filters/replace':
-      return { ...state, filters: action.filters }
-    case 'search/set':
-      return { ...state, search: action.search }
-    case 'sort/set':
-      return { ...state, sort: action.sort }
-    case 'visible-columns/set':
-      return { ...state, visibleColumns: action.columns }
-  }
-}
-
-export function replaceExplorerFilter<ColumnId extends string, Filter>(
+export const replaceExplorerFilter = <ColumnId extends string, Filter>(
   filters: Partial<Record<ColumnId, Filter>>,
   column: ColumnId,
   value: Filter | null
-): Partial<Record<ColumnId, Filter>> {
+): Partial<Record<ColumnId, Filter>> => {
   const next = { ...filters }
   if (value == null) Reflect.deleteProperty(next, column)
   else next[column] = value
   return next
-}
-
-export function uniqueValues<Value>(values: Value[]): Value[] {
-  return [...new Set(values)]
 }

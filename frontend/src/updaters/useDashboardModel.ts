@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { createDataTableModel } from '@/components/data-table/DataTable'
-import { replaceExplorerFilter } from '@/components/data-table/explorer-state'
+import { replaceExplorerFilter, type ExplorerSort } from '@/components/data-table/explorer-state'
 import { useExplorerTable } from '@/components/data-table/useExplorerTable'
-import { useUpdaterDashboardUrlState } from './dashboard-url-state'
+import { useUrlState } from '@/lib/useUrlState'
+import { DEFAULT_UPDATER_DASHBOARD_STATE, parseUpdaterDashboardState } from './dashboard-url-state'
 import { hasPullRequest, pullRequestKey } from './pull-request'
 import {
   buildUpdaterFilterDefinitions,
@@ -15,41 +16,72 @@ import {
   type UpdaterResultColumnId
 } from './result-columns'
 import type { UpdaterReportSnapshot } from './updater-report'
-import { useLivePullRequests } from './useLivePullRequests'
+import { useLivePullRequests, type LivePullRequestModel } from './useLivePullRequests'
 
-interface UpdaterSummaryItem {
+type UpdaterSummaryItem = {
   error?: boolean
   label: string
   value: number
 }
 
-export function useUpdaterDashboardController(report: UpdaterReportSnapshot) {
-  const livePullRequests = useLivePullRequests(report)
+export const useUpdaterDashboardController = (report: UpdaterReportSnapshot) => {
+  // Whether the user has asked for live data at all. That is app intent, not
+  // query state, so it is the one thing TanStack cannot answer for us.
+  const [liveDataRequested, setLiveDataRequested] = useState(false)
+  const feed = useLivePullRequests(report, liveDataRequested)
+  const livePullRequests: LivePullRequestModel = {
+    ...feed,
+    load: () => {
+      setLiveDataRequested(true)
+      feed.refetch()
+    }
+  }
   const rows = useMemo(
     () => buildUpdaterResultRows(report.results, livePullRequests.pullRequests),
     [livePullRequests.pullRequests, report.results]
   )
-  const { dispatch, resetState, state } = useUpdaterDashboardUrlState(report)
+  const parse = useCallback((value: unknown) => parseUpdaterDashboardState(value, report), [report])
+  const { resetState, setState, state } = useUrlState({ defaultState: DEFAULT_UPDATER_DASHBOARD_STATE, parse })
+
+  const optionalColumns = UPDATER_RESULT_COLUMN_IDS.filter((column) => column !== UPDATER_REPOSITORY_COLUMN)
+
+  const setFilter = (column: UpdaterResultColumnId, selected: string[]) =>
+    setState((previous) => ({
+      ...previous,
+      filters: replaceExplorerFilter(previous.filters, column, selected.length === 0 ? null : selected)
+    }))
+  const setFilters = (filters: Partial<Record<UpdaterResultColumnId, string[]>>) =>
+    setState((previous) => ({ ...previous, filters }))
+  const setSearch = (search: string) => setState((previous) => ({ ...previous, search }))
+  const setSort = (sort: ExplorerSort<UpdaterResultColumnId>) => setState((previous) => ({ ...previous, sort }))
+  // The repository column is never hidden, so it is pinned back on every write.
+  const setTableColumns = (selected: string[]) =>
+    setState((previous) => ({
+      ...previous,
+      visibleColumns: [UPDATER_REPOSITORY_COLUMN, ...optionalColumns.filter((column) => selected.includes(column))]
+    }))
+
   const table = useExplorerTable({
     columnIds: UPDATER_RESULT_COLUMN_IDS,
     columns: updaterResultColumns,
     data: rows,
-    dispatch,
     getRowId: ({ result }, index) =>
       `${result.repository}\0${result.target ?? ''}\0${result.pull_request ?? ''}\0${index}`,
     globalFilterColumn: UPDATER_REPOSITORY_COLUMN,
     globalFilterFunction: updaterSearchFilter,
+    onFiltersChange: setFilters,
+    onSearchChange: setSearch,
+    onSortChange: setSort,
+    onVisibleColumnsChange: setTableColumns,
     parseFilter: (value): string[] | undefined =>
       Array.isArray(value) && value.every((item: unknown) => typeof item === 'string') ? value : undefined,
     state
   })
 
-  const statuses = [...new Set(report.results.map(({ status }) => status))].sort()
-  const filters = buildUpdaterFilterDefinitions(statuses).map((definition) => ({
+  const filters = buildUpdaterFilterDefinitions(report.results).map((definition) => ({
     ...definition,
     selected: state.filters[definition.column] ?? []
   }))
-  const optionalColumns = UPDATER_RESULT_COLUMN_IDS.filter((column) => column !== UPDATER_REPOSITORY_COLUMN)
   const selectedColumns = optionalColumns.filter((column) => state.visibleColumns.includes(column))
   const updaterFailures = report.results.filter(({ status }) => status === 'failure')
   const failureCount = report.summary.failures + report.summary.scan_failures
@@ -64,22 +96,11 @@ export function useUpdaterDashboardController(report: UpdaterReportSnapshot) {
     ...(livePullRequests.loadedCount > 0 ? [{ label: 'Open PRs', value: livePullRequests.openCount }] : [])
   ]
 
-  const setFilter = (column: UpdaterResultColumnId, selected: string[]) =>
-    dispatch({
-      filters: replaceExplorerFilter(state.filters, column, selected.length === 0 ? null : selected),
-      type: 'filters/replace'
-    })
-  const setTableColumns = (selected: string[]) =>
-    dispatch({
-      columns: [UPDATER_REPOSITORY_COLUMN, ...optionalColumns.filter((column) => selected.includes(column))],
-      type: 'visible-columns/set'
-    })
-
   return {
     actions: {
       reset: resetState,
       setFilter,
-      setSearch: (value: string) => dispatch({ search: value, type: 'search/set' }),
+      setSearch,
       setTableColumns
     },
     resources: { pullRequests: livePullRequests },

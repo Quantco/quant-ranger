@@ -1,22 +1,15 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { formatDateTime, formatRelativeTime } from '@/lib/date'
+import { useGitHubToken } from './github-client'
 import type { LivePullRequestModel } from './useLivePullRequests'
 
 type PullRequestDataControlsModel = Pick<
   LivePullRequestModel,
-  | 'cachedAt'
-  | 'clearToken'
-  | 'createTokenUrl'
-  | 'load'
-  | 'loadError'
-  | 'loadedCount'
-  | 'loading'
-  | 'setTokenInput'
-  | 'tokenInput'
+  'cachedAt' | 'createTokenUrl' | 'load' | 'loadedCount' | 'loading'
 >
 
-function PullRequestCacheSummary({ cachedAt, loadedCount }: { cachedAt: string | null; loadedCount: number }) {
+const PullRequestCacheSummary = ({ cachedAt, loadedCount }: { cachedAt: string | null; loadedCount: number }) => {
   if (cachedAt == null) return null
 
   return (
@@ -29,13 +22,15 @@ function PullRequestCacheSummary({ cachedAt, loadedCount }: { cachedAt: string |
   )
 }
 
-export function PullRequestDataControls({
+export const PullRequestDataControls = ({
   githubApiUrl,
-  model: { cachedAt, clearToken, createTokenUrl, load, loadError, loadedCount, loading, setTokenInput, tokenInput }
+  model: { cachedAt, createTokenUrl, load, loadedCount, loading }
 }: {
   githubApiUrl: string
   model: PullRequestDataControlsModel
-}) {
+}) => {
+  const { clearToken, setTokenInput, tokenInput } = useGitHubToken()
+
   return (
     <>
       <form
@@ -68,7 +63,6 @@ export function PullRequestDataControls({
           </Button>
         )}
       </form>
-      {loadError !== '' && <p role="alert">Could not load pull request data: {loadError}</p>}
       <div className="mt-3 grid max-w-4xl gap-1 text-sm wrap-anywhere text-muted-foreground" id="github-token-help">
         <p className="m-0">
           The token is only needed for non-public repositories. If you don&apos;t have a token with the appropriate
