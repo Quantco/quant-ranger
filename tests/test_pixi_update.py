@@ -89,6 +89,7 @@ def test_parse_manifest_uses_defaults_without_section() -> None:
     assert config.autoupdate_schedule == "monthly"
     assert config.ignore_environments == []
     assert config.ignore_platforms == []
+    assert config.group is None
     assert list(manifest.environments) == ["default"]
 
 
@@ -112,6 +113,32 @@ def test_parse_manifest_reads_update_section() -> None:
     assert config.autoupdate_schedule == Schedule.WEEKLY
     assert config.ignore_environments == ["docs"]
     assert config.ignore_platforms == ["win-64"]
+    assert config.group is None
+
+
+def test_parse_manifest_reads_group() -> None:
+    manifest = parse_pixi_manifest(
+        """
+        [tool.update]
+        group = "workspace"
+        """
+    )
+
+    assert manifest.tool.update.group == "workspace"
+
+
+@pytest.mark.parametrize(
+    "group",
+    ["", "   ", "with space", "with\ttab", "new\nline", "-leading-dash", "///"],
+)
+def test_parse_manifest_rejects_invalid_group(group: str) -> None:
+    with pytest.raises(ValueError, match="Invalid pixi.toml"):
+        parse_pixi_manifest(
+            f"""
+            [tool.update]
+            group = {json.dumps(group)}
+            """
+        )
 
 
 def test_parse_manifest_rejects_invalid_toml() -> None:
@@ -271,6 +298,343 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
             "publish_changes": False,
         }
     ]
+
+
+def test_pixi_update_groups_lockfiles_sharing_a_group(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(
+        tmp_path,
+        config='group = "workspace"',
+    )
+    write_pixi_project(
+        tmp_path,
+        directory="subproject",
+        config='group = "workspace"',
+    )
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del kwargs
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0,
+            stdout=f"### Updated packages in {kwargs.get('cwd')}\n",
+            stderr="",
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UPDATED,
+        Status.UPDATED,
+    ]
+    # Both lockfiles are published through one grouped pull request.
+    pull_request_calls = task_runs[0].github_client.pull_request_calls
+    assert len(pull_request_calls) == 1
+    options = cast(PullRequestOptions, pull_request_calls[0]["options"])
+    assert options.source_branch == "pixi-update/workspace"
+    assert options.title == "chore: Update pixi lockfile (workspace)"
+    assert "## `pixi.toml`" in options.body
+    assert "## `subproject/pixi.toml`" in options.body
+    # Both repositories are cloned once, not once per lockfile.
+    assert task_runs[0].github_client.clone_calls == [
+        RepositoryRef(owner="quantco", name="example", branch="main")
+    ]
+    assert task_runs[0].checkout.added_paths == ["pixi.lock", "subproject/pixi.lock"]
+
+
+def test_pixi_update_keeps_ungrouped_lockfiles_separate(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path)
+    write_pixi_project(tmp_path, directory="subproject")
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del kwargs
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout="### Updated packages\n", stderr=""
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UPDATED,
+        Status.UPDATED,
+    ]
+    pull_request_calls = task_runs[0].github_client.pull_request_calls
+    assert len(pull_request_calls) == 2
+    assert [
+        cast(PullRequestOptions, call["options"]).source_branch
+        for call in pull_request_calls
+    ] == ["pixi-update/pixi.toml", "pixi-update/subproject/pixi.toml"]
+    assert task_runs[0].github_client.clone_calls == [
+        RepositoryRef(owner="quantco", name="example", branch="main"),
+        RepositoryRef(owner="quantco", name="example", branch="main"),
+    ]
+
+
+def test_pixi_update_group_skips_up_to_date_lockfiles(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path, config='group = "workspace"')
+    write_pixi_project(
+        tmp_path,
+        directory="subproject",
+        config='group = "workspace"',
+    )
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        cwd = Path(kwargs["cwd"])
+        stdout = "{}" if cwd == tmp_path else '{"changed": true}'
+        return ExecOutput(exit_code=0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout="### Updated packages\n", stderr=""
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UP_TO_DATE,
+        Status.UPDATED,
+    ]
+    pull_request_calls = task_runs[0].github_client.pull_request_calls
+    assert len(pull_request_calls) == 1
+    options = cast(PullRequestOptions, pull_request_calls[0]["options"])
+    assert options.source_branch == "pixi-update/workspace"
+    assert "subproject/pixi.toml" in options.body
+    # Only the changed lockfile is staged and reported; the up-to-date one is not.
+    assert "## `pixi.toml`" not in options.body
+    assert task_runs[0].checkout.added_paths == ["subproject/pixi.lock"]
+
+
+def test_pixi_update_group_without_changes_opens_no_pull_request(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path, config='group = "workspace"')
+    write_pixi_project(tmp_path, directory="subproject", config='group = "workspace"')
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(exit_code=0, stdout="{}", stderr=""),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UP_TO_DATE,
+        Status.UP_TO_DATE,
+    ]
+    assert task_runs[0].github_client.pull_request_calls == []
+    assert task_runs[0].checkout.added_paths == []
+
+
+def test_pixi_update_group_unexpected_regeneration_error_fails_single_item(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path, config='group = "workspace"')
+    write_pixi_project(tmp_path, directory="subproject", config='group = "workspace"')
+    subproject = tmp_path / "subproject"
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        if Path(kwargs["cwd"]) == subproject:
+            # An unexpected error outside the handled update failure path.
+            raise RuntimeError("diff tool exploded")
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+
+    def fake_diff(command: list[str], **kwargs: Any) -> ExecOutput:
+        if Path(kwargs["cwd"]) == subproject:
+            raise RuntimeError("diff tool exploded")
+        return ExecOutput(exit_code=0, stdout="### Updated packages\n", stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        fake_diff,
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UPDATED,
+        Status.FAILURE,
+    ]
+    assert task_runs[1].result.message == "diff tool exploded"
+    assert [
+        cast(PullRequestOptions, call["options"]).source_branch
+        for call in task_runs[0].github_client.pull_request_calls
+    ] == ["pixi-update/workspace"]
+
+
+def test_pixi_update_group_reports_skipped_when_pull_request_is_not_created(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path, config='group = "workspace"')
+    write_pixi_project(
+        tmp_path,
+        directory="subproject",
+        config='group = "workspace"',
+    )
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del kwargs
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout="### Updated packages\n", stderr=""
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+        github_client=FakeGitHubClient(pr_opened=False),
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.SKIPPED,
+        Status.SKIPPED,
+    ]
+    assert [task_run.result.output for task_run in task_runs] == [None, None]
+
+
+def test_pixi_update_group_failure_isolates_other_lockfiles(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path, config='group = "workspace"')
+    write_pixi_project(
+        tmp_path,
+        directory="subproject",
+        config='group = "workspace"',
+    )
+    subproject = tmp_path / "subproject"
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        if Path(kwargs["cwd"]) == subproject:
+            raise CommandError(
+                "pixi update failed",
+                ExecOutput(exit_code=1, stdout="", stderr="boom"),
+            )
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout="### Updated packages\n", stderr=""
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.UPDATED,
+        Status.FAILURE,
+    ]
+    pull_request_calls = task_runs[0].github_client.pull_request_calls
+    assert len(pull_request_calls) == 1
+    options = cast(PullRequestOptions, pull_request_calls[0]["options"])
+    assert "## `pixi.toml`" in options.body
+    assert "subproject/pixi.toml" not in options.body
+
+
+def test_pixi_update_group_rejects_conflicting_pull_request_settings(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(
+        tmp_path,
+        config='group = "workspace"\nautoupdate-commit-message = "chore: One"',
+    )
+    write_pixi_project(
+        tmp_path,
+        directory="subproject",
+        config='group = "workspace"\nautoupdate-commit-message = "chore: Two"',
+    )
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout='{"changed": true}', stderr=""
+        ),
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=["pixi.lock", "subproject/pixi.lock"],
+    )
+
+    assert [task_run.result.result for task_run in task_runs] == [
+        Status.FAILURE,
+        Status.FAILURE,
+    ]
+    assert all(
+        "must share `autoupdate-branch-prefix`" in (task_run.result.message or "")
+        for task_run in task_runs
+    )
+    assert task_runs[0].github_client.pull_request_calls == []
 
 
 def test_pixi_update_extracts_keychain_credentials_before_sandbox(
@@ -1468,6 +1832,40 @@ def write_pixi_project(
     )
     (project / "pixi.lock").write_text("")
     return project
+
+
+def run_update_tasks(
+    tmp_path: Path,
+    *,
+    paths: list[str],
+    publish_changes: bool = True,
+    github_client: FakeGitHubClient | None = None,
+) -> list[TaskRun]:
+    repository_ref = RepositoryRef(owner="quantco", name="example", branch="main")
+    checkout = RecordingCheckout(tmp_path, repository_ref)
+    github_client = github_client or FakeGitHubClient()
+    github_client.publish_changes = publish_changes
+    github_client.checkout = checkout
+    logger = RecordingLogger()
+
+    results = PixiUpdateUpdater(PixiUpdateOptions()).update_all(
+        [
+            PixiUpdateItem(
+                repository_ref=repository_ref,
+                path=path,
+                manifest=parse_pixi_manifest(
+                    (tmp_path / Path(path).parent / "pixi.toml").read_text()
+                ),
+            )
+            for path in paths
+        ],
+        RunContext(
+            site_config=SiteConfig(),
+            github_client=cast(GitHubClient, github_client),
+            logger=logger,
+        ),
+    )
+    return [TaskRun(result, checkout, github_client, logger) for result in results]
 
 
 def _assert_task_cache(call: dict[str, Any]) -> Path:
