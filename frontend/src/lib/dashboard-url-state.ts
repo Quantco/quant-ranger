@@ -30,7 +30,8 @@ export const DEFAULT_UPDATER_DASHBOARD_STATE: UpdaterDashboardState = {
   search: '',
   sorting: [],
   version: UPDATER_STATE_VERSION,
-  visibleColumns: [...UPDATER_RESULT_COLUMN_IDS]
+  // exclude UPDATER_REPOSITORY_COLUMN as it is pinned, which omits it from being stored
+  visibleColumns: UPDATER_RESULT_COLUMN_IDS.filter((column) => column !== UPDATER_REPOSITORY_COLUMN)
 }
 
 /** Rejects anything this report cannot render, so a stale or hand-edited URL falls back to the defaults. */
@@ -45,7 +46,8 @@ export const parseUpdaterDashboardState = (
 }
 
 const validUpdaterDashboardState = (state: UpdaterDashboardState, report: UpdaterReportSnapshot): boolean => {
-  if (!state.visibleColumns.includes(UPDATER_REPOSITORY_COLUMN) || !isUnique(state.visibleColumns)) return false
+  // The pinned column is added back when the table is built, so storing it would show it twice.
+  if (state.visibleColumns.includes(UPDATER_REPOSITORY_COLUMN) || !isUnique(state.visibleColumns)) return false
 
   const filters = new Map<string, Set<string>>(
     buildUpdaterFilterDefinitions(report.results).map(({ column, options }) => [

@@ -20,7 +20,48 @@ export type TableState<ColumnId extends string, Filter> = {
   visibleColumns: ColumnId[]
 }
 
-/** Guards column and filter lists read back from a URL, where repeats are meaningless. */
+type Setter<State> = (update: (previous: State) => State) => void
+
+export const useStateSorting = <State extends { sorting: SortingState }>(state: State, setState: Setter<State>) => {
+  const sort = state.sorting
+  const setSort = (sorting: SortingState) => setState((previous) => ({ ...previous, sorting }))
+
+  return {
+    setSort,
+    sort
+  }
+}
+
+export type StateSorting = ReturnType<typeof useStateSorting<{ sorting: SortingState }>>
+
+/**
+ * `pinned` is a column the dashboard always shows. It is left out of the stored list entirely, so no URL can hide it and it costs nothing to encode
+ * `visible` puts it back for the table.
+ */
+export const useStateColumnVisibility = <ColumnId extends string, State extends { visibleColumns: ColumnId[] }>(
+  state: State,
+  setState: Setter<State>,
+  { columns, pinned }: { columns: readonly ColumnId[]; pinned: ColumnId }
+) => {
+  const selected = state.visibleColumns
+  const options = columns.filter((column) => column !== pinned)
+
+  const setVisibleColumns = (selected: readonly string[]) =>
+    setState((previous) => ({
+      ...previous,
+      visibleColumns: options.filter((column) => selected.includes(column))
+    }))
+
+  return {
+    options,
+    selected,
+    setVisibleColumns,
+    visible: [pinned, ...selected]
+  }
+}
+
+export type StateColumnVisibility = ReturnType<typeof useStateColumnVisibility<string, { visibleColumns: string[] }>>
+
 export const isUnique = (values: readonly unknown[]): boolean => new Set(values).size === values.length
 
 export const replaceFilter = <ColumnId extends string, Filter>(
@@ -29,7 +70,8 @@ export const replaceFilter = <ColumnId extends string, Filter>(
   value: Filter | null
 ): Partial<Record<ColumnId, Filter>> => {
   const next = { ...filters }
-  if (value == null) Reflect.deleteProperty(next, column) // TODO: NOOOOO WHAT IS THIS¿??¿?? Reflect??
+  if (value == null)
+    Reflect.deleteProperty(next, column) // TODO: NOOOOO WHAT IS THIS¿??¿?? Reflect??
   else next[column] = value
   return next
 }

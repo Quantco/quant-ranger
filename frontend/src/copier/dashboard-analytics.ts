@@ -5,13 +5,9 @@ import {
   type DashboardValue,
   type FilterValue
 } from './dashboard'
-import {
-  isFilterableDashboardColumn,
-  type DashboardFilterOptionOrder,
-  type FilterableDashboardColumn
-} from './dashboard-columns'
+import type { DashboardFilterOptionOrder, FilterableDashboardColumn } from './dashboard-columns'
 import type { DashboardFilterValue } from './dashboard-state'
-import type { DashboardColumnRegistry, DashboardTable, DashboardTableColumn } from './dashboard-table'
+import type { DashboardTable, DashboardTableColumn } from './dashboard-table'
 
 export type DashboardFilter = {
   column: FilterableDashboardColumn
@@ -26,41 +22,45 @@ export type DashboardChart = {
 }
 
 export const dashboardFilters = (
-  table: DashboardTable,
-  columns: DashboardColumnRegistry,
-  columnIds: string[],
+  filterable: FilterableDashboardColumn[],
+  selectedColumnIds: string[],
   filters: Partial<Record<string, DashboardFilterValue>>,
+  table: DashboardTable,
   versions: string[]
 ): DashboardFilter[] =>
-  selectDashboardColumns(columns, columnIds).flatMap((column) => {
-    if (!isFilterableDashboardColumn(column)) return []
-    const filter = filters[column.id]
-    return [{ column, filter, options: facetOptions(requireTableColumn(table, column.id), column, filter, versions) }]
-  })
+  filterable
+    .filter((column) => selectedColumnIds.includes(column.id))
+    .map((column) => ({ column, filter: filters[column.id] }))
+    .map(({ column, filter }) => ({
+      column,
+      filter,
+      options: facetOptions(requireTableColumn(table, column.id), column, filter, versions)
+    }))
 
 export const dashboardCharts = (
-  table: DashboardTable,
-  columns: DashboardColumnRegistry,
-  columnIds: string[]
+  filterable: FilterableDashboardColumn[],
+  selectedColumnIds: string[],
+  table: DashboardTable
 ): DashboardChart[] => {
+  const prefilteredRows = table.getPreFilteredRowModel().rows
   const filteredRows = table.getFilteredRowModel().rows
-  return selectDashboardColumns(columns, columnIds).map((column) => ({
-    column,
-    data: columnDistribution(filteredRows, column.id),
-    domain: columnDistribution(table.getPreFilteredRowModel().rows, column.id).map(({ value }) => value)
-  }))
+
+  return filterable
+    .filter((column) => selectedColumnIds.includes(column.id))
+    .map((column) => ({
+      column,
+      data: columnDistribution(filteredRows, column.id),
+      domain: columnDistribution(prefilteredRows, column.id).map(({ value }) => value)
+    }))
 }
 
-const selectDashboardColumns = (columns: DashboardColumnRegistry, columnIds: string[]) =>
-  columns.filter(({ column }) => columnIds.includes(column.id)).map(({ column }) => column)
-
-const requireTableColumn = (table: DashboardTable, id: string): DashboardTableColumn => {
+export const requireTableColumn = (table: DashboardTable, id: string): DashboardTableColumn => {
   const column = table.getColumn(id)
   if (column == null) throw new Error(`Dashboard table column ${id} is missing.`)
   return column
 }
 
-const facetOptions = (
+export const facetOptions = (
   tableColumn: DashboardTableColumn,
   column: FilterableDashboardColumn,
   filter: DashboardFilterValue | undefined,
@@ -70,7 +70,9 @@ const facetOptions = (
   for (const value of filter?.values ?? []) counts.set(value, 0)
 
   for (const [value, count] of tableColumn.getFacetedUniqueValues()) {
-    if (!isFilterValue(value) || value == null || (column.filter.optionOrder !== 'answer' && value === '')) continue
+    if (!isFilterValue(value)) continue
+    if (value === null) continue
+    if (column.filter.optionOrder !== 'answer' && value === '') continue
     counts.set(value, count)
   }
 
@@ -85,12 +87,12 @@ const columnDistribution = (
   rows: ReturnType<DashboardTable['getRowModel']>['rows'],
   column: string
 ): CountedValue[] => {
-  const counts = new Map<FilterValue, number>()
-  for (const row of rows) {
-    const value = row.getUniqueValues<DashboardValue>(column)[0] ?? ''
-    counts.set(value, (counts.get(value) ?? 0) + 1)
-  }
-  return [...counts].map(([value, count]) => ({ count, value })).sort((left, right) => right.count - left.count)
+  const byKeys = Object.groupBy(rows, (row) => String(row.getUniqueValues<DashboardValue>(column)[0] ?? ''))
+  const sortedCounts = Object.entries(byKeys)
+    .map(([key, values]) => ({ value: key, count: values ? values.length : 0 }))
+    .toSorted((left, right) => right.count - left.count)
+
+  return sortedCounts
 }
 
 const orderFilterOptions = (

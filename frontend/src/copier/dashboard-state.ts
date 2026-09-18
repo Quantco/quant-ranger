@@ -1,7 +1,7 @@
 import * as z from 'zod/mini'
 
 import { isUnique, type TableState } from '@/components/data-table/table-state'
-import { dashboardValueSchema, REPOSITORIES, TEMPLATE, VALIDATION, VERSION, type FilterValue } from './dashboard'
+import { dashboardValueSchema, REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from './dashboard'
 import { isFilterableDashboardColumn, type DashboardColumnModel, type DashboardFilterKind } from './dashboard-columns'
 
 const DASHBOARD_STATE_VERSION = 1
@@ -20,11 +20,6 @@ export type DashboardState = {
   version: typeof DASHBOARD_STATE_VERSION
 } & TableState<string, DashboardFilterValue>
 
-export const dashboardFilterValue = (values: FilterValue[], inverted = false): DashboardFilterValue => ({
-  inverted,
-  values
-})
-
 export const hasDashboardFilterValue = (kind: DashboardFilterKind, filter: DashboardFilterValue): boolean =>
   filter.values.length > 0 && (kind === 'values' || String(filter.values[0]).trim() !== '')
 
@@ -36,9 +31,8 @@ export const defaultDashboardState = (columns: DashboardColumnModel[]): Dashboar
   filters: {},
   sorting: [],
   version: DASHBOARD_STATE_VERSION,
-  visibleColumns: columns
-    .filter(({ id }) => id === REPOSITORIES || DEFAULT_TABLE_COLUMNS.includes(id))
-    .map(({ id }) => id)
+  // The repository column is pinned visible and so never stored.
+  visibleColumns: columns.filter(({ id }) => DEFAULT_TABLE_COLUMNS.includes(id)).map(({ id }) => id)
 })
 
 const dashboardStateSchema = (columns: DashboardColumnModel[]) => {
@@ -68,7 +62,9 @@ const validDashboardState = (state: DashboardState, columns: DashboardColumnMode
   const columnIds = new Set(columns.map(({ id }) => id))
   const filterColumnIds = new Set(columns.filter(isFilterableDashboardColumn).map(({ id }) => id))
   return (
-    state.visibleColumns.includes(REPOSITORIES) &&
+    // The pinned column is added back when the table is built, so storing it
+    // would show it twice.
+    !state.visibleColumns.includes(REPOSITORIES) &&
     isUnique(state.visibleColumns) &&
     isUnique(state.filterColumns) &&
     isUnique(state.chartColumns) &&

@@ -1,57 +1,53 @@
-import type { ReactNode } from 'react'
-
+import type { StateColumnVisibility } from '@/components/data-table/table-state'
 import { DashboardSidebarShell } from '@/components/dashboard/DashboardSidebar'
 import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
-
-type FieldSelection = {
-  options: string[]
-  onChange: (options: string[]) => void
-  selected: string[]
-}
+import { DashboardFilter } from './DashboardFilter'
+import type { DashboardFilter as DashboardFilterT } from './dashboard-analytics'
+import type { StateCharts, StateFiltering } from './hooks'
 
 type DashboardSidebarProps = {
+  charts: StateCharts
   className: string
-  filterFields: FieldSelection
-  filterInputs: ReactNode
-  onReset: () => void
-  pieCharts: FieldSelection
-  tableColumns: FieldSelection
+  /** `options` are faceted counts, so they come from the table rather than the hook. */
+  filtering: StateFiltering
+  augmentedFiltering: DashboardFilterT[]
+  onClearAll: () => void
+  visibility: StateColumnVisibility
 }
 
 export const DashboardSidebar = ({
+  charts,
   className,
-  filterFields,
-  filterInputs,
-  onReset,
-  pieCharts,
-  tableColumns
+  filtering,
+  augmentedFiltering,
+  onClearAll,
+  visibility
 }: DashboardSidebarProps) => (
-  <DashboardSidebarShell className={className} headingId="sidebar-heading" onReset={onReset} title="Explore data">
+  <DashboardSidebarShell className={className} headingId="sidebar-heading" onReset={onClearAll} title="Explore data">
     <section className="m-0 grid gap-3 border-t border-border pt-3">
       <MultiSelect
         codeLabels
         id="filter-fields"
         label="Filter fields"
-        onChange={filterFields.onChange}
-        options={filterFields.options.map((column) => ({ label: column, value: column }))}
+        onChange={filtering.fields.setFields}
+        options={filtering.fields.options.map((column) => ({ label: column, value: column }))}
         placeholder="Type to add fields…"
-        selected={filterFields.selected}
+        selected={filtering.fields.selected}
       />
-      <div className="grid gap-3">{filterInputs}</div>
+      <div className="grid gap-3">
+        {augmentedFiltering.map((filter) => (
+          <DashboardFilter {...filter} onChange={filtering.setFilter} />
+        ))}
+      </div>
     </section>
 
     <FieldSelector
-      fields={tableColumns.options}
+      fields={visibility.options}
       label="Table columns"
-      onChange={tableColumns.onChange}
-      selected={tableColumns.selected}
+      onChange={visibility.setVisibleColumns}
+      selected={visibility.selected}
     />
-    <FieldSelector
-      fields={pieCharts.options}
-      label="Pie charts"
-      onChange={pieCharts.onChange}
-      selected={pieCharts.selected}
-    />
+    <FieldSelector fields={charts.options} label="Pie charts" onChange={charts.setCharts} selected={charts.selected} />
   </DashboardSidebarShell>
 )

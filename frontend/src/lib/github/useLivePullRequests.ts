@@ -78,33 +78,33 @@ export const usePullRequests = ({
 
 /** Folds the per-pull-request queries into the one shape the dashboard renders. */
 const combinePullRequests = (queries: (UseQueryResult<PullRequest> & { key: string })[]): PullRequestFeedState => {
-  const {
-    loading = [],
-    failure = [],
-    success = []
-  } = Object.groupBy(queries, (query) => {
-    if (query.isFetching) return 'loading'
-    if (query.error !== null) return 'failure'
-    return 'success'
-  })
 
+  const loading = queries.filter((query) => query.isFetching)
+  // A refetch that fails keeps the data it had, so these overlap by design and
+  // are counted over the queries rather than summed from the lists above.
+  const completed = queries.filter((query) => query.data != null || query.error != null)
+
+  // Selected on what a query holds rather than on what it is doing. A query that
+  // has never run reports `isFetching: false` with no data and no error, so any
+  // grouping keyed on activity files it alongside the ones that succeeded.
+  const success = queries.flatMap((query) => (query.data == null ? [] : [{ data: query.data, key: query.key }]))
+  const failures = queries.flatMap((query) => query.error == null ? [] : [{ key: query.key, message: query.error.message }])
   const lastUpdatedAt = Math.max(0, ...queries.map((query) => query.dataUpdatedAt))
   const cachedAt = lastUpdatedAt === 0 ? null : new Date(lastUpdatedAt).toISOString()
-  const errors = failure.map((query) => ({ key: query.key, message: query.error!.message }))
-  const openCount = success.filter((query) => query.data!.state === 'open').length
+  const openCount = success.filter(({ data }) => data.state === 'open').length
 
-  const pullRequests: Record<string, PullRequest> = Object.fromEntries(success.map((query) => [query.key, query.data!]))
+  const pullRequests = Object.fromEntries(success.map(({ data, key }) => [key, data]))
 
   const progress = {
     loading: loading.length,
-    completed: failure.length + success.length,
-    failed: failure.length,
+    completed: completed.length,
+    failed: failures.length,
     total: queries.length
   }
 
   return {
     cachedAt,
-    errors,
+    errors: failures,
     openCount,
     progress,
     pullRequests

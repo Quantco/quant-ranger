@@ -3,7 +3,8 @@ import { FieldSelector } from '@/components/dashboard/FieldSelector'
 import { MultiSelect } from '@/components/dashboard/MultiSelect'
 import { Input } from '@/components/ui/Input'
 import { updaterResultColumnLabel } from './result-columns'
-import type { StateFiltering, StateSearch, StateColumnVisibility } from './hooks'
+import type { StateColumnVisibility } from '@/components/data-table/table-state'
+import type { StateFiltering, StateSearch } from './hooks'
 
 type UpdaterSidebarProps = {
   filtering: StateFiltering
@@ -12,12 +13,7 @@ type UpdaterSidebarProps = {
   onClearAll: () => void
 }
 
-export const UpdaterSidebar = ({
-  filtering,
-  searching,
-  visibility,
-  onClearAll,
-}: UpdaterSidebarProps) => (
+export const UpdaterSidebar = ({ filtering, searching, visibility, onClearAll }: UpdaterSidebarProps) => (
   <DashboardSidebarShell
     className="w-full lg:w-80 lg:flex-none"
     headingId="updater-sidebar-heading"
