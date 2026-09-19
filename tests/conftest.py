@@ -18,10 +18,12 @@ def _plain_console_output(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep rich consoles created during tests free of ANSI codes regardless of the
     caller's environment, so assertions on console output are deterministic.
 
-    These are the only variables rich consults at runtime for terminal detection.
+    Rich reads these variables at runtime to decide whether to emit ANSI codes, so an
+    ambient value would make styled-output assertions environment-dependent.
     """
     monkeypatch.delenv("FORCE_COLOR", raising=False)
     monkeypatch.delenv("TTY_COMPATIBLE", raising=False)
+    monkeypatch.delenv("NO_COLOR", raising=False)
 
 
 @pytest.fixture(autouse=True)
