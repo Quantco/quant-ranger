@@ -15,6 +15,10 @@ The two Pixi updaters maintain different pins:
 
 `pixi-version` resolves the latest [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi/releases) release once per run, then rewrites `pixi-version: vX.Y.Z` in marked files directly under `.github/workflows`.
 
+By default the newest release is used as soon as it is published.
+Set `--exclude-newer-days` to apply a cooldown and only consider releases published at least that many days ago, giving a fresh release time to settle before it is rolled out.
+When a cooldown is in effect, drafts and prereleases are never selected.
+
 ```yaml title=".github/workflows/ci.yml" {3}
 - uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
   with:
@@ -43,7 +47,7 @@ The updater does not change the `uses` line.
 It updates `pixi-version` values in matching files.
 Its deployment-wide default is documented under [Configuration](../plugins/site-configuration.md#options).
 
-```console {10}
+```console {10,16}
 # Resolve the latest Pixi release
 quant-ranger update \
   --repository octo-org/octo-repo \
@@ -54,7 +58,15 @@ quant-ranger update \
   --repository octo-org/octo-repo \
   pixi-version \
   --pixi-version v0.70.0
+
+# Only roll out releases that are at least 7 days old
+quant-ranger update \
+  --repository octo-org/octo-repo \
+  pixi-version \
+  --exclude-newer-days 7
 ```
+
+`--exclude-newer-days` is ignored when `--pixi-version` requests an exact release.
 
 Any `pixi.lock` makes a repository eligible.
 Repository settings are read from the root `pixi.toml`.
