@@ -96,7 +96,7 @@ When an `ignore-environments` or `ignore-platforms` list is configured, the comm
 No environment is installed.
 
 quant-ranger passes the JSON output to [`pixi-diff-to-markdown`](https://github.com/pavelzw/pixi-diff-to-markdown) and uses the resulting dependency report as the pull-request body.
-Multiple lockfiles produce separate update items and independently configured pull requests.
+By default, multiple lockfiles produce separate update items and independently configured pull requests.
 
 ```console
 quant-ranger update \
@@ -123,19 +123,47 @@ autoupdate-pull-request-labels = ["dependencies", "pixi"]
 autoupdate-schedule = "weekly"
 ignore-environments = ["docs"]
 ignore-platforms = ["win-64"]
+group = "workspace"
 ```
 
-| Key                              | Default                         | Meaning                                            |
-| -------------------------------- | ------------------------------- | -------------------------------------------------- |
-| `autoupdate-branch-prefix`       | `"pixi-update"`                 | [Managed branch](index.md#managed-branches) prefix |
-| `autoupdate-commit-message`      | `"chore: Update pixi lockfile"` | Commit message and pull-request title              |
-| `autoupdate-pull-request-labels` | `["dependencies"]`              | Pull-request labels                                |
-| `autoupdate-schedule`            | `"monthly"`                     | `weekly`, `monthly`, `quarterly`, or `never`       |
-| `ignore-environments`            | `[]`                            | Environments excluded from dependency resolution   |
-| `ignore-platforms`               | `[]`                            | Platforms excluded from dependency resolution      |
+| Key                              | Default                         | Meaning                                               |
+| -------------------------------- | ------------------------------- | ----------------------------------------------------- |
+| `autoupdate-branch-prefix`       | `"pixi-update"`                 | [Managed branch](index.md#managed-branches) prefix    |
+| `autoupdate-commit-message`      | `"chore: Update pixi lockfile"` | Commit message and pull-request title                 |
+| `autoupdate-pull-request-labels` | `["dependencies"]`              | Pull-request labels                                   |
+| `autoupdate-schedule`            | `"monthly"`                     | `weekly`, `monthly`, `quarterly`, or `never`          |
+| `ignore-environments`            | `[]`                            | Environments excluded from dependency resolution      |
+| `ignore-platforms`               | `[]`                            | Platforms excluded from dependency resolution         |
+| `group`                          | `None`                          | Group to publish in a single pull request (see below) |
 
 The branch ends in the manifest path, and the pull-request title includes the nested lockfile path.
 A missing or invalid adjacent manifest is skipped and logged.
+
+### Grouping lockfiles into one pull request
+
+In a monorepo with many manifests, one pull request per lockfile produces a lot of
+pull requests, and merging them causes repeated CI runs.
+Set the same `group` in the `[tool.update]` section of several `pixi.toml` files
+within one repository to regenerate all their lockfiles in a single checkout and
+publish them together in one pull request.
+
+```toml title="subprojects/a/pixi.toml and subprojects/b/pixi.toml"
+[tool.update]
+group = "workspace"
+```
+
+Grouped manifests must agree on `autoupdate-branch-prefix`,
+`autoupdate-commit-message`, and `autoupdate-pull-request-labels`; a
+disagreement fails the group instead of silently picking one manifest's values.
+The branch becomes `<autoupdate-branch-prefix>/<group>`, the title is
+`<autoupdate-commit-message> (<group>)`, and the body holds one section per
+changed lockfile.
+Lockfiles in a group that are already up to date are neither staged nor listed.
+A failing lockfile reports its own failure; the remaining lockfiles in the group
+are still published.
+`group` is limited to characters that are always valid in a git ref, so it starts
+with an alphanumeric character and continues with alphanumerics, `-`, `_`, `.`,
+or `/`.
 
 :::note[Private channels]
 
