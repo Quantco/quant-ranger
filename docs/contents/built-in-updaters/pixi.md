@@ -81,7 +81,7 @@ An invalid root config is logged and the defaults are used.
 
 `pixi-update` finds every `pixi.lock` with a `pixi.toml` beside it and runs a sandboxed command from the manifest directory:
 
-The sandbox is a security boundary.
+The sandbox is a security boundary, see the [security model](../usage/security-model.md).
 Pixi may [execute a project-defined build backend while resolving dependencies](https://pixi.prefix.dev/latest/security/#4-treat-package-hooks-as-code-execution), and a malicious backend could otherwise run arbitrary code with the quant-ranger process's privileges and credentials.
 
 ```console
