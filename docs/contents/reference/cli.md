@@ -229,7 +229,7 @@ $ quant-ranger aggregate log-failures [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: [required]
 
 **Options**:
 
@@ -247,7 +247,7 @@ $ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `RESULTS_FILE`: [required]
 
 **Options**:
 
