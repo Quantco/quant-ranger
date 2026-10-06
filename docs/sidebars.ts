@@ -7,7 +7,7 @@ const sidebars: SidebarsConfig = {
     {
       type: "category",
       label: "Using quant-ranger",
-      items: ["usage/getting-started", "usage/authentication", "usage/running-updates", "usage/results-and-aggregation", "usage/scheduling"],
+      items: ["usage/getting-started", "usage/authentication", "usage/security-model", "usage/running-updates", "usage/results-and-aggregation", "usage/scheduling"],
     },
     {
       type: "category",
