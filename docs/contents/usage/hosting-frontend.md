@@ -27,7 +27,7 @@ No Node.js installation is needed.
 Serve the exported directory with any static file server. For example:
 
 ```bash
-python -m http.server --directory _site 8000
+python -m http.server --directory _site --bind 127.0.0.1 8000
 ```
 
 Then open [http://localhost:8000/](http://localhost:8000/).
