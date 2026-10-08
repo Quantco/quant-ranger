@@ -59,7 +59,7 @@ jobs:
           use_oidc: true
 
   frontend:
-    name: Frontend build
+    name: Build frontend
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
