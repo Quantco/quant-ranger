@@ -105,9 +105,13 @@ def _feed_id(updater: str, updater_options: Mapping[str, object]) -> str:
 
 
 def _update_index(path: Path, summary: dict[str, Any]) -> None:
-    feeds: list[dict[str, Any]] = (
-        json.loads(path.read_text())["feeds"] if path.exists() else []
-    )
+    if path.exists():
+        try:
+            feeds: list[dict[str, Any]] = json.loads(path.read_text())["feeds"]
+        except (ValueError, KeyError) as error:
+            raise CliError(f"Invalid updater report index {path}: {error}") from error
+    else:
+        feeds = []
     feeds = [feed for feed in feeds if feed.get("feed_id") != summary["feed_id"]]
     feeds.append(summary)
     feeds.sort(key=lambda feed: str(feed["feed_id"]))

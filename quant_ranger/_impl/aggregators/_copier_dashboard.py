@@ -41,7 +41,7 @@ class _DashboardRow(TypedDict):
     repository: str
     url: str
     values: dict[str, _DashboardValue]
-    validationFailure: str
+    validation_failure: str
 
 
 class _DashboardColumn(TypedDict):
@@ -172,7 +172,7 @@ def _dashboard_row(
         repository=item.repository_ref.full_name,
         url=f"{github_url}/{item.repository_ref.full_name}",
         values=values,
-        validationFailure=_validation_failure(output.validation_errors),
+        validation_failure=_validation_failure(output.validation_errors),
     )
 
 

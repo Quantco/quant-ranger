@@ -57,7 +57,7 @@ class CopierDashboardUpdater(Updater[UpdateItem, CopierDashboardOutput, UpdateOp
         )
         if content is None:
             return UpdateOutcome(
-                result=Status.UP_TO_DATE,
+                result=Status.SKIPPED,
                 output=CopierDashboardOutput(
                     copier_answers=None,
                 ),

@@ -31,10 +31,13 @@ python -m http.server --directory _site 8000
 ```
 
 Then open [http://localhost:8000/](http://localhost:8000/).
-The production deployment is still completely static: GitHub Pages serves the HTML, JavaScript, and JSON files over HTTPS, with no application server.
+The production deployment is still completely static: We can serve the HTML, JavaScript, and JSON files over HTTPS, with no application server.
 Opening `_site/index.html` directly with a `file://` URL is unsupported because browsers prevent locally loaded JavaScript from fetching adjacent JSON files.
 
 ## Deploy the frontend to GitHub Pages
+
+> [!WARNING]
+> GitHub pages are publicly accessible by default. You either need a GitHub Enterprise Cloud subscription or host your static page via a different mechanism if you want the page to remain private.
 
 The following workflow assumes:
 

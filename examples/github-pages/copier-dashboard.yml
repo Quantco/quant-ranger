@@ -61,3 +61,4 @@ jobs:
           github_token: ${{ github.token }}
           keep_files: true
           publish_dir: ./_site/data
+          commit_message: "Deploy from GitHub Actions run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
