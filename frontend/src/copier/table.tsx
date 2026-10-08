@@ -54,7 +54,7 @@ export const buildColumnDefinitions = (columns: Column[]): DataTableColumn<Row>[
       const value = getValue()
       const content = renderValue(value, row.original, column)
       return column.id === VALIDATION ? (
-        <DataTableOverflowValue text={row.original.validationFailure || displayValue(value)}>
+        <DataTableOverflowValue text={row.original.validation_failure || displayValue(value)}>
           {content}
         </DataTableOverflowValue>
       ) : (

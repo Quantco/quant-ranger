@@ -14,12 +14,12 @@ const columnSchema = z.object({
 const rowSchema = z.object({
   repository: z.string(),
   url: z.string(),
-  validationFailure: z.string(),
+  validation_failure: z.string(),
   values: z.record(z.string(), valueSchema)
 })
 const snapshotSchema = z.object({
   columns: z.array(columnSchema),
-  generatedAt: z.string(),
+  generated_at: z.string(),
   rows: z.array(rowSchema),
   versions: z.array(z.string())
 })

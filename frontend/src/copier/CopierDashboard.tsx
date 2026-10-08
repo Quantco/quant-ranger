@@ -11,7 +11,7 @@ const CopierDashboard = ({ snapshot }: { snapshot: Snapshot }) => {
 
   return (
     <main>
-      <Header generatedAt={snapshot.generatedAt} repositoryCount={snapshot.rows.length} />
+      <Header generatedAt={snapshot.generated_at} repositoryCount={snapshot.rows.length} />
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-4 lg:gap-6">
         <Sidebar

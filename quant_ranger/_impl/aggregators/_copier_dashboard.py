@@ -113,7 +113,7 @@ class CopierDashboardAggregator(
             for item, output in outputs
         ]
         payload = {
-            "generatedAt": artifact.generated_at.isoformat(),
+            "generated_at": artifact.generated_at.isoformat(),
             "columns": _dashboard_columns(column_ids),
             "rows": rows,
             "versions": _versions(rows),

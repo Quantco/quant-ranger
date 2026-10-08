@@ -66,7 +66,7 @@ def test_copier_dashboard_validation_failure_includes_all_details() -> None:
 def test_copier_dashboard_handles_repository_without_answers() -> None:
     outcome = _update_dashboard(None)
 
-    assert outcome.result == Status.UP_TO_DATE
+    assert outcome.result == Status.SKIPPED
     assert outcome.output == CopierDashboardOutput(copier_answers=None)
 
 
@@ -154,7 +154,7 @@ def test_copier_dashboard_aggregator_writes_browser_ready_data(
     )
 
     payload = json.loads(output_file.read_text())
-    assert payload["generatedAt"] == artifact.generated_at.isoformat()
+    assert payload["generated_at"] == artifact.generated_at.isoformat()
     assert payload["columns"] == [
         {"id": "Repositories", "kind": "repository"},
         {"id": ".copier-answers.yml", "kind": "metadata"},
@@ -206,7 +206,7 @@ def test_copier_dashboard_aggregator_marks_invalid_metadata(
 
     row = json.loads(output_file.read_text())["rows"][0]
     assert row["values"]["Template"] is None
-    assert row["validationFailure"] == "_src_path=wrong-type"
+    assert row["validation_failure"] == "_src_path=wrong-type"
 
 
 def test_copier_dashboard_accepts_all_json_value_types() -> None:
