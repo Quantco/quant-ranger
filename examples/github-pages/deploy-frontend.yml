@@ -1,6 +1,11 @@
 name: Deploy quant-ranger frontend
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - pixi.lock
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
