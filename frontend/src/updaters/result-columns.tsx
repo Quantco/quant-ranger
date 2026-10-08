@@ -346,7 +346,7 @@ const PullRequestStatus = ({
 }: {
   number: number | null | undefined
   state: PullRequestState | 'unknown' | null
-  url: string | undefined
+  url: string | null | undefined
 }) => {
   if (number == null) return displayValue(number)
   const displayState = state ?? 'unknown'

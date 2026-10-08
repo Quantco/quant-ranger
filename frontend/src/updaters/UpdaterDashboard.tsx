@@ -41,7 +41,7 @@ const UpdaterDashboardPage = ({ report }: { report: UpdaterReportSnapshot }) => 
   return (
     <main>
       <header className="mb-4">
-        <h1>{report.title ?? report.feed_id}</h1>
+        <h1>{report.title}</h1>
         <p className="text-muted-foreground">
           <strong>{report.updater}</strong> · generated {formatDateTime(report.generated_at) ?? 'unknown date'}
           {report.dry_run && ' · dry run'}

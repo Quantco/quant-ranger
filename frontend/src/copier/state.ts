@@ -1,12 +1,13 @@
 import * as z from 'zod/mini'
 
 import { isUnique, type TableState } from '@/components/data-table/hooks'
-import { valueSchema, REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from './report'
+import { REPOSITORIES, TEMPLATE, VALIDATION, VERSION } from './report'
 import { isFilterable, type Column, type FilterKind } from './columns'
 
 const STATE_VERSION = 1
 const DEFAULT_FILTER_COLUMNS = [REPOSITORIES, TEMPLATE, VERSION]
 const DEFAULT_TABLE_COLUMNS = [VALIDATION, TEMPLATE, VERSION]
+const valueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
 
 const filterSchema = z.object({
   inverted: z.boolean(),

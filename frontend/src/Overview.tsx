@@ -11,7 +11,7 @@ const DATA_MESSAGE_CLASS = 'grid gap-2 rounded-lg border border-border bg-muted 
 export const loadOverview = async ({ request }: LoaderFunctionArgs) => {
   try {
     const index = await fetchJson(`./${UPDATER_INDEX_PATH}`, request.signal)
-    return { error: null, feeds: index == null ? [] : parseUpdaterIndex(index).feeds }
+    return { error: null, feeds: index == null ? [] : parseUpdaterIndex(index, UPDATER_INDEX_PATH).feeds }
   } catch (error) {
     request.signal.throwIfAborted()
     return { error: error instanceof Error ? error.message : String(error), feeds: [] }

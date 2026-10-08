@@ -8,3 +8,4 @@
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true
 
 docs/docs/reference/*.md merge=binary linguist-generated=true
+frontend/src/generated/** linguist-generated=true

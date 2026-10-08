@@ -16,12 +16,8 @@ const updaterOptions = (value: Record<string, unknown>) =>
 
 const helper = createColumnHelper<typeof dataTableFeatures, UpdaterFeedSummary>()
 const columns = helper.columns([
-  helper.accessor((feed) => feed.title ?? feed.updater, {
-    cell: ({ row }) => (
-      <Link to={`/updaters/${encodeURIComponent(row.original.feed_id)}`}>
-        {row.original.title ?? row.original.updater}
-      </Link>
-    ),
+  helper.accessor((feed) => feed.title, {
+    cell: ({ row }) => <Link to={`/updaters/${encodeURIComponent(row.original.feed_id)}`}>{row.original.title}</Link>,
     header: 'Updater',
     id: 'updater'
   }),

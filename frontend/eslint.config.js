@@ -9,7 +9,7 @@ const javascriptConfigs = js.configs
 const typescriptFiles = ['**/*.{ts,tsx}']
 
 export default defineConfig(
-  globalIgnores(['node_modules/**', 'pnpm-lock.yaml']),
+  globalIgnores(['node_modules/**', 'pnpm-lock.yaml', 'src/generated/**']),
   {
     files: ['**/*.{js,mjs,cjs}'],
     extends: [javascriptConfigs.recommended],

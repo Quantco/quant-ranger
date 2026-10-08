@@ -29,6 +29,9 @@ pre-commit:
           - name: pyrefly
             glob: "*.{py,pyi}"
             run: pixi {run} pyrefly check {staged_files}
+          - name: frontend-contracts
+            glob: "{quant_ranger/_impl/aggregators/{_copier_dashboard.py,_updater_report.py},scripts/generate_frontend_contracts.py,frontend/src/generated/frontend-contracts.ts}"
+            run: pixi {run} check-frontend-contracts
           - name: prettier
             glob: "*.{css,json,md,mdx,yml,yaml}"
             run: pixi {run} prettier --write --no-error-on-unmatched-pattern --list-different --ignore-unknown {staged_files}

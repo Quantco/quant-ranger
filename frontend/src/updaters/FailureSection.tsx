@@ -13,11 +13,11 @@ import type { DataTableColumnDefinition, dataTableFeatures } from '@/components/
 type ReportFailure = UpdaterReportFailure | UpdaterReportResult
 
 type FailureItem = {
-  details: string | undefined
+  details: string | null | undefined
   message: string
   repository: string
   repositoryUrl: string
-  target: { label: string; url: string | undefined } | null
+  target: { label: string; url: string | null | undefined } | null
 }
 
 const toFailureItem = (failure: ReportFailure): FailureItem => {

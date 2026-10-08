@@ -48,7 +48,7 @@ const REPORT_ERRORS = {
 const loadCopier = async ({ request }: LoaderFunctionArgs): Promise<CopierSnapshot> => {
   const snapshot = await fetchJson(`./${COPIER_DATA_PATH}`, request.signal)
   if (snapshot == null) throw new Error('No Copier report data was found.')
-  return parseSnapshot(snapshot)
+  return parseSnapshot(snapshot, COPIER_DATA_PATH)
 }
 
 const loadUpdater = async ({ params, request }: LoaderFunctionArgs): Promise<UpdaterReportSnapshot> => {
@@ -56,7 +56,7 @@ const loadUpdater = async ({ params, request }: LoaderFunctionArgs): Promise<Upd
   if (feedId == null) throw new Error('No updater feed was selected.')
   const report = await fetchJson(`./${updaterDataPath(feedId)}`, request.signal)
   if (report == null) throw new Error('No updater report data was found.')
-  return parseUpdaterReport(report)
+  return parseUpdaterReport(report, updaterDataPath(feedId))
 }
 
 const keepReportData = ({ currentUrl, defaultShouldRevalidate, nextUrl }: ShouldRevalidateFunctionArgs) =>

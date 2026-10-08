@@ -1,11 +1,18 @@
 import json
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Literal, TypedDict, override
+from typing import Annotated, Literal, override
 
 import typer
 from packaging.version import Version
-from pydantic import JsonValue
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    JsonValue,
+    field_serializer,
+)
 
 from quant_ranger._impl.artifacts import UpdateResultsArtifact
 from quant_ranger._impl.github import github_web_url
@@ -34,19 +41,34 @@ _BASE_COLUMNS = (
 )
 _METADATA_FIELDS = {"_src_path": _TEMPLATE, "_commit": _VERSION}
 
-type _DashboardValue = str | int | float | bool | None
+type CopierDashboardValue = str | int | float | bool | None
 
 
-class _DashboardRow(TypedDict):
+class _CopierDashboardModel(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class CopierDashboardRow(_CopierDashboardModel):
     repository: str
     url: str
-    values: dict[str, _DashboardValue]
+    values: dict[str, CopierDashboardValue]
     validation_failure: str
 
 
-class _DashboardColumn(TypedDict):
+class CopierDashboardColumn(_CopierDashboardModel):
     id: str
     kind: Literal["answer", "metadata", "repository"]
+
+
+class CopierDashboard(_CopierDashboardModel):
+    generated_at: AwareDatetime
+    columns: list[CopierDashboardColumn]
+    rows: list[CopierDashboardRow]
+    versions: list[str]
+
+    @field_serializer("generated_at", when_used="json")
+    def _serialize_generated_at(self, value: datetime) -> str:
+        return value.isoformat()
 
 
 class CopierDashboardOptions(AggregatorOptions):
@@ -112,17 +134,17 @@ class CopierDashboardAggregator(
             _dashboard_row(item, output, column_ids, answer_fields, web_url)
             for item, output in outputs
         ]
-        payload = {
-            "generated_at": artifact.generated_at.isoformat(),
-            "columns": _dashboard_columns(column_ids),
-            "rows": rows,
-            "versions": _versions(rows),
-        }
+        dashboard = CopierDashboard(
+            generated_at=artifact.generated_at,
+            columns=_dashboard_columns(column_ids),
+            rows=rows,
+            versions=_versions(rows),
+        )
 
         output_file = self.options.output_file
         try:
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(f"{json.dumps(payload, indent=2)}\n")
+            output_file.write_text(f"{dashboard.model_dump_json(indent=2)}\n")
         except OSError as error:
             raise CliError(
                 f"Failed to write Copier Dashboard data to {output_file}: {error}"
@@ -149,8 +171,8 @@ def _dashboard_row(
     columns: Sequence[str],
     answer_fields: Sequence[str],
     github_url: str,
-) -> _DashboardRow:
-    values: dict[str, _DashboardValue] = {column: "" for column in columns}
+) -> CopierDashboardRow:
+    values: dict[str, CopierDashboardValue] = {column: "" for column in columns}
     values[_REPOSITORIES] = item.repository_ref.full_name
     answers = output.copier_answers
     if answers is not None:
@@ -168,7 +190,7 @@ def _dashboard_row(
         if error.field is not None and error.code != "missing":
             values[_ui_field(error.field)] = None
 
-    return _DashboardRow(
+    return CopierDashboardRow(
         repository=item.repository_ref.full_name,
         url=f"{github_url}/{item.repository_ref.full_name}",
         values=values,
@@ -176,7 +198,7 @@ def _dashboard_row(
     )
 
 
-def _dashboard_value(value: JsonValue) -> _DashboardValue:
+def _dashboard_value(value: JsonValue) -> CopierDashboardValue:
     if value is None or isinstance(value, str | int | float | bool):
         return value
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
@@ -196,20 +218,20 @@ def _validation_failure(
     return ", ".join(labels)
 
 
-def _versions(rows: Sequence[_DashboardRow]) -> list[str]:
+def _versions(rows: Sequence[CopierDashboardRow]) -> list[str]:
     versions = {
         version
         for row in rows
-        if isinstance((version := row["values"][_VERSION]), str) and version
+        if isinstance((version := row.values[_VERSION]), str) and version
     }
     return sorted(versions, key=lambda value: (Version(value), value), reverse=True)
 
 
-def _dashboard_columns(column_ids: Sequence[str]) -> list[_DashboardColumn]:
-    columns: list[_DashboardColumn] = []
+def _dashboard_columns(column_ids: Sequence[str]) -> list[CopierDashboardColumn]:
+    columns: list[CopierDashboardColumn] = []
     for column in column_ids:
         columns.append(
-            _DashboardColumn(
+            CopierDashboardColumn(
                 id=column,
                 kind=(
                     "repository"

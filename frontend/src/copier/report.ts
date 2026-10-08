@@ -1,4 +1,7 @@
-import * as z from 'zod/mini'
+import type { FromSchema } from 'json-schema-to-ts'
+
+import { copierDashboardSchema } from '@/generated/frontend-contracts'
+import { contractValidator, parseContract } from '@/lib/contract-validation'
 
 export const COPIER_ANSWERS = '.copier-answers.yml'
 export const REPOSITORIES = 'Repositories'
@@ -6,30 +9,12 @@ export const TEMPLATE = 'Template'
 export const VERSION = 'Version'
 export const VALIDATION = 'Validation'
 
-export const valueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
-const columnSchema = z.object({
-  id: z.string(),
-  kind: z.enum(['answer', 'metadata', 'repository'])
-})
-const rowSchema = z.object({
-  repository: z.string(),
-  url: z.string(),
-  validation_failure: z.string(),
-  values: z.record(z.string(), valueSchema)
-})
-const snapshotSchema = z.object({
-  columns: z.array(columnSchema),
-  generated_at: z.string(),
-  rows: z.array(rowSchema),
-  versions: z.array(z.string())
-})
-
-export type Snapshot = z.infer<typeof snapshotSchema>
-export type Row = z.infer<typeof rowSchema>
+export type Snapshot = FromSchema<typeof copierDashboardSchema>
+export type Row = Snapshot['rows'][number]
 export type ReportColumn = Snapshot['columns'][number]
 
 /** What a cell holds when the row has one. */
-export type Value = z.infer<typeof valueSchema>
+export type Value = Row['values'][string]
 /** What reading a cell gives you, since a row need not carry every column. */
 export type CellValue = Value | undefined
 
@@ -38,13 +23,10 @@ export type CountedValue = {
   value: Value
 }
 
-export const parseSnapshot = (value: unknown): Snapshot => {
-  const result = z.safeParse(snapshotSchema, value)
-  if (!result.success) {
-    throw new Error('The Copier report has an invalid data format.', { cause: result.error })
-  }
-  return result.data
-}
+const validateSnapshot = contractValidator.compile<Snapshot>(copierDashboardSchema)
+
+export const parseSnapshot = (value: unknown, path: string): Snapshot =>
+  parseContract(validateSnapshot, value, `The Copier report at ${path} has an invalid data format.`)
 
 export const repositoryName = (value: string): string => value.slice(value.lastIndexOf('/') + 1)
 
