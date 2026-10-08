@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react'
 
-export function DashboardSection({ children, heading }: { children: ReactNode; heading: ReactNode }) {
+export const DashboardSection = ({ children, heading }: { children: ReactNode; heading: ReactNode }) => {
   const headingId = useId()
   return (
     <section

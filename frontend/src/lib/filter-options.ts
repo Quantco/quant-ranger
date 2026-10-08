@@ -1,9 +1,9 @@
-interface LabelledOption {
+type LabelledOption = {
   label: string
 }
 
 /** Filters options by label and orders equally ranked matches by their original position. */
-export function filterOptions<Option extends LabelledOption>(options: Option[], query: string, limit?: number) {
+export const filterOptions = <Option extends LabelledOption>(options: Option[], query: string, limit?: number) => {
   const matches: { index: number; option: Option; rank: number }[] = []
   for (const [index, option] of options.entries()) {
     const rank = optionMatchRank(option.label, query)
@@ -20,7 +20,7 @@ export function filterOptions<Option extends LabelledOption>(options: Option[], 
  * exact match, label prefix, word prefix, then substring. An empty query gives
  * every option the same rank so that the original option order is preserved.
  */
-function optionMatchRank(label: string, query: string): number | null {
+const optionMatchRank = (label: string, query: string): number | null => {
   const candidate = label.toLocaleLowerCase()
   const search = query.trim().toLocaleLowerCase()
   if (search === '' || candidate === search) return 0

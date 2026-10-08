@@ -1,98 +1,65 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
-import { createDataTableModel } from '@/components/data-table/DataTable'
-import { replaceExplorerFilter } from '@/components/data-table/explorer-state'
-import { useExplorerTable } from '@/components/data-table/useExplorerTable'
-import { dashboardCharts, dashboardFilters } from './dashboard-analytics'
-import { REPOSITORIES, type DashboardSnapshot } from './dashboard'
-import { createDashboardColumns, isFilterableDashboardColumn } from './dashboard-columns'
-import { parseDashboardFilterValue, useDashboardState, type DashboardFilterValue } from './dashboard-state'
-import { createDashboardColumnRegistry } from './dashboard-table'
+import { useStateColumnVisibility, useStateSorting } from '@/components/data-table/hooks'
+import { useControlledTable } from '@/components/data-table/useControlledTable'
+import { useUrlState } from '@/lib/useUrlState'
+import { buildColumns, isFilterable } from './columns'
+import { chartData, facetValues, requireColumn, type Facet } from './facets'
+import { useCharts, useFiltering } from './hooks'
+import { REPOSITORIES, type Snapshot } from './report'
+import { defaultState, parseState } from './state'
+import { buildColumnDefinitions } from './table'
 
-export function useCopierDashboardController(snapshot: DashboardSnapshot) {
-  const columns = useMemo(() => createDashboardColumns(snapshot), [snapshot])
-  const columnRegistry = useMemo(() => createDashboardColumnRegistry(columns), [columns])
+export const useCopierDashboard = (snapshot: Snapshot) => {
+  const columns = useMemo(() => buildColumns(snapshot), [snapshot])
+  const columnIds = columns.map(({ id }) => id)
+  const filterable = columns.filter(isFilterable)
+  // Every repository starts selected for copying. Selection lives in the table
+  // rather than the URL, so a shared link never carries a stale list.
   const initialRowSelection = useMemo(
     () => Object.fromEntries(snapshot.rows.map(({ repository }) => [repository, true as const])),
     [snapshot.rows]
   )
-  const { dispatch, resetState, state } = useDashboardState(columns)
-  const columnIds = columnRegistry.map(({ column }) => column.id)
-  const filterColumns = columnRegistry
-    .filter(({ column }) => isFilterableDashboardColumn(column))
-    .map(({ column }) => column.id)
-  const tableColumns = columnIds.filter((id) => id !== REPOSITORIES)
-  const table = useExplorerTable({
+
+  const parse = useCallback((value: unknown) => parseState(value, columns), [columns])
+  const { resetState, setState, state } = useUrlState({
+    defaultState: useMemo(() => defaultState(columns), [columns]),
+    parse
+  })
+
+  const charts = useCharts(state, setState, columns)
+  const filtering = useFiltering(state, setState, filterable)
+  const sorting = useStateSorting(state, setState)
+  const visibility = useStateColumnVisibility(state, setState, { columns: columnIds, pinned: REPOSITORIES })
+
+  const table = useControlledTable({
     columnIds,
-    columns: columnRegistry.map(({ definition }) => definition),
+    columns: useMemo(() => buildColumnDefinitions(columns), [columns]),
     data: snapshot.rows,
-    dispatch,
     enableRowSelection: true,
     getRowId: (row) => row.repository,
     initialRowSelection,
-    parseFilter: parseDashboardFilterValue,
-    state
+    onSortingChange: sorting.setSort,
+    state: { filters: filtering.filters, sorting: sorting.sort, visibleColumns: visibility.visible }
   })
 
-  const reset = () => {
-    table.resetRowSelection()
-    resetState()
-  }
-  const setChartColumns = (selected: string[]) =>
-    dispatch({
-      columns: columnIds.filter((id) => selected.includes(id)),
-      type: 'chart-columns/set'
-    })
-  const setFilter = (column: string, filter: DashboardFilterValue | null) =>
-    dispatch({
-      filters: replaceExplorerFilter(state.filters, column, filter),
-      type: 'filters/replace'
-    })
-  const setFilterColumns = (selected: string[]) =>
-    dispatch({
-      columns: filterColumns.filter((id) => selected.includes(id)),
-      type: 'filter-columns/set'
-    })
-  const setTableColumns = (selected: string[]) =>
-    dispatch({
-      columns: [REPOSITORIES, ...tableColumns.filter((id) => selected.includes(id))],
-      type: 'visible-columns/set'
-    })
+  // Both are faceted over the rows the current filters leave in, so they can
+  // only be read once the table exists.
+  const facets: Facet[] = filtering.active.map(({ column, filter }) => ({
+    column,
+    filter,
+    options: facetValues(requireColumn(table, column.id), column, filter, snapshot.versions)
+  }))
 
   return {
-    actions: {
-      reset,
-      setChartColumns,
-      setFilter,
-      setFilterColumns,
-      setTableColumns
+    charts: { ...charts, data: chartData(filterable, charts.selected, table) },
+    clearAll: () => {
+      table.resetRowSelection()
+      resetState()
     },
-    view: {
-      charts: dashboardCharts(table, columnRegistry, state.chartColumns),
-      filterFields: {
-        fields: filterColumns,
-        selected: state.filterColumns
-      },
-      filters: dashboardFilters(table, columnRegistry, state.filterColumns, state.filters, snapshot.versions),
-      generatedAt: snapshot.generatedAt,
-      pieCharts: {
-        fields: columnIds,
-        selected: state.chartColumns
-      },
-      repositories: {
-        matchingRepositoryCount: table.getFilteredRowModel().rows.length,
-        repositoryNames: table.getFilteredSelectedRowModel().rows.map(({ original }) => original.repository),
-        table: createDataTableModel({
-          emptyMessage: 'No matching repositories.',
-          label: 'Repository Inventory',
-          table
-        })
-      },
-      repositoryCount: snapshot.rows.length,
-      tableColumns: {
-        fields: tableColumns,
-        selected: tableColumns.filter((id) => state.visibleColumns.includes(id))
-      }
-    }
+    facets,
+    filtering,
+    table,
+    visibility
   }
 }

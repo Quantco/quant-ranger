@@ -1,4 +1,4 @@
-export async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
+export const fetchJson = async (url: string, signal: AbortSignal): Promise<unknown> => {
   let response: Response
   try {
     response = await fetch(url, {

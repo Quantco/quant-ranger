@@ -14,27 +14,23 @@ import {
 } from '@/components/ui/Combobox'
 import { filterOptions } from '@/lib/filter-options'
 import { displayValue } from '@/lib/value'
-import { repositoryName } from './dashboard'
-import type { CountedValue, DashboardValue, FilterValue } from './dashboard'
-import type { FilterableDashboardColumn } from './dashboard-columns'
-import type { DashboardFilterValue } from './dashboard-state'
+import { repositoryName } from './report'
+import type { CountedValue, CellValue, Value } from './report'
+import type { FilterableColumn } from './columns'
+import type { Filter } from './state'
 
-const valueToken = (value: DashboardValue) => `${typeof value}:${String(value)}`
-interface TextSuggestion {
+const valueToken = (value: CellValue) => `${typeof value}:${String(value)}`
+type TextSuggestion = {
   count: number
   label: string
-  value: DashboardValue
+  value: CellValue
 }
 
-function controlId(column: string) {
-  return encodeURIComponent(column)
-}
+const controlId = (column: string) => encodeURIComponent(column)
 
-function repositoryCount(count: number) {
-  return `${count} ${count === 1 ? 'repository' : 'repositories'}`
-}
+const repositoryCount = (count: number) => `${count} ${count === 1 ? 'repository' : 'repositories'}`
 
-function InvertToggle({
+const InvertToggle = ({
   disabled,
   inverted,
   label,
@@ -44,36 +40,34 @@ function InvertToggle({
   inverted: boolean
   label: string
   onChange: (inverted: boolean) => void
-}) {
-  return (
-    <Button
-      aria-label={`${inverted ? 'Disable' : 'Enable'} inverted ${label} filter`}
-      aria-pressed={inverted}
-      className="flex-none rounded-full px-1.5 py-0.5 text-xs/tight text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
-      disabled={disabled}
-      onClick={() => onChange(!inverted)}
-      title={disabled ? 'Add a filter value before inverting' : 'Invert this filter'}
-      type="button"
-      variant="outline"
-    >
-      Invert
-    </Button>
-  )
-}
+}) => (
+  <Button
+    aria-label={`${inverted ? 'Disable' : 'Enable'} inverted ${label} filter`}
+    aria-pressed={inverted}
+    className="flex-none rounded-full px-1.5 py-0.5 text-xs/tight text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white"
+    disabled={disabled}
+    onClick={() => onChange(!inverted)}
+    title={disabled ? 'Add a filter value before inverting' : 'Invert this filter'}
+    type="button"
+    variant="outline"
+  >
+    Invert
+  </Button>
+)
 
-export function ValueFilterInput({
+export const ValueFilter = ({
   column,
   filter,
   onChange,
   onInvert,
   options
 }: {
-  column: FilterableDashboardColumn
-  filter: DashboardFilterValue | undefined
-  onChange: (values: FilterValue[]) => void
+  column: FilterableColumn
+  filter: Filter | undefined
+  onChange: (values: Value[]) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
-}) {
+}) => {
   const optionByToken = new Map(options.map(({ value }) => [valueToken(value), value]))
   const selectedValues = filter?.values ?? []
   const repository = column.kind === 'repository'
@@ -110,19 +104,19 @@ export function ValueFilterInput({
   )
 }
 
-export function TextFilterInput({
+export const TextFilter = ({
   column,
   filter,
   onChange,
   onInvert,
   options
 }: {
-  column: FilterableDashboardColumn
-  filter: DashboardFilterValue | undefined
+  column: FilterableColumn
+  filter: Filter | undefined
   onChange: (query: string) => void
   onInvert: (inverted: boolean) => void
   options: CountedValue[]
-}) {
+}) => {
   const query = String(filter?.values[0] ?? '')
   const id = `text-filter-${controlId(column.id)}`
   const [open, setOpen] = useState(false)

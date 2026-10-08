@@ -17,7 +17,7 @@ import {
 } from '@tanstack/react-table'
 import type { CSSProperties } from 'react'
 
-export interface DataTableColumnMeta {
+export type DataTableColumnMeta = {
   align?: 'left' | 'right'
   highlightBoolean?: boolean
   maxWidth?: CSSProperties['maxWidth']

@@ -6,15 +6,12 @@ const SITE_TITLE = 'Quant Ranger Dashboard'
 
 export type RouteTitleResolver<Data = unknown> = (match: UIMatch<Data>) => string
 
-function isRouteTitleResolver(value: unknown): value is RouteTitleResolver {
-  return typeof value === 'function'
-}
+const isRouteTitleResolver = (value: unknown): value is RouteTitleResolver => typeof value === 'function'
 
-function resolveRouteTitle(match: UIMatch | undefined): string {
-  return match != null && isRouteTitleResolver(match.handle) ? match.handle(match) : ''
-}
+const resolveRouteTitle = (match: UIMatch | undefined): string =>
+  match != null && isRouteTitleResolver(match.handle) ? match.handle(match) : ''
 
-function AppTitle({ current }: { current: boolean }) {
+const AppTitle = ({ current }: { current: boolean }) => {
   const content = (
     <>
       <img alt="" aria-hidden="true" className="size-6 flex-none" src={faviconUrl} />
@@ -34,15 +31,13 @@ function AppTitle({ current }: { current: boolean }) {
   )
 }
 
-export function LoadingPage() {
-  return (
-    <main>
-      <p>Loading…</p>
-    </main>
-  )
-}
+export const LoadingPage = () => (
+  <main>
+    <p>Loading…</p>
+  </main>
+)
 
-export function AppLayout() {
+export const AppLayout = () => {
   const location = useLocation()
   const matches = useMatches()
   const navigation = useNavigation()

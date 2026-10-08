@@ -17,13 +17,13 @@ import {
   ComboboxValue
 } from '@/components/ui/Combobox'
 
-export interface AutocompleteOption {
+export type AutocompleteOption = {
   detail?: string
   label: string
   value: string
 }
 
-interface MultiSelectProps {
+type MultiSelectProps = {
   codeLabels?: boolean
   id: string
   label: ReactNode
@@ -34,7 +34,7 @@ interface MultiSelectProps {
   selected: string[]
 }
 
-export function MultiSelect({
+export const MultiSelect = ({
   codeLabels = false,
   id,
   label,
@@ -43,7 +43,7 @@ export function MultiSelect({
   options,
   placeholder,
   selected
-}: MultiSelectProps) {
+}: MultiSelectProps) => {
   const selectedOptions = options.filter(({ value }) => selected.includes(value))
 
   return (

@@ -1,31 +1,35 @@
-import { DashboardHeader, PieChartsSection, RepositoriesSection } from './DashboardContent'
-import { DashboardFilters } from './DashboardFilters'
-import { DashboardSidebar } from './DashboardSidebar'
-import type { DashboardSnapshot } from './dashboard'
-import { useCopierDashboardController } from './useCopierDashboard'
+import type { Snapshot } from './report'
+import { Header, PieCharts, Repositories } from './sections'
+import { Sidebar } from './Sidebar'
+import { useCopierDashboard } from './useCopierDashboard'
 
-export default function CopierDashboard({ snapshot }: { snapshot: DashboardSnapshot }) {
-  const { actions, view } = useCopierDashboardController(snapshot)
+const CopierDashboard = ({ snapshot }: { snapshot: Snapshot }) => {
+  const { charts, clearAll, facets, filtering, table, visibility } = useCopierDashboard(snapshot)
+
+  const matching = table.getFilteredRowModel().rows.length
+  const selected = table.getFilteredSelectedRowModel().rows.map(({ original }) => original.repository)
 
   return (
     <main>
-      <DashboardHeader generatedAt={view.generatedAt} repositoryCount={view.repositoryCount} />
+      <Header generatedAt={snapshot.generatedAt} repositoryCount={snapshot.rows.length} />
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-4 lg:gap-6">
-        <DashboardSidebar
+        <Sidebar
+          charts={charts}
           className="lg:col-span-1"
-          filterFields={{ ...view.filterFields, onChange: actions.setFilterColumns }}
-          filterInputs={<DashboardFilters filters={view.filters} onChange={actions.setFilter} />}
-          onReset={actions.reset}
-          pieCharts={{ ...view.pieCharts, onChange: actions.setChartColumns }}
-          tableColumns={{ ...view.tableColumns, onChange: actions.setTableColumns }}
+          facets={facets}
+          filtering={filtering}
+          onClearAll={clearAll}
+          visibility={visibility}
         />
 
         <div className="min-w-0 lg:col-span-3">
-          <RepositoriesSection {...view.repositories} />
-          <PieChartsSection charts={view.charts} />
+          <Repositories matchingRepositoryCount={matching} repositoryNames={selected} table={table} />
+          <PieCharts charts={charts.data} />
         </div>
       </div>
     </main>
   )
 }
+
+export default CopierDashboard

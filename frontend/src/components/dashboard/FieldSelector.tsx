@@ -1,7 +1,7 @@
 import { ChevronIcon } from '@/components/ui/ChevronIcon'
 import { Checkbox } from '@/components/ui/Checkbox'
 
-interface FieldSelectorProps {
+type FieldSelectorProps = {
   codeLabels?: boolean
   emptyMessage?: string
   fields: string[]
@@ -11,7 +11,7 @@ interface FieldSelectorProps {
   selected: string[]
 }
 
-export function FieldSelector({
+export const FieldSelector = ({
   codeLabels = true,
   emptyMessage = 'No fields available.',
   fields,
@@ -19,7 +19,7 @@ export function FieldSelector({
   label,
   onChange,
   selected
-}: FieldSelectorProps) {
+}: FieldSelectorProps) => {
   const allSelected = fields.length > 0 && fields.every((field) => selected.includes(field))
   const selectedCount = fields.filter((field) => selected.includes(field)).length
 

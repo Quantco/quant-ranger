@@ -2,16 +2,10 @@ import { CheckIcon, CopyIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
-import { useClipboard } from './useClipboard'
+import { useClipboard } from '../lib/useClipboard'
 import { cn } from '@/lib/class-merge'
 
-function CopyStateIcon({ copied }: { copied: boolean }) {
-  const Icon = copied ? CheckIcon : CopyIcon
-
-  return <Icon aria-hidden="true" className="size-full" />
-}
-
-export function CopyableRepositoryList({ label, value }: { label: string; value: string }) {
+export const CopyableRepositoryList = ({ label, value }: { label: string; value: string }) => {
   const { copy, copyState } = useClipboard()
   const copyLabel =
     copyState === 'copied'
@@ -19,6 +13,8 @@ export function CopyableRepositoryList({ label, value }: { label: string; value:
       : copyState === 'failed'
         ? 'Could not copy'
         : `Copy ${label.toLocaleLowerCase()} repository names`
+
+  const Icon = copyState === 'copied' ? CheckIcon : CopyIcon
 
   return (
     <div className="relative">
@@ -40,7 +36,7 @@ export function CopyableRepositoryList({ label, value }: { label: string; value:
         type="button"
         variant="ghost"
       >
-        <CopyStateIcon copied={copyState === 'copied'} />
+        <Icon aria-hidden="true" className="size-full" />
       </Button>
     </div>
   )
