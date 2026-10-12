@@ -1,5 +1,6 @@
 import json
 import os
+import stat
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +29,15 @@ from quant_ranger._impl.testing import (
 )
 from quant_ranger._impl.updaters import PixiUpdateUpdater
 from quant_ranger._impl.updaters._pixi_update import _auth as pixi_auth
+from quant_ranger._impl.updaters._pixi_update import (
+    _checkout_copy as checkout_copy_module,
+)
 from quant_ranger._impl.updaters._pixi_update import _update as pixi_update
+from quant_ranger._impl.updaters._pixi_update._checkout_copy import (
+    LockfileCopyError,
+    checkout_copy,
+    copy_back_lockfile,
+)
 from quant_ranger._impl.updaters._pixi_update._update import (
     MAX_PULL_REQUEST_BODY_LENGTH,
     PIXI_UPDATE_TIMEOUT_SECONDS,
@@ -189,9 +198,11 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
         platforms=["linux-64", "osx-arm64", "win-64"],
     )
     command_calls: list[dict[str, Any]] = []
+    workspace_manifests: list[str] = []
 
     def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
         command_calls.append({"command": command, **kwargs})
+        workspace_manifests.append((kwargs["cwd"] / "pixi.toml").read_text())
         if command[0] == "pixi":
             return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
         raise AssertionError(f"Unexpected command: {command}")
@@ -218,6 +229,12 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
     assert task_run.checkout.added_paths == ["subproject/pixi.lock"]
     assert len(command_calls) == 1
     cache_dir = _assert_task_cache(command_calls[0])
+    workspace_project = _assert_runs_in_checkout_copy(command_calls[0], tmp_path)
+    assert workspace_project.relative_to(workspace_project.parents[1]) == Path(
+        tmp_path.name, "subproject"
+    )
+    assert workspace_manifests == [(project / "pixi.toml").read_text()]
+    assert not workspace_project.exists()
     assert command_calls[0] == {
         "command": [
             "pixi",
@@ -226,7 +243,7 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
             "--json",
             "--no-install",
             "--manifest-path",
-            str(project / "pixi.toml"),
+            str(workspace_project / "pixi.toml"),
             "-e",
             "default",
             "-e",
@@ -236,7 +253,7 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
             "-p",
             "osx-arm64",
         ],
-        "cwd": project,
+        "cwd": workspace_project,
         "env": {
             "PIXI_CACHE_DIR": str(cache_dir),
             "HOME": os.environ["HOME"],
@@ -249,7 +266,7 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
         "network": True,
         "read_paths": (),
         "redact": (),
-        "read_write_paths": (project, cache_dir),
+        "read_write_paths": (workspace_project, cache_dir),
         "timeout": PIXI_UPDATE_TIMEOUT_SECONDS,
         "tempdir": True,
     }
@@ -1077,10 +1094,11 @@ def test_pixi_update_returns_up_to_date_without_pull_request(
 ) -> None:
     write_pixi_project(tmp_path)
     command_calls: list[list[str]] = []
+    workspaces: list[Path] = []
 
     def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
-        del kwargs
         command_calls.append(command)
+        workspaces.append(kwargs["cwd"])
         return ExecOutput(exit_code=0, stdout="{}", stderr="")
 
     monkeypatch.setattr(
@@ -1099,9 +1117,11 @@ def test_pixi_update_returns_up_to_date_without_pull_request(
             "--json",
             "--no-install",
             "--manifest-path",
-            str(tmp_path / "pixi.toml"),
+            str(workspaces[0] / "pixi.toml"),
         ]
     ]
+    assert not workspaces[0].is_relative_to(tmp_path)
+    assert not workspaces[0].exists()
     assert task_run.checkout.added_paths == []
     assert task_run.github_client.pull_request_calls == []
 
@@ -1185,6 +1205,280 @@ def test_pixi_update_rejects_platform_ignores_without_platform_section(
     assert task_run.result.message is not None
     assert "either [project] or [workspace]" in task_run.result.message
     assert command_calls == []
+
+
+def test_pixi_update_transfers_only_lockfile_from_checkout_copy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    project = write_pixi_project(tmp_path, directory="subproject")
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "config").write_text("[core]\n")
+    before = _snapshot(tmp_path)
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del command
+        workspace_project = Path(kwargs["cwd"])
+        workspace = workspace_project.parent
+        (workspace / ".git" / "config").write_text("[core]\n\tbare = true\n")
+        (workspace / ".gitattributes").write_text("* text\n")
+        (workspace_project / "pixi.toml").write_text("changed")
+        (workspace_project / "pixi.lock").write_text("version: 6\n")
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(exit_code=0, stdout="", stderr=""),
+    )
+
+    task_run = run_update_task(tmp_path, path="subproject/pixi.lock")
+
+    assert task_run.result.result == Status.UPDATED
+    assert (project / "pixi.lock").read_text() == "version: 6\n"
+    after = _snapshot(tmp_path)
+    assert after.pop("subproject/pixi.lock") == b"version: 6\n"
+    assert before.pop("subproject/pixi.lock") == b""
+    assert after == before
+
+
+def test_pixi_update_fails_without_usable_lockfile_in_checkout_copy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    write_pixi_project(tmp_path)
+    (tmp_path / "pixi.lock").write_text("original")
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.write_text("outside")
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del command
+        lockfile = Path(kwargs["cwd"]) / "pixi.lock"
+        lockfile.unlink()
+        lockfile.symlink_to(outside)
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+
+    task_run = run_update_task(tmp_path)
+
+    assert task_run.result.result == Status.FAILURE
+    assert task_run.result.message is not None
+    assert task_run.result.message.startswith(
+        "pixi update did not produce a usable lockfile: pixi.lock "
+    )
+    assert (tmp_path / "pixi.lock").read_text() == "original"
+    assert task_run.checkout.added_paths == []
+    assert task_run.github_client.pull_request_calls == []
+
+
+@pytest.mark.parametrize("lockfile_directory", ["subproject", "nested/subproject"])
+def test_pixi_update_rejects_symlinked_lockfile_directory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    lockfile_directory: str,
+) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    # Only the first component is a symlink; the rest are real directories.
+    symlink, _, rest = lockfile_directory.partition("/")
+    outside = tmp_path / "outside"
+    project = write_pixi_project(outside, directory=rest or ".")
+    (project / "pixi.lock").write_text("outside")
+    (checkout / symlink).symlink_to(outside)
+    command_calls: list[list[str]] = []
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        del kwargs
+        command_calls.append(command)
+        return ExecOutput(exit_code=0, stdout='{"changed": true}', stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        fake_exec,
+    )
+
+    task_run = run_update_task(checkout, path=f"{lockfile_directory}/pixi.lock")
+
+    assert task_run.result.result == Status.FAILURE
+    assert task_run.result.message is not None
+    assert task_run.result.message == (
+        f"{lockfile_directory} must not be a symlink or inside a symlinked directory."
+    )
+    assert command_calls == []
+    assert (project / "pixi.lock").read_text() == "outside"
+    assert task_run.checkout.added_paths == []
+
+
+def test_checkout_copy_preserves_layout_and_git_directory(tmp_path: Path) -> None:
+    checkout = tmp_path / "checkout"
+    (checkout / ".git" / "refs").mkdir(parents=True)
+    (checkout / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    (checkout / "shared").mkdir()
+    (checkout / "shared" / "pyproject.toml").write_text("[project]\n")
+    (checkout / "project").mkdir()
+    (checkout / "project" / "pixi.toml").write_text("[workspace]\n")
+
+    with checkout_copy(checkout) as copy:
+        assert copy.name == "checkout"
+        assert not copy.is_relative_to(checkout)
+        assert _snapshot(copy) == _snapshot(checkout)
+        (copy / "project" / "pixi.toml").write_text("changed")
+
+    assert not copy.exists()
+    assert (checkout / "project" / "pixi.toml").read_text() == "[workspace]\n"
+
+
+def test_checkout_copy_keeps_symlinks_as_symlinks(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret").write_text("secret")
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    (checkout / "file-link").symlink_to(outside / "secret")
+    (checkout / "directory-link").symlink_to(outside)
+    (checkout / "relative-link").symlink_to("file-link")
+
+    with checkout_copy(checkout) as copy:
+        for name in ("file-link", "directory-link", "relative-link"):
+            assert (copy / name).is_symlink()
+            assert (copy / name).readlink() == (checkout / name).readlink()
+        assert not any(
+            path.is_file() and not path.is_symlink() for path in copy.rglob("*")
+        )
+
+
+def test_checkout_copy_is_removed_after_permissions_were_revoked(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.write_text("outside")
+    outside.chmod(0o600)
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+
+    with checkout_copy(checkout) as copy:
+        locked = copy / "locked"
+        (locked / "nested").mkdir(parents=True)
+        (locked / "nested" / "file").write_text("content")
+        (locked / "link").symlink_to(outside)
+        (locked / "nested").chmod(0o000)
+        locked.chmod(0o000)
+        copy.chmod(0o500)
+
+    assert not copy.parent.exists()
+    assert stat.S_IMODE(outside.stat().st_mode) == 0o600
+
+
+def test_copy_back_lockfile_replaces_destination(tmp_path: Path) -> None:
+    copy = tmp_path / "copy"
+    (copy / "project").mkdir(parents=True)
+    (copy / "project" / "pixi.lock").write_text("new")
+    destination = tmp_path / "checkout" / "project" / "pixi.lock"
+    destination.parent.mkdir(parents=True)
+    destination.write_text("old")
+
+    copy_back_lockfile(copy, Path("project/pixi.lock"), destination)
+
+    assert destination.read_text() == "new"
+    assert os.listdir(destination.parent) == ["pixi.lock"]
+    assert (copy / "project" / "pixi.lock").read_text() == "new"
+
+
+def test_copy_back_lockfile_replaces_symlinked_destination(tmp_path: Path) -> None:
+    copy = tmp_path / "copy"
+    copy.mkdir()
+    (copy / "pixi.lock").write_text("new")
+    outside = tmp_path / "outside"
+    outside.write_text("outside")
+    destination = tmp_path / "checkout" / "pixi.lock"
+    destination.parent.mkdir()
+    destination.symlink_to(outside)
+
+    copy_back_lockfile(copy, Path("pixi.lock"), destination)
+
+    assert not destination.is_symlink()
+    assert destination.read_text() == "new"
+    assert outside.read_text() == "outside"
+
+
+@pytest.mark.parametrize(
+    ("lockfile", "message"),
+    [
+        ("missing", "pixi.lock could not be opened: "),
+        ("symlink", "pixi.lock could not be opened: "),
+        ("fifo", "pixi.lock is not a regular file."),
+        ("directory", "pixi.lock is not a regular file."),
+        ("hardlink", "pixi.lock is not a regular file."),
+        ("oversized", "pixi.lock exceeds the maximum size of 16 bytes."),
+    ],
+)
+def test_copy_back_lockfile_rejects_unusable_lockfile(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    lockfile: str,
+    message: str,
+) -> None:
+    monkeypatch.setattr(checkout_copy_module, "MAX_LOCKFILE_SIZE_BYTES", 16)
+    outside = tmp_path / "outside"
+    outside.write_text("outside")
+    copy = tmp_path / "copy"
+    copy.mkdir()
+    source = copy / "pixi.lock"
+    match lockfile:
+        case "symlink":
+            source.symlink_to(outside)
+        case "fifo":
+            os.mkfifo(source)
+        case "directory":
+            source.mkdir()
+        case "hardlink":
+            source.hardlink_to(outside)
+        case "oversized":
+            source.write_text("x" * 17)
+    destination = tmp_path / "checkout" / "pixi.lock"
+    destination.parent.mkdir()
+    destination.write_text("original")
+
+    with pytest.raises(LockfileCopyError) as error:
+        copy_back_lockfile(copy, Path("pixi.lock"), destination)
+
+    assert str(error.value).startswith(message)
+    assert destination.read_text() == "original"
+    assert os.listdir(destination.parent) == ["pixi.lock"]
+    assert outside.read_text() == "outside"
+
+
+@pytest.mark.parametrize("swapped", ["copy", "copy/project"])
+def test_copy_back_lockfile_rejects_symlinked_directory(
+    tmp_path: Path,
+    swapped: str,
+) -> None:
+    outside = tmp_path / "outside"
+    (outside / "project").mkdir(parents=True)
+    (outside / "pixi.lock").write_text("outside")
+    (outside / "project" / "pixi.lock").write_text("outside")
+    copy = tmp_path / "copy"
+    (copy / "project").mkdir(parents=True)
+    (copy / "project" / "pixi.lock").write_text("new")
+    # The sandbox can replace its writable working directory with a symlink.
+    (tmp_path / swapped).rename(tmp_path / "moved")
+    (tmp_path / swapped).symlink_to(outside)
+    destination = tmp_path / "checkout" / "project" / "pixi.lock"
+    destination.parent.mkdir(parents=True)
+    destination.write_text("original")
+
+    with pytest.raises(LockfileCopyError) as error:
+        copy_back_lockfile(copy, Path("project/pixi.lock"), destination)
+
+    assert str(error.value).startswith("project/pixi.lock could not be opened: ")
+    assert destination.read_text() == "original"
 
 
 def test_pixi_lockfile_scanner_emits_item_for_each_lockfile() -> None:
@@ -1481,6 +1775,39 @@ def _assert_task_cache(call: dict[str, Any]) -> Path:
     )
     assert cache_dir in call["read_write_paths"]
     return cache_dir
+
+
+def _assert_runs_in_checkout_copy(call: dict[str, Any], checkout: Path) -> Path:
+    """Assert that the sandboxed call only refers to a copy of `checkout`."""
+    checkout = checkout.resolve()
+    cwd = Path(call["cwd"])
+    sandbox_paths = [
+        cwd,
+        *(Path(argument) for argument in call["command"] if "/" in argument),
+        *call["read_paths"],
+        *call["read_exec_paths"],
+        *call["read_write_paths"],
+    ]
+    for path in sandbox_paths:
+        path = Path(path).resolve()
+        assert not path.is_relative_to(checkout)
+        assert not checkout.is_relative_to(path)
+    assert cwd in call["read_write_paths"]
+    return cwd
+
+
+def _snapshot(root: Path) -> dict[str, bytes | str]:
+    """Map every path below `root` to its file content or symlink target."""
+    snapshot: dict[str, bytes | str] = {}
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            snapshot[relative] = f"symlink:{path.readlink()}"
+        elif path.is_dir():
+            snapshot[relative] = "directory"
+        else:
+            snapshot[relative] = path.read_bytes()
+    return snapshot
 
 
 @dataclass

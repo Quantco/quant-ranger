@@ -3,6 +3,7 @@ import shlex
 import signal
 import subprocess
 import tempfile
+import threading
 from collections.abc import Callable, Generator, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
@@ -20,6 +21,11 @@ SECOND_INTERRUPT_WARNING = "Second Ctrl+C received; exiting immediately."
 # subprocess.run reports signal termination as the negative signal number;
 # shells and wrapper scripts report it as 128 + the signal number.
 _SIGINT_EXIT_CODES = frozenset({-int(signal.SIGINT), 128 + int(signal.SIGINT)})
+
+# Process groups of running commands that were started in their own session. They do
+# not receive the terminal's Ctrl+C, so `map_concurrently` forwards it to them.
+_process_groups: set[int] = set()
+_process_groups_lock = threading.Lock()
 
 
 def exit_via_sigint() -> None:
@@ -124,6 +130,7 @@ def map_concurrently[ItemT, ResultT](
     except KeyboardInterrupt:
         shutdown_started = True
         try:
+            _interrupt_process_groups()
             logger.warning(INTERRUPT_WARNING)
             executor.shutdown(wait=True, cancel_futures=True)
         except KeyboardInterrupt:
@@ -180,27 +187,38 @@ def get_exec_output_silently(
     ignore_return_code: bool = False,
     logger: Logger | None = None,
     redact: Sequence[str] = (),
+    kill_process_group: bool = False,
 ) -> ExecOutput:
     """Run a command quietly unless it fails or debug logging is enabled.
 
     The command runs with a minimal environment: `PATH` and the proxy variables
     are inherited from the current process (unless overridden via `env`), plus
     whatever `env` contains.
+
+    With `kill_process_group=True`, the command runs in a new session and its whole
+    process group is killed with SIGKILL once the command exits, times out or is
+    interrupted, so that no background processes it started outlive it. Processes
+    that move to another process group or session escape this.
     """
     env = {**proxy_env(), **(env or {})}
     if "PATH" not in env:
         env["PATH"] = os.environ.get("PATH", "")
     try:
-        completed = subprocess.run(
-            list(command),
-            cwd=cwd,
-            env=env,
-            input=input,
-            capture_output=True,
-            check=False,
-            text=True,
-            timeout=timeout,
-        )
+        if kill_process_group:
+            completed = _run_and_kill_process_group(
+                command, cwd=cwd, env=env, input=input, timeout=timeout
+            )
+        else:
+            completed = subprocess.run(
+                list(command),
+                cwd=cwd,
+                env=env,
+                input=input,
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=timeout,
+            )
     except subprocess.TimeoutExpired as error:
         output = ExecOutput(
             exit_code=124,
@@ -240,6 +258,53 @@ def get_exec_output_silently(
         logger.debug(msg if details is None else f"{msg}\n{details}")
 
     return output
+
+
+def _run_and_kill_process_group(
+    command: Sequence[str],
+    *,
+    cwd: str | os.PathLike[str] | None,
+    env: Mapping[str, str],
+    input: str | None,
+    timeout: float | None,
+) -> subprocess.CompletedProcess[str]:
+    with subprocess.Popen(
+        list(command),
+        cwd=cwd,
+        env=env,
+        stdin=subprocess.PIPE if input is not None else None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    ) as process:
+        # The command leads the new session, so its process group ID is its PID.
+        process_group = process.pid
+        with _process_groups_lock:
+            _process_groups.add(process_group)
+        try:
+            # Kill the group before the timeout or interrupt propagates; leftover
+            # processes could otherwise keep the output pipes open.
+            stdout, stderr = process.communicate(input, timeout=timeout)
+        finally:
+            with _process_groups_lock:
+                _process_groups.discard(process_group)
+            _signal_process_group(process_group, signal.SIGKILL)
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
+def _interrupt_process_groups() -> None:
+    with _process_groups_lock:
+        for process_group in _process_groups:
+            _signal_process_group(process_group, signal.SIGINT)
+
+
+def _signal_process_group(process_group: int, sig: signal.Signals) -> None:
+    try:
+        os.killpg(process_group, sig)
+    except ProcessLookupError, PermissionError:
+        # The group is empty, or (on macOS) only contains zombies.
+        pass
 
 
 def _command_output_details(

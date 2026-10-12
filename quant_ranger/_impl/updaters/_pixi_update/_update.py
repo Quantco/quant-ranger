@@ -37,6 +37,7 @@ from quant_ranger._impl.scanners import Scanner
 
 from .._base import Updater, UpdateTask
 from ._auth import SandboxAuth, prepare_sandbox_auth
+from ._checkout_copy import LockfileCopyError, checkout_copy, copy_back_lockfile
 
 PIXI_LOCKFILE = "pixi.lock"
 # Pixi connect timeouts behave inconsistently at the moment, so we combine it with our own timeout.
@@ -289,33 +290,47 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
     def _absolute_lockfile_directory(self) -> Path:
         return self.checkout.absolute_path / self._relative_lockfile_directory
 
-    @property
-    def _absolute_manifest_path(self) -> Path:
-        return self.checkout.absolute_path / self._relative_manifest_path
-
     @override
     def run(self) -> UpdateOutcome:
         manifest = self.item.manifest
         config = manifest.tool.update
 
-        update_command = [
-            "pixi",
-            "update",
-            "--no-progress",
-            "--json",
-            "--no-install",
-            "--manifest-path",
-            str(self._absolute_manifest_path),
-            *self._pixi_update_flags(manifest, config),
-        ]
+        # A symlink in the lockfile directory could point the sandbox's writable
+        # working directory and the lockfile destination outside of the checkout.
+        # The copy has the same layout, so checking the checkout covers both.
+        checkout_path = self.checkout.absolute_path.resolve()
+        lockfile_directory = checkout_path / self._relative_lockfile_directory
+        if lockfile_directory.resolve() != lockfile_directory:
+            return UpdateOutcome(
+                result=Status.FAILURE,
+                message=(
+                    f"{self._relative_lockfile_directory.as_posix()} must not be "
+                    "a symlink or inside a symlinked directory."
+                ),
+            )
 
-        # Each task gets its own writable cache so a malicious repository
-        # cannot poison the cache used by other tasks or the user.
-        with app_tempdir(prefix="quant-ranger-pixi-cache-") as cache_dir:
+        # Pixi runs on a private copy of the checkout; only the resulting lockfile
+        # is transferred back. Each task also gets its own writable cache so a
+        # malicious repository cannot poison the cache used by other tasks or the
+        # user.
+        with (
+            checkout_copy(self.checkout.absolute_path) as workspace,
+            app_tempdir(prefix="quant-ranger-pixi-cache-") as cache_dir,
+        ):
+            update_command = [
+                "pixi",
+                "update",
+                "--no-progress",
+                "--json",
+                "--no-install",
+                "--manifest-path",
+                str(workspace / self._relative_manifest_path),
+                *self._pixi_update_flags(manifest, config),
+            ]
             try:
                 output = _run_pixi_update(
                     update_command,
-                    cwd=self._absolute_lockfile_directory,
+                    cwd=workspace / self._relative_lockfile_directory,
                     logger=self.context.logger,
                     auth=self._auth,
                     cache_dir=cache_dir,
@@ -327,8 +342,20 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
                     message=str(error),
                     details=error.details,
                 )
-        if output.stdout.strip() == "{}":
-            return UpdateOutcome(result=Status.UP_TO_DATE)
+            if output.stdout.strip() == "{}":
+                return UpdateOutcome(result=Status.UP_TO_DATE)
+
+            try:
+                copy_back_lockfile(
+                    workspace,
+                    self._relative_lockfile_path,
+                    self.checkout.absolute_path / self._relative_lockfile_path,
+                )
+            except LockfileCopyError as error:
+                return UpdateOutcome(
+                    result=Status.FAILURE,
+                    message=f"pixi update did not produce a usable lockfile: {error}",
+                )
 
         # Generate diff using:
         # https://pixi.sh/latest/integration/extensions/pixi_diff/

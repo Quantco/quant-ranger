@@ -35,7 +35,9 @@ def test_get_sandboxed_exec_output_silently_wraps_rattler_sandbox(
         return SimpleNamespace(returncode=0, stdout="stdout", stderr="")
 
     monkeypatch.setenv("PATH", str(tool_dir))
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     output = get_sandboxed_exec_output_silently(
         ["tool", "arg"],
@@ -87,7 +89,9 @@ def test_get_sandboxed_exec_output_silently_passes_env_inside_sandbox(
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setenv("PATH", str(tool_dir))
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently(
         ["tool", "arg"],
@@ -129,7 +133,9 @@ def test_get_sandboxed_exec_output_silently_forwards_proxy_inside_sandbox(
 
     monkeypatch.setenv("PATH", str(tool_dir))
     monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently(
         ["tool", "arg"],
@@ -165,7 +171,9 @@ def test_get_sandboxed_exec_output_silently_creates_fresh_tempdir(
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setenv("PATH", str(tool_dir))
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently(["tool"], cwd=tmp_path, tempdir=True)
 
@@ -196,7 +204,9 @@ def test_get_sandboxed_exec_output_silently_resolves_absolute_command(
         captured_command = command
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently([str(tool)], cwd=tmp_path)
 
@@ -225,7 +235,9 @@ def test_get_sandboxed_exec_output_silently_resolves_command_relative_to_cwd(
         captured_command = command
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently([f".{os.sep}bin{os.sep}tool"], cwd=tmp_path)
 
@@ -258,7 +270,9 @@ def test_get_sandboxed_exec_output_silently_deduplicates_sandbox_paths(
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setenv("PATH", str(tool_dir))
-    monkeypatch.setattr("subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "quant_ranger._impl.helpers._run_and_kill_process_group", fake_run
+    )
 
     get_sandboxed_exec_output_silently(
         ["tool"],

@@ -408,6 +408,80 @@ def test_get_exec_output_silently_wraps_timeout_without_output(
     )
 
 
+def test_get_exec_output_silently_kills_process_group_after_exit() -> None:
+    output = get_exec_output_silently(
+        ["/bin/sh", "-c", "sleep 60 >/dev/null 2>&1 & echo $!"],
+        kill_process_group=True,
+    )
+
+    _assert_process_exits(int(output.stdout))
+
+
+def test_get_exec_output_silently_kills_process_group_on_timeout() -> None:
+    # The background process keeps stdout open, so collecting the output only
+    # finishes once it was killed.
+    with pytest.raises(CommandError) as error_info:
+        get_exec_output_silently(
+            ["/bin/sh", "-c", "sleep 60 & echo $!; wait"],
+            timeout=0.5,
+            kill_process_group=True,
+        )
+
+    assert error_info.value.output.exit_code == 124
+    _assert_process_exits(int(error_info.value.output.stdout))
+
+
+def test_map_concurrently_forwards_interrupt_to_process_groups(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    started = tmp_path / "started"
+    interrupted = Event()
+
+    def run_command(item: int) -> ExecOutput:
+        del item
+        return get_exec_output_silently(
+            ["/bin/sh", "-c", f'touch "{started}"; exec sleep 60'],
+            kill_process_group=True,
+        )
+
+    def interrupting_progress(iterable: Any, **kwargs: Any) -> Any:
+        del kwargs
+        deadline = time.monotonic() + 10
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        interrupted.set()
+        raise KeyboardInterrupt
+        yield from iterable
+
+    monkeypatch.setattr(helpers_module, "progress", interrupting_progress)
+
+    start = time.monotonic()
+    with pytest.raises(KeyboardInterrupt):
+        map_concurrently(
+            run_command,
+            [1],
+            concurrency=1,
+            logger=RecordingLogger(),
+            description="Sleeping",
+        )
+
+    assert interrupted.is_set()
+    assert time.monotonic() - start < 10
+
+
+def _assert_process_exits(pid: int) -> None:
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.05)
+    os.kill(pid, signal.SIGKILL)
+    pytest.fail(f"Process {pid} is still running.")
+
+
 def test_pluralize_selects_noun_form_by_count() -> None:
     assert pluralize(1, "file") == "1 file"
     assert pluralize(0, "file") == "0 files"

@@ -41,7 +41,8 @@ def get_sandboxed_exec_output_silently(
     sandbox and exported as ``TMPDIR``. Read/execute access is also granted to
     the resolved command executable. Environment overrides are applied inside
     the sandbox with ``/usr/bin/env`` because ``rattler-sandbox`` does not
-    forward them.
+    forward them. All processes left in the sandbox's process group are killed once
+    the command finishes.
     """
     if not command:
         raise ValueError("command must not be empty")
@@ -83,6 +84,9 @@ def get_sandboxed_exec_output_silently(
             ignore_return_code=ignore_return_code,
             logger=logger,
             redact=redact,
+            # Background processes started in the sandbox must not outlive it;
+            # rattler-sandbox does not terminate them on its own.
+            kill_process_group=True,
         )
 
 

@@ -926,7 +926,7 @@ from_outcome(outcome: UpdateOutcome[ResultOutputT], *, item: ResultItemT) -> Upd
 ### get_exec_output_silently
 
 ```python
-get_exec_output_silently(command: Sequence[str], *, cwd: str | os.PathLike[str] | None = None, env: Mapping[str, str] | None = None, input: str | None = None, timeout: float | None = None, ignore_return_code: bool = False, logger: Logger | None = None, redact: Sequence[str] = ()) -> ExecOutput
+get_exec_output_silently(command: Sequence[str], *, cwd: str | os.PathLike[str] | None = None, env: Mapping[str, str] | None = None, input: str | None = None, timeout: float | None = None, ignore_return_code: bool = False, logger: Logger | None = None, redact: Sequence[str] = (), kill_process_group: bool = False) -> ExecOutput
 ```
 
 Run a command quietly unless it fails or debug logging is enabled.
@@ -934,6 +934,11 @@ Run a command quietly unless it fails or debug logging is enabled.
 The command runs with a minimal environment: `PATH` and the proxy variables
 are inherited from the current process (unless overridden via `env`), plus
 whatever `env` contains.
+
+With `kill_process_group=True`, the command runs in a new session and its whole
+process group is killed with SIGKILL once the command exits, times out or is
+interrupted, so that no background processes it started outlive it. Processes
+that move to another process group or session escape this.
 
 ## quant_ranger.scanners
 
