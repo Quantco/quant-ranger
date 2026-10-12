@@ -141,6 +141,8 @@ def _init_repository(path: Path) -> None:
     (path / "pixi.lock").write_text("version: 5\n")
     for args in (
         ["init", "--quiet", "--initial-branch", "main"],
+        # Detached auto-maintenance would race with the snapshots of `.git`.
+        ["config", "maintenance.auto", "false"],
         ["add", "pixi.toml", "pixi.lock"],
         [
             "-c",
