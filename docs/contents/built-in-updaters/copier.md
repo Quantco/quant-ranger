@@ -87,7 +87,7 @@ The special `:current:` value reuses the `_commit` from `.copier-answers.yml`, s
 The available migrations are defined by the deployment's site config in [`copier_migrations`](../plugins/site-configuration.md#define-copier-migrations).
 `--migration` accepts the configured names.
 Each migration declares the templates it applies to, the answer key it changes, a resolver that maps the current value to the desired value, and the pull-request template.
-The built-in default contains one neutral `example` migration that sets `example_feature` to `true`.
+The built-in defaults include a neutral `example` migration that sets `example_feature` to `true` and a `pydocstyle` migration for the QuantCo Python templates.
 
 The answer must already exist in the file.
 A missing key or a value already at the desired state is skipped rather than introduced implicitly.
@@ -108,3 +108,23 @@ Conceptually, this migration changes:
 
 Run different migrations separately.
 Each uses its own [managed branch](index.md#managed-branches) ending in the migration name.
+
+### Migrate to pydocstyle
+
+The `pydocstyle` migration sets `use_pydocstyle` to `true` for repositories generated from `quantco/copier-template-python` or `quantco/copier-template-python-open-source`.
+It rerenders the current template revision to replace docformatter with Ruff's pydocstyle rules and refreshes the Pixi lockfile if the manifest changes.
+Repositories already using pydocstyle are skipped.
+
+```console
+quant-ranger update \
+  --all-installed-repositories \
+  copier-migration \
+  --migration pydocstyle
+```
+
+Run this migration before updating repositories to a template revision that removes the `use_pydocstyle` question.
+Repositories whose answers lack this key are skipped; older repositories must first update to a template revision that supports the option.
+Review each migration PR and run the repository's lint checks to fix any newly reported docstring violations before merging.
+
+A deployment that overrides `copier_migrations` must include `DEFAULT_COPIER_MIGRATIONS["pydocstyle"]` in its mapping to expose this migration.
+Template execution still follows the deployment's existing trust allowlist.

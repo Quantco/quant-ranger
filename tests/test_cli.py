@@ -822,7 +822,8 @@ def test_update_command_rejects_unknown_copier_migration(
     output = _plain_output(result.output)
     assert "Invalid value" in output
     assert "--migration" in output
-    assert "'unknown' is not 'example'" in output
+    assert "'unknown' is not one of 'example'," in output
+    assert "'pydocstyle'" in output
 
 
 def test_update_command_passes_custom_updater_path(

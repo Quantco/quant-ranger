@@ -115,7 +115,7 @@ $ quant-ranger update copier-migration [OPTIONS]
 
 **Options**:
 
-* `--migration [example]`: Copier migration to run.  [required]
+* `--migration [example|pydocstyle]`: Copier migration to run.  [required]
 * `--help`: Show this message and exit.
 
 ### `quant-ranger update pixi-version`

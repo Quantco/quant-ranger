@@ -49,6 +49,85 @@ def _site_config_with_example_templates(*templates: str) -> SiteConfig:
     )
 
 
+@pytest.mark.parametrize(
+    "template",
+    [
+        "quantco/copier-template-python",
+        "quantco/copier-template-python-open-source",
+        "other/copier-template",
+    ],
+)
+@pytest.mark.parametrize(
+    "answer", ["use_pydocstyle: false", "use_pydocstyle: true", ""]
+)
+def test_pydocstyle_migration_selects_repositories(template: str, answer: str) -> None:
+    repository = RepositoryRef(owner="quantco", name="example", branch="main")
+    github_client = FakeGitHubClient(
+        file_contents={
+            ".copier-answers.yml": (
+                f"_commit: v1.0.0\n_src_path: https://github.com/{template}\n{answer}\n"
+            )
+        }
+    )
+
+    scan_result = CopierMigrationUpdater(
+        CopierMigrationOptions(migration="pydocstyle")
+    ).scanner.scan_all(
+        [repository],
+        RunContext(
+            site_config=SiteConfig(),
+            github_client=cast(GitHubClient, github_client),
+            logger=RecordingLogger(),
+        ),
+    )
+
+    assert scan_result.scan_failures == ()
+    if template.startswith("quantco/") and answer == "use_pydocstyle: false":
+        assert len(scan_result.update_items) == 1
+        assert scan_result.update_items[0].migration_target.copier_argument == (
+            "use_pydocstyle=true"
+        )
+    else:
+        assert scan_result.update_items == ()
+
+
+def test_pydocstyle_migration_keeps_template_revision(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    commands: list[list[str]] = []
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        commands.append(command)
+        return ExecOutput(exit_code=0, stdout="", stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._copier._common.get_exec_output_silently",
+        fake_exec,
+    )
+
+    task_run = run_update_task(
+        tmp_path,
+        CopierMigrationOptions(migration="pydocstyle"),
+        migration_target=CopierMigrationTarget(
+            migration_key="use_pydocstyle", desired_value=True
+        ),
+    )
+
+    assert task_run.outcome.result == Status.UPDATED
+    assert commands[0] == [
+        "copier",
+        "update",
+        "--defaults",
+        "--vcs-ref=:current:",
+        "--data",
+        "use_pydocstyle=true",
+    ]
+    pr_options = task_run.github_client.pull_request_calls[0]["options"]
+    assert pr_options.source_branch == "copier-migration-pydocstyle"
+    assert pr_options.title == "chore: Use pydocstyle for docstring linting"
+
+
 def test_copier_migration_option_completes_configured_migrations() -> None:
     site_config = SiteConfig(
         copier_migrations={

@@ -1332,7 +1332,7 @@ model_config = ConfigDict(frozen=True, extra='forbid')
 ### DEFAULT_COPIER_MIGRATIONS
 
 ```python
-DEFAULT_COPIER_MIGRATIONS: dict[str, CopierMigration] = {'example': CopierMigration(answer_key='example_feature', templates=frozenset({'github.com/example/copier-template'}), resolve_desired_value=lambda _current_value: True, pull_request_template=PullRequestTemplate(title='chore: Enable the example feature', body='This migration enables an example Copier template feature.', branch_prefix='copier-migration'))}
+DEFAULT_COPIER_MIGRATIONS: dict[str, CopierMigration] = {'example': CopierMigration(answer_key='example_feature', templates=frozenset({'github.com/example/copier-template'}), resolve_desired_value=lambda _current_value: True, pull_request_template=PullRequestTemplate(title='chore: Enable the example feature', body='This migration enables an example Copier template feature.', branch_prefix='copier-migration')), 'pydocstyle': CopierMigration(answer_key='use_pydocstyle', templates=frozenset({'github.com/quantco/copier-template-python', 'github.com/quantco/copier-template-python-open-source'}), resolve_desired_value=lambda _current_value: True, pull_request_template=PullRequestTemplate(title='chore: Use pydocstyle for docstring linting', body="Enable the Copier template's pydocstyle rules in Ruff instead of docformatter.\n\nThis migration sets `use_pydocstyle` to `true` at the repository's current template revision, updates the generated lint configuration, and refreshes the Pixi lockfile when needed.\nRun the repository's lint checks and address any newly reported docstring violations before merging.", branch_prefix='copier-migration'))}
 ```
 
 ### DEFAULT_PULL_REQUEST_TEMPLATES
@@ -1577,7 +1577,7 @@ copier_migrations: Mapping[str, CopierMigration] = DEFAULT_COPIER_MIGRATIONS
 
 Named Copier migrations available through `--migration`.
 
-Setting this replaces the builtin example entirely.
+Setting this replaces the builtin migrations entirely.
 
 #### fallback_commit_author
 
