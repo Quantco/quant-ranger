@@ -81,7 +81,7 @@ An invalid root config is logged and the defaults are used.
 
 `pixi-update` finds every `pixi.lock` with a `pixi.toml` beside it and runs a sandboxed command from the manifest directory:
 
-The sandbox is a security boundary, see the [security model](../usage/security-model.md).
+The sandbox is meant to act as a security boundary, see the [security model](../usage/security-model.md).
 Pixi may [execute a project-defined build backend while resolving dependencies](https://pixi.prefix.dev/latest/security/#4-treat-package-hooks-as-code-execution), and a malicious backend could otherwise run arbitrary code with the quant-ranger process's privileges and credentials.
 
 ```console
@@ -148,6 +148,15 @@ Missing credentials produce a warning and the update continues.
 
 The sandbox is supported on Linux and macOS.
 It permits network access and only the files needed by Pixi, including declared credential and configuration files.
+
+:::warning[Experimental sandbox]
+
+The sandbox is experimental and only a temporary, best-effort mitigation.
+It may not prevent every way a malicious project could escape it, and its behavior may change in future releases.
+The proper fix is an option for Pixi to refuse executing untrusted code while resolving dependencies, which is tracked in [prefix-dev/pixi#6385](https://github.com/prefix-dev/pixi/issues/6385).
+quant-ranger will adopt it once available.
+
+:::
 
 :::warning[Required on GitHub-hosted Ubuntu runners]
 
