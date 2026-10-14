@@ -2,6 +2,7 @@ import re
 import traceback
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from io import StringIO
 from pathlib import Path
 from typing import Any, override
@@ -150,6 +151,7 @@ class FakeGitHubClient:
     files: dict[str, list[str]] = field(default_factory=dict)
     file_contents: dict[str, str] = field(default_factory=dict)
     latest_release: str = "v0.70.0"
+    releases: list[tuple[str, datetime]] = field(default_factory=list)
     repo_tags: dict[tuple[str, str], list[str]] = field(default_factory=dict)
     repo_tag_error: GitHubError | None = None
     tag_messages: dict[tuple[str, str, str], str | None] = field(default_factory=dict)
@@ -161,6 +163,9 @@ class FakeGitHubClient:
     )
     file_content_calls: list[tuple[RepositoryRef, str]] = field(default_factory=list)
     latest_release_calls: list[tuple[str, str]] = field(default_factory=list)
+    latest_release_published_before_calls: list[datetime | None] = field(
+        default_factory=list
+    )
     repo_tag_calls: list[tuple[str, str]] = field(default_factory=list)
     pull_request_calls: list[dict[str, Any]] = field(default_factory=list)
 
@@ -211,9 +216,29 @@ class FakeGitHubClient:
             f"{repository_ref.full_name}:{path}"
         ) or self.file_contents.get(path)
 
-    def get_latest_release(self, owner: str, name: str) -> str:
+    def get_latest_release(
+        self,
+        owner: str,
+        name: str,
+        *,
+        published_before: datetime | None = None,
+    ) -> str:
         self.latest_release_calls.append((owner, name))
-        return self.latest_release
+        self.latest_release_published_before_calls.append(published_before)
+        if published_before is None or not self.releases:
+            return self.latest_release
+
+        eligible = [
+            tag
+            for tag, published_at in self.releases
+            if published_at <= published_before
+        ]
+        if not eligible:
+            raise GitHubError(
+                f"{owner}/{name} has no release published at or before "
+                f"{published_before.isoformat()}."
+            )
+        return eligible[0]
 
     def get_repo_tags(self, owner: str, name: str) -> list[str]:
         self.repo_tag_calls.append((owner, name))
