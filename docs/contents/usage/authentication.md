@@ -61,6 +61,7 @@ quant-ranger update \
 For `GH_APP_CLIENT_ID` you can either use the Client ID (shown here) or App ID found in your app's settings.
 
 Install the app on the organizations or repositories it should maintain.
+See the [security model](security-model.md) for what this implies.
 Use these repository permissions:
 
 | GitHub permission                                                                                                                               | Dry run      | Publishing                                                                 |
