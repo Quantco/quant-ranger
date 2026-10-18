@@ -23,7 +23,7 @@ Run repository maintenance and process results.
 **Usage**:
 
 ```console
-$ quant-ranger [OPTIONS] [COMMAND] [ARGS]...
+$ quant-ranger [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options**:
@@ -50,18 +50,18 @@ $ quant-ranger update [OPTIONS] COMMAND [ARGS]...
 
 **Options**:
 
-* `-r, --repository TEXT`: Repository to process. Repeat this option or use comma-separated values. Accepts repo, owner/repo, and either form with @branch.
-* `--owner TEXT`: Owner for bare repository names. When --repository is omitted, discover active, non-empty repositories for this owner.
+* `-r, --repository <str>`: Repository to process. Repeat this option or use comma-separated values. Accepts repo, owner/repo, and either form with @branch.
+* `--owner <str>`: Owner for bare repository names. When --repository is omitted, discover active, non-empty repositories for this owner.
 * `--all-installed-repositories`: Process all repositories this GitHub App has access to, across all installations. This option can only be used with GitHub App credentials and cannot be combined with --owner or --repository.
 * `--gh`: Use `gh auth token` for GitHub authentication. Takes precedence over GitHub App credentials, GH_TOKEN, and GITHUB_TOKEN.
-* `--github-api-url TEXT`: GitHub API base URL.  [default: https://api.github.com]
-* `-j, --jobs INTEGER RANGE`: Number of scanner and updater tasks to run concurrently.  [default: 1; x&gt;=1]
+* `--github-api-url <str>`: GitHub API base URL.  [default: https://api.github.com]
+* `-j, --jobs <int range>`: Number of scanner and updater tasks to run concurrently.  [default: 1; x&gt;=1]
 * `-d, --debug`: Enable verbose diagnostic logging. This may include sensitive subprocess stdout or stderr.
 * `--publish-changes`: Push managed branches and create or update pull requests. Without this, quant-ranger does not push or modify pull requests.
 * `--force-push`: Allow overwriting managed pull request branches that contain manual changes. Requires --repository and does not enable publishing.
-* `--results-file PATH`: Write task results and scan failures to a JSON artifact for `aggregate`. Unsupported by `custom`.
+* `--results-file <path>`: Write task results and scan failures to a JSON artifact for `aggregate`. Unsupported by `custom`.
 * `--pr-details`: Show pull request details, including the full diff.
-* `--pr-details-diff-lines INTEGER RANGE`: Trim pull request detail diffs and enable --pr-details.  [x&gt;=1]
+* `--pr-details-diff-lines <int range>`: Trim pull request detail diffs and enable --pr-details.  [x&gt;=1]
 * `--help`: Show this message and exit.
 
 **Commands**:
@@ -130,9 +130,9 @@ $ quant-ranger update pixi-version [OPTIONS]
 
 **Options**:
 
-* `--schedule [weekly|monthly|quarterly]`: Filter to update configurations whose schedule matches this value. Omit to include every cadence. Configurations set to `never` are always excluded.
-* `--pixi-version TEXT`: Update to this pixi version (e.g. v0.70.0) instead of resolving the latest release from GitHub.
-* `--setup-pixi-marker TEXT`: Only update workflow files containing this marker, e.g. when using a fork of setup-pixi.  [default: (prefix-dev/setup-pixi)]
+* `--schedule <weekly|monthly|quarterly>`: Filter to update configurations whose schedule matches this value. Omit to include every cadence. Configurations set to `never` are always excluded.
+* `--pixi-version <str>`: Update to this pixi version (e.g. v0.70.0) instead of resolving the latest release from GitHub.
+* `--setup-pixi-marker <str>`: Only update workflow files containing this marker, e.g. when using a fork of setup-pixi.  [default: (prefix-dev/setup-pixi)]
 * `--help`: Show this message and exit.
 
 ### `quant-ranger update pixi-update`
@@ -147,7 +147,7 @@ $ quant-ranger update pixi-update [OPTIONS]
 
 **Options**:
 
-* `--schedule [weekly|monthly|quarterly]`: Filter to update configurations whose schedule matches this value. Omit to include every cadence. Configurations set to `never` are always excluded.
+* `--schedule <weekly|monthly|quarterly>`: Filter to update configurations whose schedule matches this value. Omit to include every cadence. Configurations set to `never` are always excluded.
 * `--help`: Show this message and exit.
 
 ### `quant-ranger update node-dependency-cooldown`
@@ -162,9 +162,9 @@ $ quant-ranger update node-dependency-cooldown [OPTIONS]
 
 **Options**:
 
-* `--minimum-release-age-days INTEGER RANGE`: Minimum package release age to enforce, in whole days.  [default: 7; x&gt;=1]
-* `--bun-minimum-release-age-exclude TEXT`: Package name to exempt from Bun minimum release age checks. Repeat for multiple packages; existing exclusions are preserved.
-* `--minimum-release-age-exclude TEXT`: Package name or pattern to exempt from pnpm and npm minimum release age checks. Repeat for multiple values; existing exclusions are preserved.
+* `--minimum-release-age-days <int range>`: Minimum package release age to enforce, in whole days.  [default: 7; x&gt;=1]
+* `--bun-minimum-release-age-exclude <str>`: Package name to exempt from Bun minimum release age checks. Repeat for multiple packages; existing exclusions are preserved.
+* `--minimum-release-age-exclude <str>`: Package name or pattern to exempt from pnpm and npm minimum release age checks. Repeat for multiple values; existing exclusions are preserved.
 * `--help`: Show this message and exit.
 
 ### `quant-ranger update github-app-token`
@@ -179,7 +179,7 @@ $ quant-ranger update github-app-token [OPTIONS]
 
 **Options**:
 
-* `--action TEXT`: Action identifier without `@revision`. Renames `app-id` only in full-SHA-pinned steps whose version comment is v3.1 or later within v3.  [default: actions/create-github-app-token]
+* `--action <str>`: Action identifier without `@revision`. Renames `app-id` only in full-SHA-pinned steps whose version comment is v3.1 or later within v3.  [default: actions/create-github-app-token]
 * `--help`: Show this message and exit.
 
 ### `quant-ranger update custom`
@@ -194,7 +194,7 @@ $ quant-ranger update custom [OPTIONS]
 
 **Options**:
 
-* `-p, --path FILE`: Trusted Python file to import and execute without a sandbox. It must export `updater`, a `CustomFileUpdater` instance.  [required]
+* `-p, --path <file>`: Trusted Python file to import and execute without a sandbox. It must export `updater`, a `CustomFileUpdater` instance.  [required]
 * `--help`: Show this message and exit.
 
 ## `quant-ranger aggregate`
@@ -224,12 +224,12 @@ Print recorded failures. Includes failed updater tasks and repository scans; rec
 **Usage**:
 
 ```console
-$ quant-ranger aggregate log-failures [OPTIONS] RESULTS_FILE
+$ quant-ranger aggregate log-failures [OPTIONS] {results_file}
 ```
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `results_file`: JSON results file written by `quant-ranger update`.  [required]
 
 **Options**:
 
@@ -242,20 +242,20 @@ Send a per-repository incident.io alert event for failed update tasks and scan f
 **Usage**:
 
 ```console
-$ quant-ranger aggregate incident-io-alerts [OPTIONS] RESULTS_FILE
+$ quant-ranger aggregate incident-io-alerts [OPTIONS] {results_file}
 ```
 
 **Arguments**:
 
-* `RESULTS_FILE`: JSON results file written by `quant-ranger update`.  [required]
+* `results_file`: JSON results file written by `quant-ranger update`.  [required]
 
 **Options**:
 
-* `--alert-source-config-id TEXT`: ID of the incident.io HTTP alert source to send events to.  [required]
-* `--token TEXT`: incident.io alert source bearer token.  [env var: INCIDENT_IO_TOKEN; required]
-* `--management-token TEXT`: incident.io API token with the alerts.view and alerts.edit scopes (distinct from the alert source token).  [env var: INCIDENT_IO_MANAGEMENT_TOKEN; required]
-* `--deduplication-key-prefix TEXT`: Prefix for per-repository alert deduplication keys. Use a distinct prefix per updater pipeline (e.g. `quant-ranger/pixi-update`) so pipelines do not resolve each other&#x27;s alerts.  [default: quant-ranger]
-* `--source-url TEXT`: Link attached to each alert, e.g. the GitHub Actions run that produced the results file.  [required]
-* `--team TEXT`: Team name sent as `team` metadata, for alert sources that route alerts by a team attribute.  [required]
-* `--api-url TEXT`: incident.io API base URL.  [default: https://api.incident.io]
+* `--alert-source-config-id <str>`: ID of the incident.io HTTP alert source to send events to.  [required]
+* `--token <str>`: incident.io alert source bearer token.  [env var: INCIDENT_IO_TOKEN; required]
+* `--management-token <str>`: incident.io API token with the alerts.view and alerts.edit scopes (distinct from the alert source token).  [env var: INCIDENT_IO_MANAGEMENT_TOKEN; required]
+* `--deduplication-key-prefix <str>`: Prefix for per-repository alert deduplication keys. Use a distinct prefix per updater pipeline (e.g. `quant-ranger/pixi-update`) so pipelines do not resolve each other&#x27;s alerts.  [default: quant-ranger]
+* `--source-url <str>`: Link attached to each alert, e.g. the GitHub Actions run that produced the results file.  [required]
+* `--team <str>`: Team name sent as `team` metadata, for alert sources that route alerts by a team attribute.  [required]
+* `--api-url <str>`: incident.io API base URL.  [default: https://api.incident.io]
 * `--help`: Show this message and exit.
