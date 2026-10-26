@@ -75,8 +75,7 @@ def copy_back_lockfile(
 
 
 def _open_without_symlinks(root: Path, relative_path: Path) -> int:
-    """Open `root / relative_path` for reading without following symlinks below
-    `root`."""
+    """Open `root / relative_path` for reading without following symlinks."""
     *directories, name = relative_path.parts
     directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
     try:

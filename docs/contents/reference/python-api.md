@@ -1322,7 +1322,7 @@ model_config = ConfigDict(frozen=True, extra='forbid')
 **Classes:**
 
 - **CommitAuthor** –
-- **CopierMigration** – Changes one answer in a repository's `.copier-answers.yml` by re-running \`copier
+- **CopierMigration** – Changes one answer in a repository's `.copier-answers.yml`.
 - **PullRequestTemplate** –
 - **PullRequestTemplates** –
 - **SiteConfig** – Site-wide configuration provided by a `quant_ranger.site_config` plugin.
@@ -1375,7 +1375,10 @@ email: str
 CopierMigration(answer_key: str, templates: frozenset[str], resolve_desired_value: Callable[[CopierMigrationValue], CopierMigrationValue], pull_request_template: PullRequestTemplate, post_migration: Callable[[RepositoryCheckout, RunContext], None] | None = None) -> None
 ```
 
-Changes one answer in a repository's `.copier-answers.yml` by re-running `copier update` with the desired value and opening a pull request.
+Changes one answer in a repository's `.copier-answers.yml`.
+
+The migration re-runs `copier update` with the desired value and opens a pull
+request.
 
 **Attributes:**
 

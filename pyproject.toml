@@ -39,14 +39,14 @@ dependencies = [
 [project.urls]
 repository = "https://github.com/quantco/quant-ranger"
 
-[tool.hatch.build.targets.wheel]
-packages = ["quant_ranger"]
-
 [project.scripts]
 quant-ranger = "quant_ranger.cli:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["quant_ranger"]
+
 [tool.docformatter]
-black = true # only sets the style options to the default values of black
+black = true  # only sets the style options to the default values of black
 
 [tool.ruff]
 line-length = 88
@@ -73,6 +73,9 @@ select = [
   # pydocstyle
   "D",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"
@@ -105,9 +108,6 @@ default.extend-ignore-re = [
 [tool.pyright]
 venv = "default"
 venvPath = ".pixi/envs/"
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
 
 [tool.tombi]
 schema.enabled = false

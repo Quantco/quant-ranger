@@ -15,8 +15,10 @@ os.environ["_TYPER_FORCE_DISABLE_TERMINAL"] = "1"
 
 @pytest.fixture(autouse=True)
 def _plain_console_output(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep rich consoles created during tests free of ANSI codes regardless of the
-    caller's environment, so assertions on console output are deterministic.
+    """Keep rich consoles created during tests free of ANSI codes.
+
+    This holds regardless of the caller's environment, so assertions on console output
+    are deterministic.
 
     Rich reads these variables at runtime to decide whether to emit ANSI codes, so an
     ambient value would make styled-output assertions environment-dependent.
@@ -28,8 +30,11 @@ def _plain_console_output(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture(autouse=True)
 def _no_ambient_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Remove proxy variables so subprocess environments asserted in tests do not depend
-    on the caller's environment."""
+    """Remove proxy variables from the environment.
+
+    This keeps subprocess environments asserted in tests independent of the caller's
+    environment.
+    """
     for name in ("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"):
         monkeypatch.delenv(name, raising=False)
         monkeypatch.delenv(name.lower(), raising=False)

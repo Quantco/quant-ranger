@@ -40,8 +40,11 @@ Any other value type fails the scan of the affected repository.
 
 @dataclass(frozen=True, slots=True)
 class CopierMigration:
-    """Changes one answer in a repository's `.copier-answers.yml` by re-running `copier
-    update` with the desired value and opening a pull request."""
+    """Changes one answer in a repository's `.copier-answers.yml`.
+
+    The migration re-runs `copier update` with the desired value and opens a pull
+    request.
+    """
 
     answer_key: str
     """The key in `.copier-answers.yml` whose value the migration changes.

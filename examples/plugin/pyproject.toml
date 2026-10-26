@@ -8,9 +8,6 @@ description = "Example plugin package for quant-ranger."
 version = "0.1.0"
 requires-python = ">=3.14"
 
-[tool.hatch.build.targets.wheel]
-packages = ["quant_ranger_example_plugin"]
-
 [project.entry-points."quant_ranger.updaters"]
 ensure_config = "quant_ranger_example_plugin.updater:EnsureConfigUpdater"
 
@@ -19,3 +16,6 @@ status_summary = "quant_ranger_example_plugin.aggregator:StatusSummaryAggregator
 
 [project.entry-points."quant_ranger.site_config"]
 example = "quant_ranger_example_plugin.site_config:site_config"
+
+[tool.hatch.build.targets.wheel]
+packages = ["quant_ranger_example_plugin"]

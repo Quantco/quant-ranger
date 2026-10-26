@@ -43,8 +43,10 @@ def prepare_sandbox_auth(
     tempdir: Path,
     pixi_info: Mapping[str, JsonValue],
 ) -> SandboxAuth:
-    """Find credentials for the given channel hosts in the macOS Keychain or the rattler
-    credentials file."""
+    """Find credentials for the given channel hosts.
+
+    Looks in the macOS Keychain or the rattler credentials file.
+    """
     if not channel_hosts:
         return SandboxAuth()
 

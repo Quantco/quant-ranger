@@ -11,16 +11,20 @@ name = "quant-ranger"
 version = "0.0.0"
 license = "BSD-3-Clause"
 license-file = "LICENSE"
+
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"
+
 [package.build.config]
 # Derive the conda run-dependencies from `[project.dependencies]` in
 # `pyproject.toml` so that the PyPI metadata is the single source of truth.
 ignore-pypi-mapping = false
+
 [package.host-dependencies]
 python = ">=3.14"
 hatchling = "*"
+
 # Only dependencies that are unavailable on PyPI belong here; everything else is
 # declared in `pyproject.toml` and mapped automatically. These are all invoked as
 # external executables, so `pip` users must install them separately (see README).
