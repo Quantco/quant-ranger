@@ -1,15 +1,14 @@
 import json
 import os
 import sys
+import tomllib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal, override
 from urllib.parse import urlsplit
 
-import tomlkit
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
-from tomlkit.exceptions import ParseError
 
 from quant_ranger._impl.cli_options import ScheduleOption
 from quant_ranger._impl.git import RepositoryCheckout
@@ -217,9 +216,9 @@ class PixiUpdateScanner(Scanner[PixiUpdateItem]):
             return None
 
         try:
-            parsed = tomlkit.parse(contents).unwrap()
+            parsed = tomllib.loads(contents)
             return PixiManifest.model_validate(parsed)
-        except (ValidationError, ParseError) as error:
+        except (ValidationError, tomllib.TOMLDecodeError) as error:
             context.logger.error(
                 f"Skipping {path}: could not parse pixi manifest: {error}"
             )

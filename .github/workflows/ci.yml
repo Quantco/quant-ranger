@@ -38,7 +38,6 @@ jobs:
       fail-fast: false
       matrix:
         environment:
-          - py314
           - py315
         os:
           - ubuntu-latest
