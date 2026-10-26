@@ -45,8 +45,7 @@ def pluralize(count: int, singular: str, plural: str | None = None) -> str:
 
 
 def truncate_lines(text: str, *, max_lines: int) -> str:
-    """Keep the first and last lines of `text`, eliding the middle beyond
-    `max_lines`."""
+    """Elide the middle of `text` so that at most `max_lines` lines remain."""
     lines = text.splitlines()
     if len(lines) <= max_lines:
         return text
@@ -107,9 +106,9 @@ def map_concurrently[ItemT, ResultT](
     logger: Logger,
     description: str,
 ) -> list[ResultT]:
-    """Run `fn` over `items` in a thread pool, collecting results in completion order as
-    a progress bar advances.
+    """Run `fn` over `items` in a thread pool while a progress bar advances.
 
+    Results are collected in completion order.
     On Ctrl+C, pending items are cancelled and running ones are awaited before the
     `KeyboardInterrupt` propagates. A second Ctrl+C terminates the process immediately
     via SIGINT, skipping cleanup handlers such as temporary directory removal.

@@ -88,8 +88,10 @@ def parse_template_repository_for_host(
     src_path: str,
     github_server_host: str,
 ) -> RepositoryRef:
-    """To protect against SSRF, we only accept template src_paths that originate from
-    the same GitHub host as the repository being updated.
+    """Ensure the template src_path is hosted on the repository's GitHub host.
+
+    To protect against SSRF, we only accept template src_paths that originate from the
+    same GitHub host as the repository being updated.
 
     Raises ValueError for src_paths that do not match that host.
     """

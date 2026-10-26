@@ -11,16 +11,20 @@ name = "quant-ranger"
 version = "0.0.0"
 license = "BSD-3-Clause"
 license-file = "LICENSE"
+
 [package.build.backend]
 name = "pixi-build-python"
 version = "*"
+
 [package.build.config]
 # Derive the conda run-dependencies from `[project.dependencies]` in
 # `pyproject.toml` so that the PyPI metadata is the single source of truth.
 ignore-pypi-mapping = false
+
 [package.host-dependencies]
 python = ">=3.14"
 hatchling = "*"
+
 # Only dependencies that are unavailable on PyPI belong here; everything else is
 # declared in `pyproject.toml` and mapped automatically. These are all invoked as
 # external executables, so `pip` users must install them separately (see README).
@@ -41,6 +45,7 @@ pyrefly = "*"
 griffe = "*"
 types-pyyaml = "*"
 types-requests = "*"
+
 [feature.test.tasks]
 test = "pytest"
 test-coverage = "pytest --cov=quant_ranger --cov-report=xml --cov-report=term-missing"
@@ -50,6 +55,7 @@ python = "*"
 hatchling = "*"
 python-build = "*"
 twine = ">=6"
+
 [feature.build.tasks]
 build-wheel = "python -m build --no-isolation ."
 check-wheel = "twine check dist/*"
@@ -59,7 +65,7 @@ lefthook = "*"
 docformatter = "<1.7.8"
 ruff = "*"
 prettier = "*"
-taplo = "*"
+tombi = "*"
 pre-commit-hooks = "*"
 typos = "*"
 zizmor = "*"
@@ -101,10 +107,14 @@ docs-check = { depends-on = [
   "docs-build",
 ] }
 
+[feature.py315.dependencies]
+python = "3.15.*"
+
 [environments]
 default = ["test", "build", "lint"]
 py314 = ["py314", "test"]
 docs = ["docs"]
+py315 = ["py315", "test"]
 
 [tool.update]
 autoupdate-commit-message = "chore: Update pixi lockfile"

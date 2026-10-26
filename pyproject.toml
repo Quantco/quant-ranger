@@ -14,6 +14,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
 ]
 requires-python = ">=3.14"
 readme = "README.md"
@@ -38,23 +39,24 @@ dependencies = [
 [project.urls]
 repository = "https://github.com/quantco/quant-ranger"
 
-[tool.hatch.build.targets.wheel]
-packages = ["quant_ranger"]
-
 [project.scripts]
 quant-ranger = "quant_ranger.cli:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["quant_ranger"]
+
 [tool.docformatter]
-black = true # only sets the style options to the default values of black
+black = true  # only sets the style options to the default values of black
 
 [tool.ruff]
 line-length = 88
 
 [tool.ruff.lint]
 ignore = [
-  "N803", # https://docs.astral.sh/ruff/rules/invalid-argument-name
-  "N806", # https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function
-  "E501", # https://docs.astral.sh/ruff/faq/#is-the-ruff-linter-compatible-with-black
+  "N803",  # https://docs.astral.sh/ruff/rules/invalid-argument-name
+  "N806",  # https://docs.astral.sh/ruff/rules/non-lowercase-variable-in-function
+  "E501",  # https://docs.astral.sh/ruff/faq/#is-the-ruff-linter-compatible-with-black
+  "D1",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
 ]
 select = [
   # pyflakes
@@ -68,7 +70,12 @@ select = [
   "N",
   # pyupgrade
   "UP",
+  # pydocstyle
+  "D",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"
@@ -77,6 +84,7 @@ indent-style = "space"
 [tool.pyrefly]
 python-version = "3.14.0"
 preset = "strict"
+
 [tool.pyrefly.errors]
 # https://github.com/Quantco/quant-ranger/issues/17
 implicit-any-lambda = false
@@ -100,3 +108,6 @@ default.extend-ignore-re = [
 [tool.pyright]
 venv = "default"
 venvPath = ".pixi/envs/"
+
+[tool.tombi]
+schema.enabled = false
