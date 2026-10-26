@@ -1,3 +1,4 @@
+<<<<<<< before updating
 import warnings as _warnings
 from importlib import metadata as _metadata
 
@@ -51,6 +52,13 @@ __all__ = [
     "__version__",
     "get_exec_output_silently",
 ]
+||||||| last update
+import importlib.metadata
+import warnings
+=======
+import warnings as _warnings
+from importlib import metadata as _metadata
+>>>>>>> after updating
 
 try:
     __version__ = _metadata.version(__name__)

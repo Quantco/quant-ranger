@@ -1,3 +1,4 @@
+<<<<<<< before updating
 * text=auto
 
 *.{diff,patch} binary
@@ -8,3 +9,8 @@
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true
 
 docs/docs/reference/*.md merge=binary linguist-generated=true
+||||||| last update
+pixi.lock merge=binary linguist-language=YAML linguist-generated=true
+=======
+pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
+>>>>>>> after updating
