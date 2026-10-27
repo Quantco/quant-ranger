@@ -1,11 +1,10 @@
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 import pytest
-import tomlkit
 from pydantic import ValidationError
-from tomlkit.exceptions import ParseError
 
 from quant_ranger._impl.github import GitHubClient, PullRequestOptions
 from quant_ranger._impl.logger import LogLevel
@@ -65,9 +64,9 @@ def _pixi_version_updater() -> PixiVersionUpdater:
 
 def parse_config(contents: str) -> PixiVersionUpdaterConfig:
     try:
-        parsed = tomlkit.parse(contents).unwrap()
+        parsed = tomllib.loads(contents)
         return PixiTomlConfig.model_validate(parsed).tool.pixi_version_updater
-    except (ValidationError, ParseError) as error:
+    except (ValidationError, tomllib.TOMLDecodeError) as error:
         raise ValueError(f"Invalid pixi.toml: {error}") from error
 
 

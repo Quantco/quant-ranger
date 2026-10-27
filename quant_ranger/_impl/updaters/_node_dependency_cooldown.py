@@ -1,16 +1,15 @@
 import json
 import os
 import re
+import tomllib
 from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
 from typing import Annotated, Any, override
 
-import tomlkit
 import typer
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
-from tomlkit.exceptions import ParseError
 
 from quant_ranger._impl.github import PullRequestOptions
 from quant_ranger._impl.models import (
@@ -139,8 +138,8 @@ def _find_files_in_repo(root: Path, target_name: str) -> list[Path]:
 
 def _parse_bun_config(content: str) -> BunConfig:
     try:
-        return BunConfig.model_validate(tomlkit.parse(content).unwrap())
-    except (ParseError, ValidationError) as error:
+        return BunConfig.model_validate(tomllib.loads(content))
+    except (tomllib.TOMLDecodeError, ValidationError) as error:
         raise ValueError(f"Invalid bunfig.toml: {error}") from error
 
 

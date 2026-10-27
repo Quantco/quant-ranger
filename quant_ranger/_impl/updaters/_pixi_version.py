@@ -1,13 +1,12 @@
 import re
 import threading
+import tomllib
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Literal, override
 
-import tomlkit
 import typer
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
-from tomlkit.exceptions import ParseError
 
 from quant_ranger._impl.cli_options import ScheduleOption, SiteConfigParameter
 from quant_ranger._impl.git import RepositoryCheckout
@@ -133,9 +132,9 @@ class PixiVersionScanner(Scanner[PixiVersionItem]):
             return PixiVersionUpdaterConfig()
 
         try:
-            parsed = tomlkit.parse(contents).unwrap()
+            parsed = tomllib.loads(contents)
             return PixiTomlConfig.model_validate(parsed).tool.pixi_version_updater
-        except (ParseError, ValidationError) as error:
+        except (tomllib.TOMLDecodeError, ValidationError) as error:
             context.logger.warning(
                 "Could not parse pixi.toml; using default pixi-version updater "
                 f"config: {error}"

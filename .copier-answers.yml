@@ -15,7 +15,7 @@ author_email: noreply@quantco.com
 author_name: QuantCo, Inc.
 github_url: https://github.com/quantco/quant-ranger
 github_user: JakobKlaushoferQC
-minimal_python_version: py314
+minimal_python_version: py315
 project_short_description: Tool for maintenance work across GitHub repositories.
 project_slug: quant-ranger
 use_devcontainer: false
