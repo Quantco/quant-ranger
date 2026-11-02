@@ -51,6 +51,12 @@ jobs:
         uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
         with:
           environments: ${{ matrix.environment }}
+      - name: Allow rattler-sandbox user namespaces
+        if: runner.os == 'Linux'
+        run: |
+          # GitHub's Ubuntu AppArmor policy can deny the rootless uid_map write
+          # that rattler-sandbox uses; relax it in this ephemeral runner.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Run pytest
         run: pixi run -e ${{ matrix.environment }} test-coverage --color=yes
       - name: Upload coverage reports to Codecov
