@@ -352,4 +352,4 @@ def _sandbox_tmpdir(command: list[str]) -> str:
 
 
 def _env_path() -> str:
-    return str(Path("/usr/bin/env").resolve())
+    return os.path.abspath("/usr/bin/env")
