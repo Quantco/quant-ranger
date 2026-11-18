@@ -96,7 +96,7 @@ When an `ignore-environments` or `ignore-platforms` list is configured, the comm
 No environment is installed.
 
 quant-ranger passes the JSON output to [`pixi-diff-to-markdown`](https://github.com/pavelzw/pixi-diff-to-markdown) and uses the resulting dependency report as the pull-request body.
-Multiple lockfiles produce separate update items and independently configured pull requests.
+By default, multiple lockfiles produce separate update items and independently configured pull requests.
 
 ```console
 quant-ranger update \
@@ -123,19 +123,69 @@ autoupdate-pull-request-labels = ["dependencies", "pixi"]
 autoupdate-schedule = "weekly"
 ignore-environments = ["docs"]
 ignore-platforms = ["win-64"]
+group = "workspace"
 ```
 
-| Key                              | Default                         | Meaning                                            |
-| -------------------------------- | ------------------------------- | -------------------------------------------------- |
-| `autoupdate-branch-prefix`       | `"pixi-update"`                 | [Managed branch](index.md#managed-branches) prefix |
-| `autoupdate-commit-message`      | `"chore: Update pixi lockfile"` | Commit message and pull-request title              |
-| `autoupdate-pull-request-labels` | `["dependencies"]`              | Pull-request labels                                |
-| `autoupdate-schedule`            | `"monthly"`                     | `weekly`, `monthly`, `quarterly`, or `never`       |
-| `ignore-environments`            | `[]`                            | Environments excluded from dependency resolution   |
-| `ignore-platforms`               | `[]`                            | Platforms excluded from dependency resolution      |
+| Key                              | Default                         | Meaning                                                                                             |
+| -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `autoupdate-branch-prefix`       | `"pixi-update"`                 | [Managed branch](index.md#managed-branches) prefix, see [Branches and titles](#branches-and-titles) |
+| `autoupdate-commit-message`      | `"chore: Update pixi lockfile"` | Commit message and pull-request title                                                               |
+| `autoupdate-pull-request-labels` | `["dependencies"]`              | Pull-request labels                                                                                 |
+| `autoupdate-schedule`            | `"monthly"`                     | `weekly`, `monthly`, `quarterly`, or `never`                                                        |
+| `ignore-environments`            | `[]`                            | Environments excluded from dependency resolution                                                    |
+| `ignore-platforms`               | `[]`                            | Platforms excluded from dependency resolution                                                       |
+| `group`                          | `None`                          | [Group](#grouping-lockfiles-into-one-pull-request) to publish in a single pull request              |
 
-The branch ends in the manifest path, and the pull-request title includes the nested lockfile path.
 A missing or invalid adjacent manifest is skipped and logged.
+
+### Branches and titles
+
+Each pull request is pushed from a branch below `autoupdate-branch-prefix`.
+Ungrouped lockfiles use the manifest path as suffix; [grouped lockfiles](#grouping-lockfiles-into-one-pull-request) use the fixed `group/` namespace followed by the group name.
+
+| Lockfile               | Branch                          | Pull-request title                        |
+| ---------------------- | ------------------------------- | ----------------------------------------- |
+| `pixi.lock`            | `<prefix>/pixi.toml`            | `<commit message>`                        |
+| `subproject/pixi.lock` | `<prefix>/subproject/pixi.toml` | `<commit message> (subproject/pixi.lock)` |
+| in group `workspace`   | `<prefix>/group/workspace`      | `<commit message> (workspace)`            |
+
+With the default prefix, the branches are `pixi-update/pixi.toml`, `pixi-update/subproject/pixi.toml`, and `pixi-update/group/workspace`.
+With `autoupdate-branch-prefix = "deps"`, the group's branch is `deps/group/workspace`.
+The `group/` namespace is not configurable: it keeps group branches apart from the manifest-path branches of ungrouped lockfiles below the same prefix.
+
+### Grouping lockfiles into one pull request
+
+Set the same `group` in the `[tool.update]` section of several `pixi.toml` files in one repository to update their lockfiles in a single checkout and publish them in one pull request.
+This avoids many pull requests and repeated CI runs in monorepos.
+
+```toml title="subprojects/a/pixi.toml and subprojects/b/pixi.toml"
+[tool.update]
+group = "workspace"
+```
+
+The pull request uses the [branch and title](#branches-and-titles) of the group, and its body holds one section per changed lockfile; up-to-date lockfiles are left out.
+
+A group is a single update item, so the run summary and the results file report one result per group instead of one per lockfile:
+
+| Lockfiles of the group            | Result                                                                                                                  |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| At least one changed, none failed | `updated`, or `skipped` if the [managed pull request](../usage/running-updates.md#managed-pull-requests) is not updated |
+| All up to date                    | `up-to-date`                                                                                                            |
+| At least one failed               | `failure`                                                                                                               |
+
+If a lockfile fails to update, for example because `pixi update` fails, the other changed lockfiles are still published, and the group reports `failure`.
+Its message names each failing lockfile with its error, for example `subproject/pixi.lock: pixi update failed (the other changed lockfiles were published)`.
+Unexpected errors, such as a crash of `pixi-diff-to-markdown`, abort the whole group without publishing.
+
+A group has a single branch, title, and schedule, so the grouped manifests share these settings:
+
+- `autoupdate-branch-prefix`, `autoupdate-commit-message`, and `autoupdate-schedule` come from the first manifest by path that sets the key; manifests that leave it unset are ignored, and the default applies if none sets it.
+- If manifests set different values for one of these keys, the pull-request body starts with a warning that names the value used.
+- `autoupdate-pull-request-labels` set by any grouped manifest are merged.
+- Manifests with schedule `never` are not part of the group.
+
+`group` starts with an alphanumeric character and contains only alphanumerics, `-`, and `_`, so that it is always a valid branch name.
+Avoid ungrouped manifests at `group/<group>/pixi.toml`: their branch would collide with the group's branch.
 
 :::note[Private channels]
 
