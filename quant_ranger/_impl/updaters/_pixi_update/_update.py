@@ -2,13 +2,21 @@ import json
 import os
 import sys
 import tomllib
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path, PurePosixPath
-from typing import Any, Literal, override
+from typing import Annotated, Any, Literal, override
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    StringConstraints,
+    ValidationError,
+)
 
 from quant_ranger._impl.cli_options import ScheduleOption
 from quant_ranger._impl.git import RepositoryCheckout
@@ -19,12 +27,12 @@ from quant_ranger._impl.helpers import (
     app_tempdir,
     get_exec_output_silently,
 )
-from quant_ranger._impl.logger import Logger
+from quant_ranger._impl.logger import Logger, PrefixLogger
 from quant_ranger._impl.models import (
-    PathUpdateItem,
     RepositoryRef,
     Schedule,
     Status,
+    UpdateItem,
     UpdateOptions,
     UpdateOutcome,
     UpdateOutput,
@@ -39,6 +47,10 @@ from ._auth import SandboxAuth, prepare_sandbox_auth
 from ._checkout_copy import LockfileCopyError, checkout_copy, copy_back_lockfile
 
 PIXI_LOCKFILE = "pixi.lock"
+# Groups become a branch name segment. Alphanumerics, `_`, and `-` are always valid
+# in a git ref segment. Without `/`, one group's branch cannot be a parent directory
+# of another group's branch, which git does not allow.
+GroupName = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")]
 # Pixi connect timeouts behave inconsistently at the moment, so we combine it with our own timeout.
 PIXI_UPDATE_TIMEOUT_SECONDS = 300
 
@@ -109,6 +121,10 @@ class PixiUpdateConfig(BaseModel):
         default_factory=list,
         alias="ignore-platforms",
     )
+    group: GroupName | None = Field(
+        default=None,
+        alias="group",
+    )
 
 
 class PixiToolSection(BaseModel):
@@ -147,10 +163,51 @@ class PixiManifest(BaseModel):
     package: PixiPackageSection | None = None
 
 
-class PixiUpdateItem(PathUpdateItem):
-    """Update item for one pixi lockfile and its parsed manifest."""
+class PixiGroup(BaseModel):
+    """Settings shared by the lockfiles of one group.
 
+    Conflicting manifest settings do not fail the group; `warnings` explains which
+    values were used.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    branch_prefix: str
+    commit_message: str
+    schedule: Schedule | Literal["never"]
+    labels: list[str]
+    warnings: list[str]
+
+
+class PixiLockfile(BaseModel):
+    """A pixi lockfile and its parsed adjacent manifest."""
+
+    model_config = ConfigDict(frozen=True)
+
+    path: PurePosixPath
     manifest: PixiManifest
+
+    @property
+    def manifest_path(self) -> PurePosixPath:
+        return self.path.parent / "pixi.toml"
+
+
+class PixiUpdateItem(UpdateItem):
+    """Update item for the lockfiles published in one pull request.
+
+    An ungrouped item holds a single lockfile; a group holds all its lockfiles that are
+    due, sorted by path.
+    """
+
+    lockfiles: list[PixiLockfile]
+    group: PixiGroup | None = None
+
+    @override
+    def __str__(self) -> str:
+        if self.group is not None:
+            return f"{self.repository_ref.display_name} group {self.group.name}"
+        return f"{self.repository_ref.display_name} {self.lockfiles[0].path}"
 
 
 class PixiUpdateScanner(Scanner[PixiUpdateItem]):
@@ -165,42 +222,68 @@ class PixiUpdateScanner(Scanner[PixiUpdateItem]):
         repository_ref: RepositoryRef,
         context: RunContext,
     ) -> Sequence[PixiUpdateItem]:
-        lockfiles = context.github_client.find_files_by_name(
+        paths = context.github_client.find_files_by_name(
             repository_ref,
             PIXI_LOCKFILE,
         )
-        if not lockfiles:
+        if not paths:
             context.logger.debug("No pixi.lock file found.")
             return []
 
-        items: list[PixiUpdateItem] = []
-        for path in lockfiles:
+        lockfiles: list[PixiLockfile] = []
+        for path in paths:
             manifest = self._read_manifest(repository_ref, path, context)
-            if manifest is None:
-                continue
+            if manifest is not None:
+                lockfiles.append(
+                    PixiLockfile(path=PurePosixPath(path), manifest=manifest)
+                )
+        # Groups are resolved before schedule filtering so that manifests that are not
+        # due in this run are taken into account as well.
+        groups = _resolve_groups(lockfiles)
+        for group in groups.values():
+            for warning in group.warnings:
+                context.logger.warning(warning)
 
-            configured_schedule = manifest.tool.update.autoupdate_schedule
+        items: list[PixiUpdateItem] = []
+        grouped: dict[str, list[PixiLockfile]] = {}
+        for lockfile in lockfiles:
+            config = lockfile.manifest.tool.update
             # `never` opts out of autoupdates entirely, so it is honored even in
             # an unfiltered run; the other values only select a cadence.
-            if configured_schedule == "never":
-                context.logger.debug(f"Skipping {path}: configured schedule is never.")
+            if config.autoupdate_schedule == "never":
+                context.logger.debug(
+                    f"Skipping {lockfile.path}: configured schedule is never."
+                )
                 continue
 
+            group = None if config.group is None else groups[config.group]
+            # All lockfiles of a group are due together, so that none of them is
+            # dropped from the group's open pull request.
+            configured_schedule = (
+                config.autoupdate_schedule if group is None else group.schedule
+            )
             if self.schedule is not None and self.schedule != configured_schedule:
                 context.logger.debug(
-                    f"Skipping {path}: configured schedule is "
+                    f"Skipping {lockfile.path}: configured schedule is "
                     f"{configured_schedule}; current scheduled run is {self.schedule}."
                 )
                 continue
 
-            items.append(
-                PixiUpdateItem(
-                    repository_ref=repository_ref,
-                    path=path,
-                    manifest=manifest,
+            if group is None:
+                items.append(
+                    PixiUpdateItem(repository_ref=repository_ref, lockfiles=[lockfile])
                 )
-            )
+            else:
+                grouped.setdefault(group.name, []).append(lockfile)
 
+        items.extend(
+            PixiUpdateItem(
+                repository_ref=repository_ref,
+                lockfiles=sorted(members, key=lambda lockfile: lockfile.path),
+                group=groups[name],
+            )
+            for name, members in grouped.items()
+        )
         return items
 
     def _read_manifest(
@@ -260,6 +343,15 @@ class PixiUpdateOptions(UpdateOptions):
     schedule: ScheduleOption = None
 
 
+@dataclass(frozen=True, slots=True)
+class LockfileUpdate:
+    """Outcome of `pixi update` for one lockfile and the report of its changes."""
+
+    lockfile: PixiLockfile
+    outcome: UpdateOutcome
+    report: str = ""
+
+
 class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]):
     def __init__(
         self,
@@ -274,42 +366,66 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
         super().__init__(checkout, context, item=item, options=options)
         self._auth = auth
         self._config_locations = config_locations
-        lockfile_path = Path(item.path)
-        self._relative_lockfile_path = lockfile_path
-        self._relative_lockfile_directory = lockfile_path.parent
-        self.context.logger.debug(
-            f"Lockfile directory: {self._relative_lockfile_directory.as_posix()}"
-        )
-
-    @property
-    def _relative_manifest_path(self) -> Path:
-        return self._relative_lockfile_directory / "pixi.toml"
-
-    @property
-    def _absolute_lockfile_directory(self) -> Path:
-        return self.checkout.absolute_path / self._relative_lockfile_directory
 
     @override
     def run(self) -> UpdateOutcome:
-        manifest = self.item.manifest
+        updates = [self._update_lockfile(lockfile) for lockfile in self.item.lockfiles]
+        changed = [
+            update for update in updates if update.outcome.result == Status.UPDATED
+        ]
+        published = bool(changed) and self._publish(changed)
+        return _item_outcome(updates, published=published)
+
+    def _publish(self, updates: Sequence[LockfileUpdate]) -> bool:
+        """Open or update the pull request carrying the given lockfile updates."""
+        for update in updates:
+            self.checkout.add(update.lockfile.path.as_posix())
+
+        target_branch = self.checkout.repository_ref.branch
+        if self.item.group is None:
+            (update,) = updates
+            options = _pull_request_options(update, target_branch=target_branch)
+        else:
+            options = _group_pull_request_options(
+                self.item.group, updates, target_branch=target_branch
+            )
+        return self.context.github_client.create_pull_request(
+            self.checkout,
+            options,
+            self.context.logger,
+        )
+
+    def _update_lockfile(self, lockfile: PixiLockfile) -> LockfileUpdate:
+        """Run `pixi update` for one lockfile and report the changes."""
+        # Within a group, the item's log prefix does not identify the lockfile.
+        logger = self.context.logger
+        if len(self.item.lockfiles) > 1:
+            logger = PrefixLogger(f"[{lockfile.path}] ", logger)
+        manifest = lockfile.manifest
         config = manifest.tool.update
+        relative_lockfile_path = Path(lockfile.path)
+        relative_lockfile_directory = relative_lockfile_path.parent
+        logger.debug(f"Lockfile directory: {relative_lockfile_directory.as_posix()}")
 
         # A symlink in the lockfile directory could point the sandbox's writable
         # working directory and the lockfile destination outside of the checkout.
         # The copy has the same layout, so checking the checkout covers both.
         checkout_path = self.checkout.absolute_path.resolve()
-        lockfile_directory = checkout_path / self._relative_lockfile_directory
+        lockfile_directory = checkout_path / relative_lockfile_directory
         if lockfile_directory.resolve() != lockfile_directory:
-            return UpdateOutcome(
-                result=Status.FAILURE,
-                message=(
-                    f"{self._relative_lockfile_directory.as_posix()} must not be "
-                    "a symlink or inside a symlinked directory."
+            return LockfileUpdate(
+                lockfile,
+                UpdateOutcome(
+                    result=Status.FAILURE,
+                    message=(
+                        f"{relative_lockfile_directory.as_posix()} must not be "
+                        "a symlink or inside a symlinked directory."
+                    ),
                 ),
             )
 
         # Pixi runs on a private copy of the checkout; only the resulting lockfile
-        # is transferred back. Each task also gets its own writable cache so a
+        # is transferred back. Each lockfile also gets its own writable cache so a
         # malicious repository cannot poison the cache used by other tasks or the
         # user.
         with (
@@ -323,75 +439,56 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
                 "--json",
                 "--no-install",
                 "--manifest-path",
-                str(workspace / self._relative_manifest_path),
+                str(workspace / lockfile.manifest_path),
                 *self._pixi_update_flags(manifest, config),
             ]
             try:
                 output = _run_pixi_update(
                     update_command,
-                    cwd=workspace / self._relative_lockfile_directory,
-                    logger=self.context.logger,
+                    cwd=workspace / relative_lockfile_directory,
+                    logger=logger,
                     auth=self._auth,
                     cache_dir=cache_dir,
                     config_locations=self._config_locations,
                 )
             except CommandError as error:
-                return UpdateOutcome(
-                    result=Status.FAILURE,
-                    message=str(error),
-                    details=error.details,
+                return LockfileUpdate(
+                    lockfile,
+                    UpdateOutcome(
+                        result=Status.FAILURE,
+                        message=str(error),
+                        details=error.details,
+                    ),
                 )
             if output.stdout.strip() == "{}":
-                return UpdateOutcome(result=Status.UP_TO_DATE)
+                return LockfileUpdate(lockfile, UpdateOutcome(result=Status.UP_TO_DATE))
 
             try:
                 copy_back_lockfile(
                     workspace,
-                    self._relative_lockfile_path,
-                    self.checkout.absolute_path / self._relative_lockfile_path,
+                    relative_lockfile_path,
+                    self.checkout.absolute_path / relative_lockfile_path,
                 )
             except LockfileCopyError as error:
-                return UpdateOutcome(
-                    result=Status.FAILURE,
-                    message=f"pixi update did not produce a usable lockfile: {error}",
+                return LockfileUpdate(
+                    lockfile,
+                    UpdateOutcome(
+                        result=Status.FAILURE,
+                        message=f"pixi update did not produce a usable lockfile: {error}",
+                    ),
                 )
 
         # Generate diff using:
         # https://pixi.sh/latest/integration/extensions/pixi_diff/
         updates = get_exec_output_silently(
             ["pixi-diff-to-markdown"],
-            cwd=self._absolute_lockfile_directory,
+            cwd=self.checkout.absolute_path / relative_lockfile_directory,
             input=output.stdout,
-            logger=self.context.logger,
+            logger=logger,
         ).stdout.strip()
 
-        self.checkout.add(self._relative_lockfile_path.as_posix())
-        pr_opened = self.context.github_client.create_pull_request(
-            self.checkout,
-            PullRequestOptions(
-                title=self._pull_request_title(config),
-                body=truncate_pull_request_body(updates),
-                source_branch=(
-                    f"{config.autoupdate_branch_prefix}/"
-                    f"{self._relative_manifest_path.as_posix()}"
-                ),
-                target_branch=self.checkout.repository_ref.branch,
-                labels=config.autoupdate_pull_request_labels,
-                quant_ranger_id=PixiUpdateUpdater.name,
-            ),
-            self.context.logger,
-        )
-        if not pr_opened:
-            return UpdateOutcome(result=Status.SKIPPED)
-
-        return UpdateOutcome(result=Status.UPDATED)
-
-    def _pull_request_title(self, config: PixiUpdateConfig) -> str:
-        if self._relative_lockfile_directory == Path("."):
-            return config.autoupdate_commit_message
-        return (
-            f"{config.autoupdate_commit_message} "
-            f"({self._relative_lockfile_path.as_posix()})"
+        return LockfileUpdate(
+            lockfile, UpdateOutcome(result=Status.UPDATED), report=updates
         )
 
     def _pixi_update_flags(
@@ -429,6 +526,182 @@ class PixiUpdateTask(UpdateTask[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
             flags.extend(platform for value in platforms for platform in ("-p", value))
 
         return flags
+
+
+def _resolve_groups(lockfiles: Sequence[PixiLockfile]) -> dict[str, PixiGroup]:
+    """Resolve the settings of every group from its manifests.
+
+    Manifests with schedule `never` are never updated and therefore not part of a group.
+    """
+    members: dict[str, list[PixiLockfile]] = {}
+    for lockfile in sorted(lockfiles, key=lambda lockfile: lockfile.path):
+        config = lockfile.manifest.tool.update
+        if config.group is not None and config.autoupdate_schedule != "never":
+            members.setdefault(config.group, []).append(lockfile)
+    return {name: _resolve_group(name, group) for name, group in members.items()}
+
+
+def _resolve_group(name: str, members: Sequence[PixiLockfile]) -> PixiGroup:
+    """Resolve one group's settings from the values its manifests set explicitly.
+
+    Manifests that leave a setting unset do not count as disagreeing. Labels of all
+    manifests are merged.
+    """
+    warnings: list[str] = []
+    explicit_labels = _explicit_values(
+        members,
+        "autoupdate_pull_request_labels",
+        lambda config: config.autoupdate_pull_request_labels,
+    )
+    labels = chain.from_iterable(labels for _, labels in explicit_labels)
+    return PixiGroup(
+        name=name,
+        branch_prefix=_group_setting(
+            name,
+            members,
+            "autoupdate_branch_prefix",
+            lambda config: config.autoupdate_branch_prefix,
+            warnings,
+        ),
+        commit_message=_group_setting(
+            name,
+            members,
+            "autoupdate_commit_message",
+            lambda config: config.autoupdate_commit_message,
+            warnings,
+        ),
+        schedule=_group_setting(
+            name,
+            members,
+            "autoupdate_schedule",
+            lambda config: config.autoupdate_schedule,
+            warnings,
+        ),
+        labels=list(dict.fromkeys(labels))
+        if explicit_labels
+        else PixiUpdateConfig().autoupdate_pull_request_labels,
+        warnings=warnings,
+    )
+
+
+def _explicit_values[T](
+    members: Sequence[PixiLockfile],
+    field: str,
+    value: Callable[[PixiUpdateConfig], T],
+) -> list[tuple[PurePosixPath, T]]:
+    """Return the values of the manifests that set `field` explicitly, by manifest.
+
+    `value` reads the same field as `field` names; it only adds type safety.
+    """
+    return [
+        (member.manifest_path, value(member.manifest.tool.update))
+        for member in members
+        if field in member.manifest.tool.update.model_fields_set
+    ]
+
+
+def _group_setting[T](
+    name: str,
+    members: Sequence[PixiLockfile],
+    field: str,
+    value: Callable[[PixiUpdateConfig], T],
+    warnings: list[str],
+) -> T:
+    """Return the value of the first manifest by path that sets `field` explicitly.
+
+    Falls back to the default if no manifest sets it, and appends a warning to
+    `warnings` if manifests set different values.
+    """
+    explicit = _explicit_values(members, field, value)
+    if not explicit:
+        return value(PixiUpdateConfig())
+
+    manifest_path, chosen = explicit[0]
+    if len({setting for _, setting in explicit}) > 1:
+        key = PixiUpdateConfig.model_fields[field].alias
+        warnings.append(
+            f"The manifests of group `{name}` set different `{key}` values; "
+            f"using `{chosen}` from `{manifest_path}`."
+        )
+    return chosen
+
+
+def _item_outcome(
+    updates: Sequence[LockfileUpdate],
+    *,
+    published: bool,
+) -> UpdateOutcome:
+    """Combine the outcomes of an item's lockfiles into the outcome of the item.
+
+    Any failing lockfile fails the item, even if the changed lockfiles were published.
+    """
+    failures = [update for update in updates if update.outcome.result == Status.FAILURE]
+    if len(updates) == 1 and failures:
+        # The item's name already identifies its only lockfile.
+        return failures[0].outcome
+    if failures:
+        message = "; ".join(
+            f"{update.lockfile.path}: {update.outcome.message}" for update in failures
+        )
+        if published:
+            message += " (the other changed lockfiles were published)"
+        details = "\n\n".join(
+            f"{update.lockfile.path}:\n{update.outcome.details}"
+            for update in failures
+            if update.outcome.details
+        )
+        return UpdateOutcome(
+            result=Status.FAILURE, message=message, details=details or None
+        )
+    if published:
+        return UpdateOutcome(result=Status.UPDATED)
+    if any(update.outcome.result == Status.UPDATED for update in updates):
+        return UpdateOutcome(result=Status.SKIPPED)
+    return UpdateOutcome(result=Status.UP_TO_DATE)
+
+
+def _pull_request_options(
+    update: LockfileUpdate,
+    *,
+    target_branch: str | None,
+) -> PullRequestOptions:
+    lockfile = update.lockfile
+    config = lockfile.manifest.tool.update
+    title = config.autoupdate_commit_message
+    if lockfile.path.parent != PurePosixPath("."):
+        title = f"{title} ({lockfile.path})"
+    return PullRequestOptions(
+        title=title,
+        body=truncate_pull_request_body(update.report),
+        source_branch=f"{config.autoupdate_branch_prefix}/{lockfile.manifest_path}",
+        target_branch=target_branch,
+        labels=config.autoupdate_pull_request_labels,
+        quant_ranger_id=PixiUpdateUpdater.name,
+    )
+
+
+def _group_pull_request_options(
+    group: PixiGroup,
+    updates: Sequence[LockfileUpdate],
+    *,
+    target_branch: str | None,
+) -> PullRequestOptions:
+    sections = [
+        f"## `{update.lockfile.manifest_path}`\n\n{update.report}" for update in updates
+    ]
+    if group.warnings:
+        warning_lines = "\n".join(f"> - {warning}" for warning in group.warnings)
+        sections.insert(0, f"> [!WARNING]\n{warning_lines}")
+    return PullRequestOptions(
+        title=f"{group.commit_message} ({group.name})",
+        body=truncate_pull_request_body("\n\n".join(sections)),
+        # The `group/` namespace keeps group branches apart from the manifest-path
+        # branches of ungrouped lockfiles.
+        source_branch=f"{group.branch_prefix}/group/{group.name}",
+        target_branch=target_branch,
+        labels=group.labels,
+        quant_ranger_id=PixiUpdateUpdater.name,
+    )
 
 
 def _run_pixi_update(
@@ -567,7 +840,11 @@ class PixiUpdateUpdater(Updater[PixiUpdateItem, UpdateOutput, PixiUpdateOptions]
         pixi_info = _pixi_info()
         with app_tempdir(prefix="quant-ranger-pixi-auth-") as auth_tempdir:
             self._auth = _sandbox_auth_for_manifests(
-                [item.manifest for item in update_items],
+                [
+                    lockfile.manifest
+                    for item in update_items
+                    for lockfile in item.lockfiles
+                ],
                 context.logger,
                 auth_tempdir=auth_tempdir,
                 pixi_info=pixi_info,

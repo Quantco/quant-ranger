@@ -2,7 +2,7 @@
 
 import os
 import shlex
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import cast
 
 import pytest
@@ -20,6 +20,7 @@ from quant_ranger._impl.sandbox import get_sandboxed_exec_output_silently
 from quant_ranger._impl.testing import FakeGitHubClient, RecordingLogger
 from quant_ranger._impl.updaters._pixi_update._auth import SandboxAuth
 from quant_ranger._impl.updaters._pixi_update._update import (
+    PixiLockfile,
     PixiManifest,
     PixiUpdateItem,
     PixiUpdateOptions,
@@ -103,10 +104,14 @@ def test_sandboxed_writes_do_not_reach_checkout(
         ),
         item=PixiUpdateItem(
             repository_ref=repository_ref,
-            path="pixi.lock",
-            manifest=PixiManifest.model_validate(
-                {"workspace": {"platforms": ["linux-64"]}}
-            ),
+            lockfiles=[
+                PixiLockfile(
+                    path=PurePosixPath("pixi.lock"),
+                    manifest=PixiManifest.model_validate(
+                        {"workspace": {"platforms": ["linux-64"]}}
+                    ),
+                )
+            ],
         ),
         options=PixiUpdateOptions(),
         auth=SandboxAuth(),
