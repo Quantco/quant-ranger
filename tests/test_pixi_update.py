@@ -4,6 +4,7 @@ import stat
 import subprocess
 import sys
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, cast
@@ -11,7 +12,11 @@ from typing import Any, cast
 import pytest
 from pydantic import ValidationError
 
-from quant_ranger._impl.github import GitHubClient, PullRequestOptions
+from quant_ranger._impl.github import (
+    MAX_PULL_REQUEST_COMMENT_LENGTH,
+    GitHubClient,
+    PullRequestOptions,
+)
 from quant_ranger._impl.helpers import CommandError, ExecOutput
 from quant_ranger._impl.logger import LogLevel, PrefixLogger
 from quant_ranger._impl.models import (
@@ -405,6 +410,108 @@ def test_pixi_update_groups_lockfiles_sharing_a_group(
         RepositoryRef(owner="quantco", name="example", branch="main")
     ]
     assert task_runs[0].checkout.added_paths == ["pixi.lock", "subproject/pixi.lock"]
+
+
+def _run_group_with_report_sizes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    sizes: Mapping[str, int],
+) -> PullRequestOptions:
+    """Publish a group whose lockfile reports have the given sizes by directory."""
+    for directory in sizes:
+        write_pixi_project(tmp_path, directory=directory, config='group = "workspace"')
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_sandboxed_exec_output_silently",
+        lambda command, **kwargs: ExecOutput(
+            exit_code=0, stdout='{"changed": true}', stderr=""
+        ),
+    )
+
+    def fake_report(command: list[str], **kwargs: Any) -> ExecOutput:
+        directory = kwargs["cwd"].relative_to(tmp_path).as_posix()
+        size = sizes[directory]
+        # Many short lines, so that truncation can snap to a line boundary.
+        report = "\n".join(["x" * 99] * (size // 100))
+        return ExecOutput(exit_code=0, stdout=report, stderr="")
+
+    monkeypatch.setattr(
+        "quant_ranger._impl.updaters._pixi_update._update.get_exec_output_silently",
+        fake_report,
+    )
+
+    task_runs = run_update_tasks(
+        tmp_path,
+        paths=[
+            "pixi.lock" if directory == "." else f"{directory}/pixi.lock"
+            for directory in sizes
+        ],
+    )
+    (call,) = task_runs[0].github_client.pull_request_calls
+    return cast(PullRequestOptions, call["options"])
+
+
+def _section_headings(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line.startswith("## ")]
+
+
+def test_pixi_update_group_keeps_fitting_report_in_body(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    options = _run_group_with_report_sizes(
+        monkeypatch, tmp_path, {"a": 20_000, "b": 20_000}
+    )
+
+    assert options.comments == ()
+    assert _section_headings(options.body) == [
+        "## `a/pixi.toml`",
+        "## `b/pixi.toml`",
+    ]
+
+
+def test_pixi_update_group_moves_overflowing_sections_to_comments(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    options = _run_group_with_report_sizes(
+        monkeypatch,
+        tmp_path,
+        {"a": 50_000, "b": 20_000, "c": 20_000, "d": 30_000},
+    )
+
+    assert len(options.body) <= MAX_PULL_REQUEST_BODY_LENGTH
+    assert _section_headings(options.body) == ["## `a/pixi.toml`"]
+    assert "> - `b/pixi.toml`\n> - `c/pixi.toml`\n> - `d/pixi.toml`" in options.body
+    # Sections are never split, and packed into as few comments as possible.
+    assert [_section_headings(comment) for comment in options.comments] == [
+        ["## `b/pixi.toml`", "## `c/pixi.toml`"],
+        ["## `d/pixi.toml`"],
+    ]
+    assert "truncated" not in "".join([options.body, *options.comments])
+    assert all(
+        len(comment) <= MAX_PULL_REQUEST_COMMENT_LENGTH for comment in options.comments
+    )
+
+
+def test_pixi_update_group_truncates_section_too_long_for_a_comment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    options = _run_group_with_report_sizes(
+        monkeypatch, tmp_path, {"a": 70_000, "b": 1_000}
+    )
+
+    # Keeping the sections in order leaves the first, oversized one out of the body.
+    assert _section_headings(options.body) == []
+    assert [_section_headings(comment) for comment in options.comments] == [
+        ["## `a/pixi.toml`"],
+        ["## `b/pixi.toml`"],
+    ]
+    first_comment = options.comments[0]
+    assert len(first_comment) <= MAX_PULL_REQUEST_COMMENT_LENGTH
+    assert first_comment.startswith("## `a/pixi.toml`\n\n> [!WARNING]\n> This report")
+    assert first_comment.endswith("*... (truncated)*")
 
 
 def test_pixi_update_keeps_ungrouped_lockfiles_separate(

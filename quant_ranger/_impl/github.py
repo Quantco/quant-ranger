@@ -2,7 +2,7 @@ import base64
 import os
 import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
@@ -12,6 +12,7 @@ from github import Auth, Github, GithubException, GithubIntegration
 from github.Commit import Commit
 from github.GithubException import UnknownObjectException
 from github.Installation import Installation
+from github.IssueComment import IssueComment
 from github.PaginatedList import PaginatedList
 from github.PullRequest import PullRequest
 from github.Repository import Repository as GitHubRepository
@@ -36,15 +37,38 @@ from quant_ranger._impl.logger import Logger, PrefixLogger, progress
 from quant_ranger._impl.models import RepositoryRef
 from quant_ranger._impl.site_config import CommitAuthor
 
+# GitHub rejects pull request bodies and comments longer than this.
+MAX_PULL_REQUEST_BODY_LENGTH = 65_536
+# Leaves room for the hidden marker that identifies a comment as quant-ranger's.
+MAX_PULL_REQUEST_COMMENT_LENGTH = MAX_PULL_REQUEST_BODY_LENGTH - 256
+
 
 @dataclass(frozen=True, slots=True)
 class PullRequestOptions:
+    """Content and target of a pull request opened or updated by quant-ranger.
+
+    `comments` are conversation comments that follow the body, in order. On every
+    update, quant-ranger edits its existing comments in place, posts missing ones,
+    and deletes those that are no longer needed, so the pull request always shows
+    exactly these comments. Each comment can be at most
+    `MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
+    """
+
     title: str
     body: str
     source_branch: str
     quant_ranger_id: str
     target_branch: str | None = None
     labels: list[str] = field(default_factory=list)
+    comments: Sequence[str] = ()
+
+    def __post_init__(self) -> None:
+        for index, comment in enumerate(self.comments):
+            if len(comment) > MAX_PULL_REQUEST_COMMENT_LENGTH:
+                raise ValueError(
+                    f"Pull request comment {index} has {len(comment)} characters, "
+                    f"more than the maximum of {MAX_PULL_REQUEST_COMMENT_LENGTH}."
+                )
 
 
 # See: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats
@@ -586,6 +610,7 @@ class GitHubClient:
         if pull_request is not None:
             pull_request.edit(title=options.title, body=options.body)
             logger.debug("Successfully updated pull request.")
+            self._sync_comments(pull_request, options, logger)
         else:
             pull_request = self.get_github_repository(
                 repository_checkout.repository_ref
@@ -596,10 +621,66 @@ class GitHubClient:
                 base=target_branch,
             )
             logger.debug("Successfully created a pull request.")
+            # A new pull request has no comments to update or delete.
+            for index, comment in enumerate(options.comments):
+                pull_request.create_issue_comment(
+                    _comment_body(options.quant_ranger_id, index, comment)
+                )
 
         if options.labels:
             pull_request.add_to_labels(*options.labels)
         return True
+
+    def _sync_comments(
+        self,
+        pull_request: PullRequest,
+        options: PullRequestOptions,
+        logger: Logger,
+    ) -> None:
+        """Make quant-ranger's comments on the pull request match `options.comments`.
+
+        Comments are matched by position. Only the leading comments that are still
+        in order are kept and edited; all other comments of this updater are deleted
+        and the missing ones are posted after the kept ones, so the comments always
+        appear in the order of `options.comments`.
+        """
+        kept: list[IssueComment] = []
+        stale: list[IssueComment] = []
+        for comment in pull_request.get_issue_comments():
+            index = _comment_index(comment.body, options.quant_ranger_id)
+            if index is None or not self._is_own_comment(comment):
+                continue
+            if index == len(kept) and index < len(options.comments):
+                kept.append(comment)
+            else:
+                stale.append(comment)
+
+        for comment in stale:
+            comment.delete()
+        for index, comment in enumerate(options.comments):
+            body = _comment_body(options.quant_ranger_id, index, comment)
+            if index >= len(kept):
+                pull_request.create_issue_comment(body)
+            elif kept[index].body != body:
+                # Editing does not notify subscribers, posting does.
+                kept[index].edit(body)
+        logger.debug(
+            f"Synced {pluralize(len(options.comments), 'pull request comment')}, "
+            f"deleted {len(stale)}."
+        )
+
+    def _is_own_comment(self, comment: IssueComment) -> bool:
+        """Whether quant-ranger may edit or delete the comment.
+
+        With GitHub App authentication, comments are posted by the app's bot account;
+        otherwise by the user the token belongs to.
+        """
+        user = comment.user
+        if user is None:
+            return False
+        if self._is_installation_auth:
+            return user.type == "Bot"
+        return user.login == self._commit_author().name
 
     def _commit_author(self) -> CommitAuthor:
         with self._commit_author_lock:
@@ -641,6 +722,27 @@ class GitHubClient:
             return False
 
 
+def _comment_marker(quant_ranger_id: str, index: int) -> str:
+    return f"<!-- quant-ranger:{quant_ranger_id}:comment:{index} -->"
+
+
+_COMMENT_MARKER = re.compile(
+    r"<!-- quant-ranger:(?P<id>[^:]+):comment:(?P<index>\d+) -->"
+)
+
+
+def _comment_body(quant_ranger_id: str, index: int, comment: str) -> str:
+    return f"{_comment_marker(quant_ranger_id, index)}\n{comment}"
+
+
+def _comment_index(body: str, quant_ranger_id: str) -> int | None:
+    """Return the position of a comment posted for `quant_ranger_id`, if any."""
+    match = _COMMENT_MARKER.match(body)
+    if match is None or match["id"] != quant_ranger_id:
+        return None
+    return int(match["index"])
+
+
 def _is_safe_to_overwrite(commit: Commit) -> bool:
     return _commit_author_type(commit) == "Bot" or _commit_has_quant_ranger_trailer(
         commit
@@ -676,10 +778,13 @@ def _pull_request_details(
     diff_lines: int | None,
 ) -> Group:
     labels = ", ".join(options.labels) or "none"
+    comments = (
+        f", {pluralize(len(options.comments), 'comment')}" if options.comments else ""
+    )
     metadata = (
         f"{options.source_branch} -> {target_branch}, "
         f"{pluralize(changed_file_count, 'changed file')}, "
-        f"body {len(options.body)} chars, labels: {labels}"
+        f"body {len(options.body)} chars{comments}, labels: {labels}"
     )
     if diff_lines is not None:
         diff = truncate_lines(diff, max_lines=diff_lines)

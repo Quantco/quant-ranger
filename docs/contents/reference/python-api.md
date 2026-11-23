@@ -27,7 +27,7 @@ complete implementation.
 - **GitHubError** – Wrapper for errors raised by GitHub operations.
 - **Logger** – Small logging interface shared by CLI helpers and updaters.
 - **PathUpdateItem** – Update item for tasks scoped to a repository path.
-- **PullRequestOptions** –
+- **PullRequestOptions** – Content and target of a pull request opened or updated by quant-ranger.
 - **RepositoryCheckout** – Git operations for a local checkout of a repository ref.
 - **RepositoryRef** – Remote repository identity selected for an update run.
 - **RunContext** – Runtime dependencies shared across scanner and updater operations.
@@ -432,8 +432,16 @@ path: PurePosixPath = PurePosixPath('.')
 ### PullRequestOptions
 
 ```python
-PullRequestOptions(title: str, body: str, source_branch: str, quant_ranger_id: str, target_branch: str | None = None, labels: list[str] = list()) -> None
+PullRequestOptions(title: str, body: str, source_branch: str, quant_ranger_id: str, target_branch: str | None = None, labels: list[str] = list(), comments: Sequence[str] = ()) -> None
 ```
+
+Content and target of a pull request opened or updated by quant-ranger.
+
+`comments` are conversation comments that follow the body, in order. On every
+update, quant-ranger edits its existing comments in place, posts missing ones,
+and deletes those that are no longer needed, so the pull request always shows
+exactly these comments. Each comment can be at most
+`MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
 
 **Attributes:**
 
@@ -443,6 +451,7 @@ PullRequestOptions(title: str, body: str, source_branch: str, quant_ranger_id: s
 - **quant_ranger_id** (<code>str</code>) –
 - **target_branch** (<code>str | None</code>) –
 - **labels** (<code>list\[str\]</code>) –
+- **comments** (<code>Sequence\[str\]</code>) –
 
 #### title
 
@@ -478,6 +487,12 @@ target_branch: str | None = None
 
 ```python
 labels: list[str] = field(default_factory=list)
+```
+
+#### comments
+
+```python
+comments: Sequence[str] = ()
 ```
 
 ### RepositoryCheckout
