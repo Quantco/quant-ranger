@@ -767,7 +767,7 @@ def _split_group_report(
             comments[-1] = f"{comments[-1]}\n\n{section}"
         else:
             comments.append(section)
-    # Only many warnings could make the body too long even without any section.
+    # Only a note listing an extreme number of manifests can still be too long.
     return truncate_pull_request_body(body), comments
 
 

@@ -22,6 +22,7 @@ from rich.syntax import Syntax
 from rich.text import Text
 
 from quant_ranger._impl.github import (
+    MAX_PULL_REQUEST_BODY_LENGTH,
     MAX_PULL_REQUEST_COMMENT_LENGTH,
     GitHubAppCredentials,
     GitHubClient,
@@ -1353,6 +1354,16 @@ def test_create_pull_request_without_publishing_leaves_comments_alone(
     assert _publish_with_comments(tmp_path, client, [])
 
     assert pull_request.comments == [comment]
+
+
+def test_pull_request_options_rejects_too_long_body() -> None:
+    with pytest.raises(ValueError, match="body has"):
+        PullRequestOptions(
+            title="title",
+            body="x" * (MAX_PULL_REQUEST_BODY_LENGTH + 1),
+            source_branch="branch",
+            quant_ranger_id="pixi-update",
+        )
 
 
 def test_pull_request_options_rejects_too_long_comments() -> None:

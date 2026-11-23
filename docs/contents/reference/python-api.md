@@ -440,8 +440,8 @@ Content and target of a pull request opened or updated by quant-ranger.
 `comments` are conversation comments that follow the body, in order. On every
 update, quant-ranger edits its existing comments in place, posts missing ones,
 and deletes those that are no longer needed, so the pull request always shows
-exactly these comments. Each comment can be at most
-`MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
+exactly these comments. The body can be at most `MAX_PULL_REQUEST_BODY_LENGTH`
+and each comment at most `MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
 
 **Attributes:**
 

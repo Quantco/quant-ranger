@@ -1,10 +1,11 @@
+import itertools
 import json
 import os
 import stat
 import subprocess
 import sys
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, cast
@@ -23,6 +24,7 @@ from quant_ranger._impl.models import (
     RepositoryRef,
     Schedule,
     Status,
+    UpdateOutcome,
     UpdateResult,
 )
 from quant_ranger._impl.runtime import RunContext
@@ -512,6 +514,172 @@ def test_pixi_update_group_truncates_section_too_long_for_a_comment(
     assert len(first_comment) <= MAX_PULL_REQUEST_COMMENT_LENGTH
     assert first_comment.startswith("## `a/pixi.toml`\n\n> [!WARNING]\n> This report")
     assert first_comment.endswith("*... (truncated)*")
+
+
+_GROUP_WARNINGS = [
+    "The manifests of group `workspace` set different `autoupdate-schedule` values; "
+    "using `weekly` from `a/pixi.toml`."
+]
+
+
+def _report(size: int) -> str:
+    """Return a report of exactly `size` characters made of short lines."""
+    return (("x" * 99 + "\n") * (size // 100 + 1))[:size]
+
+
+def _group_options(
+    reports: Mapping[str, str], *, warnings: Sequence[str]
+) -> PullRequestOptions:
+    """Build the pull request of a group whose lockfiles have the given reports."""
+    group = PixiGroup(
+        name="workspace",
+        branch_prefix="pixi-update",
+        commit_message="chore: Update pixi lockfile",
+        schedule=Schedule.MONTHLY,
+        labels=[],
+        warnings=list(warnings),
+    )
+    updates = [
+        pixi_update.LockfileUpdate(
+            PixiLockfile(
+                path=PurePosixPath(directory) / "pixi.lock",
+                manifest=parse_pixi_manifest(""),
+            ),
+            UpdateOutcome(result=Status.UPDATED),
+            report=report,
+        )
+        for directory, report in reports.items()
+    ]
+    return pixi_update._group_pull_request_options(group, updates, target_branch=None)
+
+
+def _assert_valid_split(
+    options: PullRequestOptions,
+    reports: Mapping[str, str],
+    *,
+    warnings: Sequence[str],
+) -> None:
+    """Check the guarantees of a group's body and comments."""
+    body, comments = options.body, list(options.comments)
+    assert len(body) <= MAX_PULL_REQUEST_BODY_LENGTH
+    assert all(len(comment) <= MAX_PULL_REQUEST_COMMENT_LENGTH for comment in comments)
+    if warnings:
+        assert body.startswith("> [!WARNING]\n")
+        assert all(warning in body for warning in warnings)
+    else:
+        assert "[!WARNING]" not in body
+
+    # Every section appears exactly once, in order, across body and comments.
+    headings = {directory: f"## `{directory}/pixi.toml`" for directory in reports}
+    assert [
+        heading for text in [body, *comments] for heading in _section_headings(text)
+    ] == list(headings.values())
+
+    in_comments = [
+        directory
+        for directory, heading in headings.items()
+        if any(heading in comment for comment in comments)
+    ]
+    if comments:
+        # The note ends the body and lists exactly the sections in the comments.
+        listed = "\n".join(f"> - `{directory}/pixi.toml`" for directory in in_comments)
+        assert "> [!NOTE]\n" in body
+        assert body.endswith(listed)
+    else:
+        assert "[!NOTE]" not in body
+
+    # Sections are never split, unless one is too long for a comment on its own.
+    for directory, report in reports.items():
+        section = f"{headings[directory]}\n\n{report}"
+        if directory not in in_comments:
+            assert section in body
+        elif len(section) <= MAX_PULL_REQUEST_COMMENT_LENGTH:
+            assert sum(section in comment for comment in comments) == 1
+
+    # Comments are packed: the next comment's first section would not fit.
+    for current, following in itertools.pairwise(comments):
+        first_section = following.split("\n\n## `", 1)[0]
+        assert (
+            len(current) + len("\n\n") + len(first_section)
+            > MAX_PULL_REQUEST_COMMENT_LENGTH
+        )
+
+
+@pytest.mark.parametrize("warnings", [[], _GROUP_WARNINGS], ids=["plain", "warnings"])
+@pytest.mark.parametrize(
+    "sizes",
+    [
+        {"a": 100},
+        {"a": 30_000, "b": 30_000},
+        {"a": 50_000, "b": 20_000, "c": 20_000, "d": 30_000},
+        {"a": 70_000, "b": 1_000},
+        {"a": 1_000, "b": 70_000, "c": 1_000},
+        {"a": 64_000, "b": 64_000, "c": 64_000},
+        {f"p{index:02}": 3_000 for index in range(60)},
+    ],
+)
+def test_group_report_split_keeps_guarantees(
+    sizes: Mapping[str, int], warnings: list[str]
+) -> None:
+    reports = {directory: _report(size) for directory, size in sizes.items()}
+
+    options = _group_options(reports, warnings=warnings)
+
+    _assert_valid_split(options, reports, warnings=warnings)
+
+
+@pytest.mark.parametrize("warnings", [[], _GROUP_WARNINGS], ids=["plain", "warnings"])
+@pytest.mark.parametrize("overflow", [0, 1])
+def test_group_report_overflows_only_beyond_the_limit(
+    warnings: list[str], overflow: int
+) -> None:
+    base = len(_group_options({"a": "", "b": ""}, warnings=warnings).body)
+    reports = {
+        "a": _report(1_000),
+        "b": _report(MAX_PULL_REQUEST_BODY_LENGTH - base - 1_000 + overflow),
+    }
+
+    options = _group_options(reports, warnings=warnings)
+
+    _assert_valid_split(options, reports, warnings=warnings)
+    if overflow:
+        assert _section_headings(options.body) == ["## `a/pixi.toml`"]
+        assert len(options.comments) == 1
+    else:
+        assert len(options.body) == MAX_PULL_REQUEST_BODY_LENGTH
+        assert options.comments == ()
+
+
+@pytest.mark.parametrize("warnings", [[], _GROUP_WARNINGS], ids=["plain", "warnings"])
+@pytest.mark.parametrize("overflow", [0, 1])
+def test_group_report_counts_the_note_against_the_limit(
+    warnings: list[str], overflow: int
+) -> None:
+    # Measure the body that holds empty sections `a` and `b` plus the note for `c`.
+    with_note = len(
+        _group_options(
+            {"a": "", "b": "", "c": _report(MAX_PULL_REQUEST_BODY_LENGTH)},
+            warnings=warnings,
+        ).body
+    )
+    reports = {
+        "a": _report(MAX_PULL_REQUEST_BODY_LENGTH - with_note + overflow),
+        "b": "",
+        "c": _report(1_000),
+    }
+
+    options = _group_options(reports, warnings=warnings)
+
+    _assert_valid_split(options, reports, warnings=warnings)
+    if overflow:
+        # `a` and `b` alone would fit, but not together with the note.
+        assert _section_headings(options.body) == ["## `a/pixi.toml`"]
+    else:
+        assert len(options.body) == MAX_PULL_REQUEST_BODY_LENGTH
+        assert _section_headings(options.body) == [
+            "## `a/pixi.toml`",
+            "## `b/pixi.toml`",
+        ]
 
 
 def test_pixi_update_keeps_ungrouped_lockfiles_separate(

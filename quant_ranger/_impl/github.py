@@ -50,8 +50,8 @@ class PullRequestOptions:
     `comments` are conversation comments that follow the body, in order. On every
     update, quant-ranger edits its existing comments in place, posts missing ones,
     and deletes those that are no longer needed, so the pull request always shows
-    exactly these comments. Each comment can be at most
-    `MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
+    exactly these comments. The body can be at most `MAX_PULL_REQUEST_BODY_LENGTH`
+    and each comment at most `MAX_PULL_REQUEST_COMMENT_LENGTH` characters long.
     """
 
     title: str
@@ -63,6 +63,11 @@ class PullRequestOptions:
     comments: Sequence[str] = ()
 
     def __post_init__(self) -> None:
+        if len(self.body) > MAX_PULL_REQUEST_BODY_LENGTH:
+            raise ValueError(
+                f"Pull request body has {len(self.body)} characters, more than the "
+                f"maximum of {MAX_PULL_REQUEST_BODY_LENGTH}."
+            )
         for index, comment in enumerate(self.comments):
             if len(comment) > MAX_PULL_REQUEST_COMMENT_LENGTH:
                 raise ValueError(
