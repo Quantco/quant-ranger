@@ -91,13 +91,28 @@ def resolve_github_app_credentials() -> GitHubAppCredentials | None:
     return GitHubAppCredentials(client_id=client_id, private_key=private_key)
 
 
+# Variables `gh` reads to locate its config and state directories. Without
+# `HOME`, gh falls back to a relative `.local/state/gh` in the working directory
+# and writes its `device-id` there.
+_GH_ENV_VARS = ("HOME", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "GH_CONFIG_DIR")
+
+
+def _gh_env() -> dict[str, str]:
+    """Return the environment variables `gh` needs to find its config and state."""
+    return {
+        name: value
+        for name in _GH_ENV_VARS
+        if (value := os.environ.get(name)) is not None
+    }
+
+
 def resolve_github_token(*, use_gh: bool = False) -> str | None:
     """Resolve a GitHub token for local CLI runs."""
     if use_gh:
         # Doesn't pass logger to avoid logging any secrets at debug level.
 
         output = get_exec_output_silently(
-            ["gh", "auth", "token"], ignore_return_code=True
+            ["gh", "auth", "token"], env=_gh_env(), ignore_return_code=True
         )
         if output.exit_code == 0:
             return output.stdout.strip() or None

@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Barrier, Lock, get_ident
 from types import SimpleNamespace
 from typing import Any, cast, override
+from unittest.mock import ANY
 
 import jwt
 import pytest
@@ -62,6 +63,38 @@ def test_resolve_github_token_can_use_gh_cli(
     assert calls == [["gh", "auth", "token"]]
 
 
+def test_resolve_github_token_passes_gh_its_home_and_config_dirs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HOME", "/home/ranger")
+    monkeypatch.setenv("XDG_CONFIG_HOME", "/home/ranger/config")
+    monkeypatch.setenv("XDG_STATE_HOME", "/home/ranger/state")
+    monkeypatch.delenv("GH_CONFIG_DIR", raising=False)
+    monkeypatch.setenv("GH_TOKEN", "must-not-leak")
+    envs: list[dict[str, str] | None] = []
+
+    def fake_exec(command: list[str], **kwargs: Any) -> ExecOutput:
+        envs.append(kwargs.get("env"))
+        return ExecOutput(exit_code=0, stdout="cli-token\n", stderr="")
+
+    monkeypatch.setattr("quant_ranger._impl.github.get_exec_output_silently", fake_exec)
+
+    assert resolve_github_token(use_gh=True) == "cli-token"
+    assert envs == [
+        {
+            "HOME": "/home/ranger",
+            "XDG_CONFIG_HOME": "/home/ranger/config",
+            "XDG_STATE_HOME": "/home/ranger/state",
+        }
+    ]
+
+    monkeypatch.setenv("GH_CONFIG_DIR", "/home/ranger/gh")
+    envs.clear()
+    resolve_github_token(use_gh=True)
+    assert envs[0] is not None
+    assert envs[0]["GH_CONFIG_DIR"] == "/home/ranger/gh"
+
+
 def test_resolve_github_token_redacts_stdout_when_gh_cli_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -83,6 +116,7 @@ def test_resolve_github_token_redacts_stdout_when_gh_cli_fails(
     assert calls == [
         {
             "command": ["gh", "auth", "token"],
+            "env": ANY,
             "ignore_return_code": True,
         }
     ]
