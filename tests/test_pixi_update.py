@@ -1,6 +1,7 @@
 import json
 import os
 import stat
+import subprocess
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -329,6 +330,29 @@ def test_pixi_update_creates_pull_request_for_nested_lockfile(
             "publish_changes": False,
         }
     ]
+
+
+@pytest.mark.parametrize(
+    ("manifest_path", "expected"),
+    [
+        ("pixi.toml", "pixi.toml"),
+        ("subproject/pixi.toml", "subproject/pixi.toml"),
+        (".github/assets/rattler/pixi.toml", "_github/assets/rattler/pixi.toml"),
+        ("a/..hidden/pixi.toml", "a/_.hidden/pixi.toml"),
+        ("deps.lock/pixi.toml", "deps_lock/pixi.toml"),
+    ],
+)
+def test_branch_path_yields_valid_git_branch_name(
+    manifest_path: str, expected: str
+) -> None:
+    branch_path = pixi_update._branch_path(PurePosixPath(manifest_path))
+
+    assert branch_path == expected
+    subprocess.run(
+        ["git", "check-ref-format", "--branch", f"pixi-update/{branch_path}"],
+        check=True,
+        capture_output=True,
+    )
 
 
 def test_pixi_update_groups_lockfiles_sharing_a_group(

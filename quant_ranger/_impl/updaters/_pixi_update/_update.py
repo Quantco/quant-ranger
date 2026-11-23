@@ -673,11 +673,30 @@ def _pull_request_options(
     return PullRequestOptions(
         title=title,
         body=truncate_pull_request_body(update.report),
-        source_branch=f"{config.autoupdate_branch_prefix}/{lockfile.manifest_path}",
+        source_branch=(
+            f"{config.autoupdate_branch_prefix}/{_branch_path(lockfile.manifest_path)}"
+        ),
         target_branch=target_branch,
         labels=config.autoupdate_pull_request_labels,
         quant_ranger_id=PixiUpdateUpdater.name,
     )
+
+
+def _branch_path(path: PurePosixPath) -> str:
+    """Turn a repository path into a valid git branch name suffix.
+
+    Git rejects ref components that start with a dot or end with `.lock`, so a
+    manifest in `.github/` would otherwise yield an unusable branch name.
+    """
+    return "/".join(_branch_component(part) for part in path.parts)
+
+
+def _branch_component(part: str) -> str:
+    if part.startswith("."):
+        part = f"_{part[1:]}"
+    if part.endswith(".lock"):
+        part = f"{part.removesuffix('.lock')}_lock"
+    return part
 
 
 def _group_pull_request_options(
