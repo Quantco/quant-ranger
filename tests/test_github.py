@@ -1294,6 +1294,9 @@ def test_create_pull_request_leaves_foreign_comments_alone(tmp_path: Path) -> No
             _marked(0, "copied"), login="someone", pull_request=pull_request
         ),
         FakeIssueComment(
+            _marked(0, "no author"), login=None, pull_request=pull_request
+        ),
+        FakeIssueComment(
             _marked(0, "other updater", quant_ranger_id="zizmor"),
             pull_request=pull_request,
         ),
@@ -1689,13 +1692,15 @@ class FakePullRequest:
 @dataclass(eq=False)
 class FakeIssueComment:
     body: str
-    login: str = "octocat"
+    login: str | None = "octocat"
     user_type: str = "User"
     pull_request: FakePullRequest | None = None
     edits: list[str] = field(default_factory=list)
 
     @property
     def user(self) -> Any:
+        if self.login is None:
+            return None
         return SimpleNamespace(login=self.login, type=self.user_type)
 
     def edit(self, body: str) -> None:
