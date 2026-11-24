@@ -306,6 +306,7 @@ def _make_run_contexts(
                 show_pr_details=show_pr_details,
                 pr_details_diff_lines=pr_details_diff_lines,
                 fallback_commit_author=site_config.fallback_commit_author,
+                pull_request_labels=site_config.pull_request_labels,
             )
         except GitHubError as error:
             raise CliError(str(error)) from error
@@ -345,6 +346,7 @@ def _make_run_contexts(
                 show_pr_details=show_pr_details,
                 pr_details_diff_lines=pr_details_diff_lines,
                 fallback_commit_author=site_config.fallback_commit_author,
+                pull_request_labels=site_config.pull_request_labels,
             ),
             logger=logger,
             site_config=site_config,

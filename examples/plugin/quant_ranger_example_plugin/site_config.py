@@ -45,6 +45,7 @@ site_config = SiteConfig(
         name="example-ranger[bot]",
         email="1+example-ranger[bot]@users.noreply.github.com",
     ),
+    pull_request_labels=("automerge",),
     copier_trusted_templates=frozenset(
         {"github.com/quantco/copier-template-python-open-source"}
     ),

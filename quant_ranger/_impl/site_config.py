@@ -197,6 +197,14 @@ class SiteConfig(BaseModel):
     Other GitHub instances may use a different schema.
     """
 
+    pull_request_labels: tuple[str, ...] = ()
+    """Labels added to every pull request quant-ranger creates or updates, in addition
+    to labels set by individual updaters.
+
+    Use this for example to add `automerge` for a bot such as bulldozer. Failing
+    to add labels logs a warning and does not fail the run.
+    """
+
     copier_trusted_templates: frozenset[str] = frozenset()
     """The lowercase `host/owner/name` copier templates that may run with `--trust`.
     Setting this replaces the builtin allowlist entirely.

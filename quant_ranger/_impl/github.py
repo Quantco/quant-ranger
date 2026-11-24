@@ -2,7 +2,7 @@ import base64
 import os
 import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
@@ -145,6 +145,7 @@ def app_installation_clients(
     force_push: bool = False,
     show_pr_details: bool = False,
     pr_details_diff_lines: int | None = None,
+    pull_request_labels: Sequence[str] = (),
 ) -> list[GitHubClient]:
     """Return one client per installation of the GitHub App.
 
@@ -175,6 +176,7 @@ def app_installation_clients(
             force_push=force_push,
             show_pr_details=show_pr_details,
             pr_details_diff_lines=pr_details_diff_lines,
+            pull_request_labels=pull_request_labels,
         )
         for installation in installations
     ]
@@ -197,6 +199,7 @@ class GitHubClient:
         force_push: bool = False,
         show_pr_details: bool = False,
         pr_details_diff_lines: int | None = None,
+        pull_request_labels: Sequence[str] = (),
     ) -> None:
         self._token_or_installation = token_or_installation
         self.logger = logger
@@ -206,6 +209,7 @@ class GitHubClient:
         self.force_push = force_push
         self.show_pr_details = show_pr_details
         self.pr_details_diff_lines = pr_details_diff_lines
+        self.pull_request_labels = tuple(pull_request_labels)
         self._thread_local = threading.local()
         if isinstance(token_or_installation, str):
             auth = Auth.Token(token_or_installation)
@@ -597,8 +601,15 @@ class GitHubClient:
             )
             logger.debug("Successfully created a pull request.")
 
-        if options.labels:
-            pull_request.add_to_labels(*options.labels)
+        labels = list(dict.fromkeys([*self.pull_request_labels, *options.labels]))
+        if labels:
+            try:
+                pull_request.add_to_labels(*labels)
+            except GithubException as error:
+                logger.warning(
+                    f"Failed to add labels ({', '.join(labels)}) to the pull "
+                    f"request: {error}"
+                )
         return True
 
     def _commit_author(self) -> CommitAuthor:

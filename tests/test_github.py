@@ -332,8 +332,10 @@ def test_app_installation_clients_creates_one_client_per_installation(
         force_push=True,
         show_pr_details=True,
         pr_details_diff_lines=20,
+        pull_request_labels=("automerge",),
     )
 
+    assert all(client.pull_request_labels == ("automerge",) for client in clients)
     assert [client.installation_owner for client in clients] == ["quantco", "Other"]
     assert all(not client.publish_changes for client in clients)
     assert all(client.force_push for client in clients)
@@ -970,6 +972,76 @@ def test_create_pull_request_creates_new_pull_request_with_labels(
     assert repository.pulls[0].labels == ["dependencies"]
 
 
+def _labels_options(labels: list[str]) -> PullRequestOptions:
+    return PullRequestOptions(
+        title="Updated title",
+        body="Updated body",
+        source_branch="update-branch",
+        quant_ranger_id="zizmor",
+        target_branch="main",
+        labels=labels,
+    )
+
+
+def test_create_pull_request_adds_site_labels_to_new_pull_request(
+    tmp_path: Path,
+) -> None:
+    repository = FakeRepository(name="example")
+    client = make_client(
+        FakeGithub(repository=repository),
+        pull_request_labels=("automerge", "dependencies"),
+    )
+    checkout = RecordingCheckout(
+        tmp_path, RepositoryRef(owner="quantco", name="example")
+    )
+
+    assert client.create_pull_request(
+        checkout, _labels_options(["dependencies", "pixi"]), RecordingLogger()
+    )
+
+    assert repository.pulls[0].labels == ["automerge", "dependencies", "pixi"]
+
+
+def test_create_pull_request_adds_site_labels_to_existing_pull_request(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    repository = FakeRepository(name="example", pulls=[pull_request])
+    client = make_client(
+        FakeGithub(repository=repository), pull_request_labels=("automerge",)
+    )
+    checkout = RecordingCheckout(
+        tmp_path, RepositoryRef(owner="quantco", name="example")
+    )
+
+    assert client.create_pull_request(checkout, _labels_options([]), RecordingLogger())
+
+    assert pull_request.labels == ["automerge"]
+
+
+def test_create_pull_request_warns_when_adding_labels_fails(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+
+    def fail(*labels: str) -> None:
+        raise GithubException(403, {"message": "forbidden"})
+
+    pull_request.add_to_labels = fail  # type: ignore[method-assign]
+    repository = FakeRepository(name="example", pulls=[pull_request])
+    client = make_client(
+        FakeGithub(repository=repository), pull_request_labels=("automerge",)
+    )
+    checkout = RecordingCheckout(
+        tmp_path, RepositoryRef(owner="quantco", name="example")
+    )
+    logger = RecordingLogger()
+
+    assert client.create_pull_request(checkout, _labels_options([]), logger)
+
+    assert logger.logged(LogLevel.WARNING, "Failed to add labels (automerge)")
+
+
 def test_create_pull_request_updates_only_matching_target_branch(
     tmp_path: Path,
 ) -> None:
@@ -1271,6 +1343,7 @@ def make_client(
     show_pr_details: bool = False,
     pr_details_diff_lines: int | None = None,
     fallback_commit_author: CommitAuthor | None = None,
+    pull_request_labels: tuple[str, ...] = (),
 ) -> GitHubClient:
     client = GitHubClient(
         cast(Any, token),
@@ -1280,6 +1353,7 @@ def make_client(
         pr_details_diff_lines=pr_details_diff_lines,
         fallback_commit_author=fallback_commit_author,
         publish_changes=publish_changes,
+        pull_request_labels=pull_request_labels,
     )
     client._github_factory = lambda: cast(Any, github)
     return client
