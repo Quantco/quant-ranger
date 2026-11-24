@@ -25,13 +25,14 @@ ignore-pypi-mapping = false
 python = ">=3.15"
 hatchling = "*"
 
-# Only dependencies that are unavailable on PyPI belong here; everything else is
-# declared in `pyproject.toml` and mapped automatically. These are all invoked as
-# external executables, so `pip` users must install them separately (see README).
+# Only external executables belong here; Python libraries are declared in
+# `pyproject.toml` and mapped automatically. Keeping executables out of the PyPI
+# metadata means `pip` users must install them separately (see README).
 [package.run-dependencies]
 git = ">=2.54.0"
 mergiraf = ">=0.17.0"
 rattler-sandbox = ">=0.2.3"
+zizmor = "==1.22.0"
 
 [tasks]
 
