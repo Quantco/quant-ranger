@@ -36,6 +36,8 @@ PIXI_VERSION_PATTERN = re.compile(
     rf"(pixi-version:\s*)['\"]?({PIXI_VERSION_FORMAT.pattern})['\"]?"
 )
 PIXI_LOCKFILE = "pixi.lock"
+WORKFLOW_FILE_PATTERNS = ("*.yml", "*.yaml")
+ACTION_FILE_PATTERNS = ("action.yml", "action.yaml")
 
 
 def _validate_pixi_version(value: str | None) -> str | None:
@@ -218,16 +220,9 @@ class PixiVersionUpdateTask(
 
     def _update_workflow_files(self, latest_pixi_version: str) -> list[Path]:
         updated_files: list[Path] = []
-        workflow_dir = self.checkout.absolute_path / ".github" / "workflows"
-
-        try:
-            workflow_files = sorted(
-                entry
-                for entry in workflow_dir.iterdir()
-                if entry.is_file() and entry.suffix in {".yml", ".yaml"}
-            )
-        except OSError:
-            self.context.logger.debug("No .github/workflows directory found")
+        workflow_files = self._find_workflow_files()
+        if not workflow_files:
+            self.context.logger.debug("No workflow or action files found")
             return updated_files
 
         for workflow_file in workflow_files:
@@ -251,12 +246,33 @@ class PixiVersionUpdateTask(
 
         return updated_files
 
+    def _find_workflow_files(self) -> list[Path]:
+        """Return workflow files and the composite actions they may call.
+
+        GitHub only runs workflows placed directly in `.github/workflows`, while
+        local composite actions (`action.yml`) usually live in subdirectories of
+        `.github`, such as `.github/actions/<name>/action.yml`.
+        """
+        github_dir = self.checkout.absolute_path / ".github"
+        workflow_dir = github_dir / "workflows"
+        files = {
+            path
+            for pattern in WORKFLOW_FILE_PATTERNS
+            for path in workflow_dir.glob(pattern)
+        }
+        files |= {
+            path
+            for pattern in ACTION_FILE_PATTERNS
+            for path in github_dir.glob(f"**/{pattern}")
+        }
+        return sorted(path for path in files if path.is_file())
+
 
 class PixiVersionUpdater(Updater[PixiVersionItem, UpdateOutput, PixiVersionOptions]):
     name = "pixi-version"
     description = (
-        "Update pinned Pixi versions. Rewrites marked setup-pixi workflow "
-        "entries to a selected or latest release."
+        "Update pinned Pixi versions. Rewrites marked setup-pixi workflow and "
+        "composite action entries to a selected or latest release."
     )
     task_type = PixiVersionUpdateTask
 

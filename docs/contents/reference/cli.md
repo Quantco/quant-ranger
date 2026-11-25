@@ -120,7 +120,7 @@ $ quant-ranger update copier-migration [OPTIONS]
 
 ### `quant-ranger update pixi-version`
 
-Update pinned Pixi versions. Rewrites marked setup-pixi workflow entries to a selected or latest release.
+Update pinned Pixi versions. Rewrites marked setup-pixi workflow and composite action entries to a selected or latest release.
 
 **Usage**:
 
