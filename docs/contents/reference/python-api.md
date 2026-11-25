@@ -155,7 +155,7 @@ stderr: str
 ### GitHubClient
 
 ```python
-GitHubClient(token_or_installation: str | Installation, logger: Logger, api_url: str, fallback_commit_author: CommitAuthor | None, publish_changes: bool = False, force_push: bool = False, show_pr_details: bool = False, pr_details_diff_lines: int | None = None) -> None
+GitHubClient(token_or_installation: str | Installation, logger: Logger, api_url: str, fallback_commit_author: CommitAuthor | None, publish_changes: bool = False, force_push: bool = False, show_pr_details: bool = False, pr_details_diff_lines: int | None = None, pull_request_labels: Sequence[str] = ()) -> None
 ```
 
 Small PyGithub-backed client used by updater helpers.
@@ -185,6 +185,7 @@ Small PyGithub-backed client used by updater helpers.
 - **force_push** –
 - **show_pr_details** –
 - **pr_details_diff_lines** –
+- **pull_request_labels** –
 - **token** (<code>str</code>) – Return a currently valid token.
 - **installation_owner** (<code>str | None</code>) – Return the login of the account the installation belongs to.
 - **github** (<code>Github</code>) –
@@ -229,6 +230,12 @@ show_pr_details = show_pr_details
 
 ```python
 pr_details_diff_lines = pr_details_diff_lines
+```
+
+#### pull_request_labels
+
+```python
+pull_request_labels = tuple(pull_request_labels)
 ```
 
 #### token
@@ -1532,6 +1539,7 @@ and is used when no plugin is installed.
 - **pull_request_templates** (<code>PullRequestTemplates</code>) – Titles, bodies, and source-branch prefixes for configurable pull requests.
 - **copier_migrations** (<code>Mapping\[str, CopierMigration\]</code>) – Named Copier migrations available through `--migration`.
 - **fallback_commit_author** (<code>CommitAuthor | None</code>) – Optional commit author used for GitHub App authentication via private-key
+- **pull_request_labels** (<code>tuple\[str, ...\]</code>) – Labels added to every pull request quant-ranger creates or updates, in addition
 - **copier_trusted_templates** (<code>frozenset\[str\]</code>) – The lowercase `host/owner/name` copier templates that may run with `--trust`.
 
 #### model_config
@@ -1603,6 +1611,18 @@ verified correctly. GitHub noreply email schema:
 `<account-id>+<login>@users.noreply.github.com`
 
 Other GitHub instances may use a different schema.
+
+#### pull_request_labels
+
+```python
+pull_request_labels: tuple[str, ...] = ()
+```
+
+Labels added to every pull request quant-ranger creates or updates, in addition
+to labels set by individual updaters.
+
+Use this for example to add `automerge` for a bot such as bulldozer. Failing
+to add labels logs a warning and does not fail the run.
 
 #### copier_trusted_templates
 
