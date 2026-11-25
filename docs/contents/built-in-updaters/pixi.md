@@ -165,6 +165,14 @@ group = "workspace"
 
 The pull request uses the [branch and title](#branches-and-titles) of the group, and its body holds one section per changed lockfile; up-to-date lockfiles are left out.
 
+GitHub limits a pull-request body to 65,536 characters.
+If the sections do not fit, the body keeps as many leading sections as fit and lists the remaining lockfiles in a note.
+The remaining sections follow in order as pull-request comments, packed into as few comments as possible.
+A section is never split across the body and comments; only a single section that is too long for a comment on its own is truncated.
+When the pull request is updated, quant-ranger edits its comments in place, posts new ones if more are needed, and deletes those that are no longer needed, for example once all sections fit into the body again.
+Other comments on the pull request are left alone.
+A single ungrouped lockfile has only one section, so its report is truncated to fit into the body.
+
 A group is a single update item, so the run summary and the results file report one result per group instead of one per lockfile:
 
 | Lockfiles of the group            | Result                                                                                                                  |

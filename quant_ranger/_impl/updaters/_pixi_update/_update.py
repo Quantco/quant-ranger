@@ -20,7 +20,11 @@ from pydantic import (
 
 from quant_ranger._impl.cli_options import ScheduleOption
 from quant_ranger._impl.git import RepositoryCheckout
-from quant_ranger._impl.github import PullRequestOptions
+from quant_ranger._impl.github import (
+    MAX_PULL_REQUEST_BODY_LENGTH,
+    MAX_PULL_REQUEST_COMMENT_LENGTH,
+    PullRequestOptions,
+)
 from quant_ranger._impl.helpers import (
     CommandError,
     ExecOutput,
@@ -308,17 +312,23 @@ class PixiUpdateScanner(Scanner[PixiUpdateItem]):
             return None
 
 
-MAX_PULL_REQUEST_BODY_LENGTH = 65_536
+def truncate_pull_request_body(
+    body: str,
+    *,
+    max_length: int = MAX_PULL_REQUEST_BODY_LENGTH,
+    subject: str = "pull request body",
+) -> str:
+    """Cut `body` at a line boundary so that it fits within `max_length` characters.
 
-
-def truncate_pull_request_body(body: str) -> str:
-    if len(body) <= MAX_PULL_REQUEST_BODY_LENGTH:
+    `subject` names the truncated text in the notice that precedes it.
+    """
+    if len(body) <= max_length:
         return body
 
     notice = "\n".join(
         [
             "> [!WARNING]",
-            "> This pull request body was truncated because it exceeded GitHub's "
+            f"> This {subject} was truncated because it exceeded GitHub's "
             "maximum length",
             f"> of {MAX_PULL_REQUEST_BODY_LENGTH} characters. Check out the branch "
             "locally to inspect the full set of changes or generate the full diff yourself "
@@ -329,8 +339,8 @@ def truncate_pull_request_body(body: str) -> str:
     )
     truncation_marker = "\n\n*... (truncated)*"
 
-    # Fit the notice and marker within GitHub's limit, then snap to a line boundary.
-    budget = MAX_PULL_REQUEST_BODY_LENGTH - len(notice) - len(truncation_marker)
+    # Fit the notice and marker within the limit, then snap to a line boundary.
+    budget = max_length - len(notice) - len(truncation_marker)
     truncated_body = body[:budget]
     last_newline = truncated_body.rfind("\n")
     if last_newline > 0:
@@ -705,21 +715,81 @@ def _group_pull_request_options(
     *,
     target_branch: str | None,
 ) -> PullRequestOptions:
-    sections = [
-        f"## `{update.lockfile.manifest_path}`\n\n{update.report}" for update in updates
-    ]
+    leading = []
     if group.warnings:
         warning_lines = "\n".join(f"> - {warning}" for warning in group.warnings)
-        sections.insert(0, f"> [!WARNING]\n{warning_lines}")
+        leading.append(f"> [!WARNING]\n{warning_lines}")
+    body, comments = _split_group_report(leading, updates)
     return PullRequestOptions(
         title=f"{group.commit_message} ({group.name})",
-        body=truncate_pull_request_body("\n\n".join(sections)),
+        body=body,
         # The `group/` namespace keeps group branches apart from the manifest-path
         # branches of ungrouped lockfiles.
         source_branch=f"{group.branch_prefix}/group/{group.name}",
         target_branch=target_branch,
         labels=group.labels,
         quant_ranger_id=PixiUpdateUpdater.name,
+        comments=tuple(comments),
+    )
+
+
+def _split_group_report(
+    leading: Sequence[str],
+    updates: Sequence[LockfileUpdate],
+) -> tuple[str, list[str]]:
+    """Distribute the per-lockfile sections of a group over the body and comments.
+
+    Sections are never split: the body holds the leading sections that fit, and the
+    remaining ones are packed in order into as few comments as possible. Only a
+    single section that is too long for a comment on its own is truncated.
+    """
+    sections = [_group_section(update) for update in updates]
+    body = "\n\n".join([*leading, *sections])
+    if len(body) <= MAX_PULL_REQUEST_BODY_LENGTH:
+        return body, []
+
+    in_body = len(sections) - 1
+    while True:
+        note = _continuation_note(updates[in_body:])
+        body = "\n\n".join([*leading, *sections[:in_body], note])
+        if len(body) <= MAX_PULL_REQUEST_BODY_LENGTH or in_body == 0:
+            break
+        in_body -= 1
+
+    comments: list[str] = []
+    for update in updates[in_body:]:
+        section = _group_section(update, max_length=MAX_PULL_REQUEST_COMMENT_LENGTH)
+        if (
+            comments
+            and len(comments[-1]) + len("\n\n") + len(section)
+            <= MAX_PULL_REQUEST_COMMENT_LENGTH
+        ):
+            comments[-1] = f"{comments[-1]}\n\n{section}"
+        else:
+            comments.append(section)
+    # Only a note listing an extreme number of manifests can still be too long.
+    return truncate_pull_request_body(body), comments
+
+
+def _group_section(update: LockfileUpdate, *, max_length: int | None = None) -> str:
+    heading = f"## `{update.lockfile.manifest_path}`\n\n"
+    report = update.report
+    if max_length is not None:
+        report = truncate_pull_request_body(
+            report, max_length=max_length - len(heading), subject="report"
+        )
+    return f"{heading}{report}"
+
+
+def _continuation_note(updates: Sequence[LockfileUpdate]) -> str:
+    manifests = "\n".join(
+        f"> - `{update.lockfile.manifest_path}`" for update in updates
+    )
+    return (
+        "> [!NOTE]\n"
+        "> The reports of these manifests did not fit into the pull request "
+        "description and continue in the comments below:\n"
+        f"{manifests}"
     )
 
 

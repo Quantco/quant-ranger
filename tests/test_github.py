@@ -22,6 +22,8 @@ from rich.syntax import Syntax
 from rich.text import Text
 
 from quant_ranger._impl.github import (
+    MAX_PULL_REQUEST_BODY_LENGTH,
+    MAX_PULL_REQUEST_COMMENT_LENGTH,
     GitHubAppCredentials,
     GitHubClient,
     GitHubError,
@@ -1179,6 +1181,202 @@ def test_create_pull_request_overwrites_manual_changes_with_force_push(
     assert any("--force-push" in warning for warning in logger.warnings)
 
 
+def _publish_with_comments(
+    tmp_path: Path,
+    client: GitHubClient,
+    comments: Sequence[str],
+    *,
+    quant_ranger_id: str = "pixi-update",
+) -> bool:
+    checkout = RecordingCheckout(
+        tmp_path, RepositoryRef(owner="quantco", name="example")
+    )
+    return client.create_pull_request(
+        checkout,
+        PullRequestOptions(
+            title="Updated title",
+            body="Updated body",
+            source_branch="update-branch",
+            quant_ranger_id=quant_ranger_id,
+            target_branch="main",
+            comments=comments,
+        ),
+        RecordingLogger(),
+    )
+
+
+def _marked(index: int, body: str, quant_ranger_id: str = "pixi-update") -> str:
+    return f"<!-- quant-ranger:{quant_ranger_id}:comment:{index} -->\n{body}"
+
+
+def test_create_pull_request_posts_comments_on_new_pull_request(
+    tmp_path: Path,
+) -> None:
+    repository = FakeRepository(name="example")
+    client = make_client(FakeGithub(repository=repository))
+
+    assert _publish_with_comments(tmp_path, client, ["first", "second"])
+
+    assert repository.pulls[0].created_comments == [
+        _marked(0, "first"),
+        _marked(1, "second"),
+    ]
+
+
+def test_create_pull_request_syncs_comments_of_existing_pull_request(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    unchanged = FakeIssueComment(_marked(0, "same"), pull_request=pull_request)
+    changed = FakeIssueComment(_marked(1, "old"), pull_request=pull_request)
+    pull_request.comments = [unchanged, changed]
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request]))
+    )
+
+    assert _publish_with_comments(tmp_path, client, ["same", "new", "added"])
+
+    # Unchanged comments are not edited, so that nobody is notified.
+    assert unchanged.edits == []
+    assert changed.edits == [_marked(1, "new")]
+    assert [comment.body for comment in pull_request.comments] == [
+        _marked(0, "same"),
+        _marked(1, "new"),
+        _marked(2, "added"),
+    ]
+
+
+@pytest.mark.parametrize("comments", [["kept"], []])
+def test_create_pull_request_deletes_comments_that_are_no_longer_needed(
+    tmp_path: Path, comments: list[str]
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    pull_request.comments = [
+        FakeIssueComment(_marked(index, "old"), pull_request=pull_request)
+        for index in range(3)
+    ]
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request]))
+    )
+
+    assert _publish_with_comments(tmp_path, client, comments)
+
+    assert [comment.body for comment in pull_request.comments] == [
+        _marked(index, body) for index, body in enumerate(comments)
+    ]
+    assert pull_request.created_comments == []
+
+
+def test_create_pull_request_keeps_comments_in_order(tmp_path: Path) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    # Comment 0 was deleted manually and an outdated duplicate of 1 exists.
+    pull_request.comments = [
+        FakeIssueComment(_marked(1, "second"), pull_request=pull_request),
+        FakeIssueComment(_marked(0, "first"), pull_request=pull_request),
+        FakeIssueComment(_marked(0, "duplicate"), pull_request=pull_request),
+    ]
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request]))
+    )
+
+    assert _publish_with_comments(tmp_path, client, ["first", "second"])
+
+    assert [comment.body for comment in pull_request.comments] == [
+        _marked(0, "first"),
+        _marked(1, "second"),
+    ]
+
+
+def test_create_pull_request_leaves_foreign_comments_alone(tmp_path: Path) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    foreign = [
+        FakeIssueComment("LGTM", pull_request=pull_request),
+        FakeIssueComment(
+            _marked(0, "copied"), login="someone", pull_request=pull_request
+        ),
+        FakeIssueComment(
+            _marked(0, "no author"), login=None, pull_request=pull_request
+        ),
+        FakeIssueComment(
+            _marked(0, "other updater", quant_ranger_id="zizmor"),
+            pull_request=pull_request,
+        ),
+    ]
+    pull_request.comments = list(foreign)
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request]))
+    )
+
+    assert _publish_with_comments(tmp_path, client, [])
+
+    assert pull_request.comments == foreign
+    assert all(comment.edits == [] for comment in foreign)
+
+
+def test_create_pull_request_owns_bot_comments_with_app_authentication(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    bot_comment = FakeIssueComment(
+        _marked(0, "old"),
+        login="example-ranger[bot]",
+        user_type="Bot",
+        pull_request=pull_request,
+    )
+    user_comment = FakeIssueComment(_marked(1, "old"), pull_request=pull_request)
+    pull_request.comments = [bot_comment, user_comment]
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request])),
+        token="ghs_installation-token",
+        fallback_commit_author=CommitAuthor(
+            name="example-ranger[bot]",
+            email="1+example-ranger[bot]@users.noreply.github.com",
+        ),
+    )
+
+    assert _publish_with_comments(tmp_path, client, ["new"])
+
+    assert bot_comment.edits == [_marked(0, "new")]
+    assert pull_request.comments == [bot_comment, user_comment]
+
+
+def test_create_pull_request_without_publishing_leaves_comments_alone(
+    tmp_path: Path,
+) -> None:
+    pull_request = FakePullRequest(number=1, base_ref="main")
+    comment = FakeIssueComment(_marked(0, "old"), pull_request=pull_request)
+    pull_request.comments = [comment]
+    client = make_client(
+        FakeGithub(repository=FakeRepository(name="example", pulls=[pull_request])),
+        publish_changes=False,
+    )
+
+    assert _publish_with_comments(tmp_path, client, [])
+
+    assert pull_request.comments == [comment]
+
+
+def test_pull_request_options_rejects_too_long_body() -> None:
+    with pytest.raises(ValueError, match="body has"):
+        PullRequestOptions(
+            title="title",
+            body="x" * (MAX_PULL_REQUEST_BODY_LENGTH + 1),
+            source_branch="branch",
+            quant_ranger_id="pixi-update",
+        )
+
+
+def test_pull_request_options_rejects_too_long_comments() -> None:
+    with pytest.raises(ValueError, match="comment 1 has"):
+        PullRequestOptions(
+            title="title",
+            body="body",
+            source_branch="branch",
+            quant_ranger_id="pixi-update",
+            comments=["ok", "x" * (MAX_PULL_REQUEST_COMMENT_LENGTH + 1)],
+        )
+
+
 def test_github_client_fetches_commit_author_lazily() -> None:
     github = FakeGithub(repository=FakeRepository(name="example"))
     client = make_client(github)
@@ -1469,6 +1667,8 @@ class FakePullRequest:
     edits: list[dict[str, str]] = field(default_factory=list)
     commits: list[Any] = field(default_factory=lambda: [FakeCommit()])
     labels: list[str] = field(default_factory=list)
+    comments: list[FakeIssueComment] = field(default_factory=list)
+    created_comments: list[str] = field(default_factory=list)
 
     @property
     def base(self) -> Any:
@@ -1489,6 +1689,38 @@ class FakePullRequest:
 
     def add_to_labels(self, *labels: str) -> None:
         self.labels.extend(labels)
+
+    def get_issue_comments(self) -> list[FakeIssueComment]:
+        return list(self.comments)
+
+    def create_issue_comment(self, body: str) -> FakeIssueComment:
+        self.created_comments.append(body)
+        comment = FakeIssueComment(body=body, pull_request=self)
+        self.comments.append(comment)
+        return comment
+
+
+@dataclass(eq=False)
+class FakeIssueComment:
+    body: str
+    login: str | None = "octocat"
+    user_type: str = "User"
+    pull_request: FakePullRequest | None = None
+    edits: list[str] = field(default_factory=list)
+
+    @property
+    def user(self) -> Any:
+        if self.login is None:
+            return None
+        return SimpleNamespace(login=self.login, type=self.user_type)
+
+    def edit(self, body: str) -> None:
+        self.edits.append(body)
+        self.body = body
+
+    def delete(self) -> None:
+        assert self.pull_request is not None
+        self.pull_request.comments.remove(self)
 
 
 @dataclass
