@@ -252,6 +252,7 @@ def test_pixi_version_update_updates_composite_actions(
     root_action = write_repository_file(tmp_path, "action.yml")
     nested_action = write_repository_file(tmp_path, "setup/action.yaml")
     nested_workflow = write_github_file(tmp_path, "workflows/nested/ci.yml")
+    git_action = write_repository_file(tmp_path, ".git/action.yml")
 
     task_run = run_update_task(tmp_path)
 
@@ -260,6 +261,7 @@ def test_pixi_version_update_updates_composite_actions(
         assert "pixi-version: v0.70.0" in action.read_text()
     # GitHub only runs workflows placed directly in `.github/workflows`.
     assert "pixi-version: v0.69.0" in nested_workflow.read_text()
+    assert "pixi-version: v0.69.0" in git_action.read_text()
 
 
 def test_pixi_version_update_returns_up_to_date_without_workflow_dir(
