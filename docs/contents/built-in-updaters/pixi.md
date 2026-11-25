@@ -6,14 +6,14 @@ import pullRequestDark from '@site/static/img/pixi_update_pr_dark.png';
 
 The two Pixi updaters maintain different pins:
 
-| Command        | Updates                                        | Configuration (`pixi.toml`)        |
-| -------------- | ---------------------------------------------- | ---------------------------------- |
-| `pixi-version` | `pixi-version:` values in setup-pixi workflows | Root `[tool.pixi-version-updater]` |
-| `pixi-update`  | Dependencies recorded in each `pixi.lock`      | Adjacent `[tool.update]`           |
+| Command        | Updates                                                    | Configuration (`pixi.toml`)        |
+| -------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `pixi-version` | `pixi-version:` values in setup-pixi workflows and actions | Root `[tool.pixi-version-updater]` |
+| `pixi-update`  | Dependencies recorded in each `pixi.lock`                  | Adjacent `[tool.update]`           |
 
 ## `pixi-version`
 
-`pixi-version` resolves the latest [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi/releases) release once per run, then rewrites `pixi-version: vX.Y.Z` in marked files directly under `.github/workflows`.
+`pixi-version` resolves the latest [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi/releases) release once per run, then rewrites `pixi-version: vX.Y.Z` in marked workflow files directly under `.github/workflows` and in marked action files (`action.yml` or `action.yaml`) anywhere in the repository, such as a root `action.yml` or a local composite action in `.github/actions/setup/action.yml`.
 
 ```yaml title=".github/workflows/ci.yml" {3}
 - uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
@@ -38,7 +38,7 @@ quant-ranger update \
   --setup-pixi-marker octo-org/setup-pixi
 ```
 
-The marker is a plain substring used to select workflow files.
+The marker is a plain substring used to select workflow and action files.
 The updater does not change the `uses` line.
 It updates `pixi-version` values in matching files.
 Its deployment-wide default is documented under [Configuration](../plugins/site-configuration.md#options).

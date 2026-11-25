@@ -245,15 +245,32 @@ def test_pixi_version_update_skips_when_pull_request_was_not_created(
     assert task_run.outcome.result == Status.SKIPPED
 
 
+def test_pixi_version_update_updates_composite_actions(
+    tmp_path: Path,
+) -> None:
+    local_action = write_github_file(tmp_path, "actions/setup/action.yml")
+    root_action = write_repository_file(tmp_path, "action.yml")
+    nested_action = write_repository_file(tmp_path, "setup/action.yaml")
+    nested_workflow = write_github_file(tmp_path, "workflows/nested/ci.yml")
+    git_action = write_repository_file(tmp_path, ".git/action.yml")
+
+    task_run = run_update_task(tmp_path)
+
+    assert task_run.outcome.result == Status.UPDATED
+    for action in (local_action, root_action, nested_action):
+        assert "pixi-version: v0.70.0" in action.read_text()
+    # GitHub only runs workflows placed directly in `.github/workflows`.
+    assert "pixi-version: v0.69.0" in nested_workflow.read_text()
+    assert "pixi-version: v0.69.0" in git_action.read_text()
+
+
 def test_pixi_version_update_returns_up_to_date_without_workflow_dir(
     tmp_path: Path,
 ) -> None:
     task_run = run_update_task(tmp_path)
 
     assert task_run.outcome.result == Status.UP_TO_DATE
-    assert task_run.logger.logged(
-        LogLevel.DEBUG, "No .github/workflows directory found"
-    )
+    assert task_run.logger.logged(LogLevel.DEBUG, "No workflow or action files found")
     assert task_run.logger.logged(LogLevel.DEBUG, "All workflow files are up-to-date")
 
 
@@ -506,10 +523,26 @@ def write_workflow(
     *,
     name: str = "ci.yml",
 ) -> Path:
-    workflow = tmp_path / ".github" / "workflows" / name
-    workflow.parent.mkdir(parents=True, exist_ok=True)
-    workflow.write_text(content)
-    return workflow
+    return write_github_file(tmp_path, f"workflows/{name}", content)
+
+
+def write_github_file(
+    tmp_path: Path,
+    relative_path: str,
+    content: str = OUTDATED_WORKFLOW,
+) -> Path:
+    return write_repository_file(tmp_path, f".github/{relative_path}", content)
+
+
+def write_repository_file(
+    tmp_path: Path,
+    relative_path: str,
+    content: str = OUTDATED_WORKFLOW,
+) -> Path:
+    path = tmp_path / relative_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+    return path
 
 
 @dataclass
