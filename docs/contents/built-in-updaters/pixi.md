@@ -13,7 +13,7 @@ The two Pixi updaters maintain different pins:
 
 ## `pixi-version`
 
-`pixi-version` resolves the latest [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi/releases) release once per run, then rewrites `pixi-version: vX.Y.Z` in marked workflow files directly under `.github/workflows` and in marked composite actions (`action.yml` or `action.yaml`) anywhere under `.github`, such as `.github/actions/setup/action.yml`.
+`pixi-version` resolves the latest [`prefix-dev/pixi`](https://github.com/prefix-dev/pixi/releases) release once per run, then rewrites `pixi-version: vX.Y.Z` in marked workflow files directly under `.github/workflows` and in marked action files (`action.yml` or `action.yaml`) anywhere in the repository, such as a root `action.yml` or a local composite action in `.github/actions/setup/action.yml`.
 
 ```yaml title=".github/workflows/ci.yml" {3}
 - uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0

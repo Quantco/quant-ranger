@@ -248,15 +248,16 @@ def test_pixi_version_update_skips_when_pull_request_was_not_created(
 def test_pixi_version_update_updates_composite_actions(
     tmp_path: Path,
 ) -> None:
-    action = write_github_file(tmp_path, "actions/setup/action.yml")
-    root_action = write_github_file(tmp_path, "action.yaml")
+    local_action = write_github_file(tmp_path, "actions/setup/action.yml")
+    root_action = write_repository_file(tmp_path, "action.yml")
+    nested_action = write_repository_file(tmp_path, "setup/action.yaml")
     nested_workflow = write_github_file(tmp_path, "workflows/nested/ci.yml")
 
     task_run = run_update_task(tmp_path)
 
     assert task_run.outcome.result == Status.UPDATED
-    assert "pixi-version: v0.70.0" in action.read_text()
-    assert "pixi-version: v0.70.0" in root_action.read_text()
+    for action in (local_action, root_action, nested_action):
+        assert "pixi-version: v0.70.0" in action.read_text()
     # GitHub only runs workflows placed directly in `.github/workflows`.
     assert "pixi-version: v0.69.0" in nested_workflow.read_text()
 
@@ -528,7 +529,15 @@ def write_github_file(
     relative_path: str,
     content: str = OUTDATED_WORKFLOW,
 ) -> Path:
-    path = tmp_path / ".github" / relative_path
+    return write_repository_file(tmp_path, f".github/{relative_path}", content)
+
+
+def write_repository_file(
+    tmp_path: Path,
+    relative_path: str,
+    content: str = OUTDATED_WORKFLOW,
+) -> Path:
+    path = tmp_path / relative_path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
     return path

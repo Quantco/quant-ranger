@@ -1,3 +1,4 @@
+import os
 import re
 import threading
 import tomllib
@@ -37,7 +38,7 @@ PIXI_VERSION_PATTERN = re.compile(
 )
 PIXI_LOCKFILE = "pixi.lock"
 WORKFLOW_FILE_PATTERNS = ("*.yml", "*.yaml")
-ACTION_FILE_PATTERNS = ("action.yml", "action.yaml")
+ACTION_FILE_NAMES = ("action.yml", "action.yaml")
 
 
 def _validate_pixi_version(value: str | None) -> str | None:
@@ -247,25 +248,29 @@ class PixiVersionUpdateTask(
         return updated_files
 
     def _find_workflow_files(self) -> list[Path]:
-        """Return workflow files and the composite actions they may call.
+        """Return workflow files and composite action metadata files.
 
-        GitHub only runs workflows placed directly in `.github/workflows`, while
-        local composite actions (`action.yml`) usually live in subdirectories of
-        `.github`, such as `.github/actions/<name>/action.yml`.
+        GitHub only runs workflows placed directly in `.github/workflows`. Action
+        files (`action.yml`/`action.yaml`) can live in any directory: at the
+        repository root for action repositories, or nested for local composite
+        actions such as `.github/actions/<name>/action.yml`.
         """
-        github_dir = self.checkout.absolute_path / ".github"
-        workflow_dir = github_dir / "workflows"
+        root = self.checkout.absolute_path
+        workflow_dir = root / ".github" / "workflows"
         files = {
             path
             for pattern in WORKFLOW_FILE_PATTERNS
             for path in workflow_dir.glob(pattern)
+            if path.is_file()
         }
-        files |= {
-            path
-            for pattern in ACTION_FILE_PATTERNS
-            for path in github_dir.glob(f"**/{pattern}")
-        }
-        return sorted(path for path in files if path.is_file())
+        for directory, directory_names, filenames in os.walk(root):
+            directory_names[:] = [name for name in directory_names if name != ".git"]
+            files.update(
+                Path(directory) / name
+                for name in ACTION_FILE_NAMES
+                if name in filenames
+            )
+        return sorted(files)
 
 
 class PixiVersionUpdater(Updater[PixiVersionItem, UpdateOutput, PixiVersionOptions]):
